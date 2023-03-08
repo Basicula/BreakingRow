@@ -1,0 +1,12 @@
+.gamefield {
+  position: absolute;
+}
+
+.score-container {
+  display: flex;
+  flex-direction: row;
+}
+
+.score-wrapper {
+  margin-left: 10px;
+}
