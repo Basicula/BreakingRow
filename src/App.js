@@ -1,52 +1,9 @@
 import { useRef, useEffect } from "react";
 
+import { init_array, manhattan_distance } from "./Utils.js";
+import { draw_line, draw_rect } from "./CanvasUtils.js";
+
 import './style/App.css';
-
-function draw_line(context, x1, y1, x2, y2, line_width = 1) {
-  context.beginPath();
-  context.lineWidth = line_width;
-  context.moveTo(x1, y1);
-  context.lineTo(x2, y2);
-  context.stroke();
-  context.closePath();
-}
-
-function draw_rect(context, x, y, width, height, line_width = 1, color = "#000") {
-  context.beginPath();
-  context.lineWidth = line_width;
-  context.strokeStyle = color;
-  context.rect(x, y, width, height);
-  context.stroke();
-  context.closePath();
-}
-
-function init_array(width, height, value, value_generator) {
-  var array = [];
-
-  if (height === 1) {
-    for (let i = 0; i < width; ++i)
-      if (value === undefined)
-        array.push(value_generator());
-      else
-        array.push(value);
-    return array;
-  }
-
-  for (let i = 0; i < height; ++i) {
-    var row = [];
-    for (let j = 0; j < width; ++j)
-      if (value === undefined)
-        row.push(value_generator());
-      else
-        row.push(value);
-    array.push(row);
-  }
-  return array;
-}
-
-function manhattan_distance(x1, y1, x2, y2) {
-  return Math.abs(x1 - x2) + Math.abs(y1 - y2);
-}
 
 class FieldElement {
   #value;
@@ -314,8 +271,8 @@ class GameField {
     for (let group_id = 0; group_id < count; ++group_id) {
       const group = groups[group_id];
       group_details.push({
-        size : group.length,
-        value : this.#field[group[0][0]][group[0][1]].value
+        size: group.length,
+        value: this.#field[group[0][0]][group[0][1]].value
       });
       for (let element of group)
         this.#field[element[0]][element[1]] = new FieldElement(-1, this.#element_size);
@@ -372,11 +329,22 @@ class GameField {
 function App() {
   const canvas_ref = useRef(null);
   const score_ref = useRef(null);
+  const elements_count_ref = useRef(null);
 
   var game_field = new GameField();
   var first_element = [];
   var second_element = [];
+  var elements_count = {};
   var swapping = false;
+
+  const update_elements_count = (value, count) => {
+    if (value in elements_count)
+      elements_count[value] += count;
+    else
+      elements_count[value] = count;
+    const elements_counts_container = elements_count_ref.current;
+
+  }
 
   const update_game_state = (context, prev_step, step) => {
     const steps = 4;
@@ -388,8 +356,10 @@ function App() {
         if (changed) {
           next_step = step;
           var score = parseInt(score_ref.current.textContent);
-          for (let removed_group_details of removed_groups_details)
+          for (let removed_group_details of removed_groups_details) {
             score += removed_group_details.size * removed_group_details.value;
+            update_elements_count(removed_group_details.value, removed_group_details.size);
+          }
           score_ref.current.textContent = score;
         }
         if (prev_step === 3) {
@@ -435,7 +405,7 @@ function App() {
     const context = canvas.getContext("2d");
     const active_zone_fraction = 0.75;
     context.canvas.style.top = `${window.innerHeight * (1 - active_zone_fraction) / 2}px`;
-    context.canvas.style.right = `${window.innerWidth * (1 - active_zone_fraction) / 2}px`;
+    context.canvas.style.left = `${window.innerWidth * (1 - active_zone_fraction) / 2}px`;
     context.canvas.height = window.innerHeight * active_zone_fraction;
     context.canvas.width = window.innerWidth * active_zone_fraction;
 
@@ -464,13 +434,19 @@ function App() {
   };
 
   return (
-    <div>
-      <div className="score-container">
-        Score
+    <div className="app-container">
+      <div className="stats-container">
+        <div className="score-container">
+          Score
+          <div
+            className="score-wrapper"
+            ref={score_ref}>
+            0
+          </div>
+        </div>
         <div
-          className="score-wrapper"
-          ref={score_ref}>
-          0
+          className="elements-count-container"
+          ref={elements_count_ref}>
         </div>
       </div>
       <canvas
