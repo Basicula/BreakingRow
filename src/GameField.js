@@ -256,12 +256,8 @@ function render(context, field_data, grid_step, element_offset, highlighted_elem
   render_field_elements(context, field_data, grid_step, element_offset);
 }
 
-export default function GameField({ width, height }) {
+export default function GameField({ width, height, onStrike }) {
   const canvas_ref = useRef(null);
-  //const [field_data, set_field_data] = useState(new FieldData(width, height));
-  //const [first_element, set_first_element] = useState([]);
-  //const [second_element, set_second_element] = useState([]);
-  //const [swapping, set_swapping] = useState(false);
 
   var field_data = new FieldData(width, height);
   var first_element = [];
@@ -298,12 +294,8 @@ export default function GameField({ width, height }) {
         const changed = removed_groups_details.length > 0;
         if (changed) {
           next_step = step;
-          //var score = parseInt(score_ref.current.textContent);
-          for (let removed_group_details of removed_groups_details) {
-            //score += removed_group_details.size * removed_group_details.value;
-            //update_elements_count(removed_group_details.value, removed_group_details.size);
-          }
-          //score_ref.current.textContent = score;
+          for (let removed_group_details of removed_groups_details)
+            onStrike(removed_group_details.value, removed_group_details.size);
         }
         if (prev_step === 3) {
           if (!changed)

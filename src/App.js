@@ -1,4 +1,4 @@
-import { useRef, useEffect } from "react";
+import { useRef } from "react";
 
 import GameField from "./GameField.js";
 
@@ -15,8 +15,9 @@ function App() {
       elements_count[value] += count;
     else
       elements_count[value] = count;
-    const elements_counts_container = elements_count_ref.current;
-
+    console.log(score_ref.current.textContent)
+    const new_score = parseInt(score_ref.current.textContent) + value * count;
+    score_ref.current.textContent = new_score;
   }
 
   return (
@@ -35,7 +36,7 @@ function App() {
           ref={elements_count_ref}>
         </div>
       </div>
-      <GameField width={7} height={7}/>
+      <GameField width={7} height={7} onStrike={update_elements_count}/>
     </div>
   );
 }
