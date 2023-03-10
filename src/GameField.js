@@ -186,8 +186,8 @@ class FieldData {
   }
 
   swap_cells(row1, column1, row2, column2) {
-    if (row1 < 0 || row1 > this.#height || column1 < 0 || column1 > this.#width ||
-      row2 < 0 || row2 > this.#height || column2 < 0 || column2 > this.#width)
+    if (row1 < 0 || row1 >= this.#height || column1 < 0 || column1 >= this.#width ||
+      row2 < 0 || row2 >= this.#height || column2 < 0 || column2 >= this.#width)
       return;
     if (this.#field[row1][column1] === -1)
       return;
@@ -195,6 +195,34 @@ class FieldData {
       return;
     [this.#field[row1][column1], this.#field[row2][column2]] =
       [this.#field[row2][column2], this.#field[row1][column1]];
+  }
+
+  get_all_available_moves() {
+    const neighbors = [[0, 1], [0, -1], [1, 0], [-1, 0]];
+    var moves = [];
+    for (let row_id = 0; row_id < this.#height; ++row_id)
+      for (let column_id = 0; column_id < this.#width; ++column_id)
+        for (let neighbor of neighbors) {
+          const neighbor_row_id = row_id + neighbor[0];
+          const neighbor_column_id = column_id + neighbor[1];
+          if (neighbor_row_id < 0 || neighbor_row_id >= this.#height ||
+            neighbor_column_id < 0 || neighbor_column_id >= this.#width)
+            continue;
+          this.swap_cells(row_id, column_id, neighbor_row_id, neighbor_column_id);
+          if (this.#get_cross_groups().length > 0) {
+            let move_exists = false;
+            for (let move of moves)
+              if (row_id === move[1][0] && column_id === move[1][1] &&
+                neighbor_row_id === move[0][0] && column_id === move[0][1]) {
+                move_exists = true;
+                break;
+              }
+            if (!move_exists)
+              moves.push([[row_id, column_id], [neighbor_row_id, neighbor_column_id]]);
+          }
+          this.swap_cells(row_id, column_id, neighbor_row_id, neighbor_column_id);
+        }
+    return moves;
   }
 }
 
