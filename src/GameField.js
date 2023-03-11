@@ -287,10 +287,12 @@ function render(context, field_data, grid_step, element_offset, highlighted_elem
 export default function GameField({ width, height, onStrike }) {
   const canvas_ref = useRef(null);
 
-  var field_data = new FieldData(width, height);
-  var first_element = [];
-  var second_element = [];
-  var swapping = false;
+  const [field_data, set_field_data] = useState(new FieldData(width, height));
+  const [first_element, set_first_element] = useState([]);
+  const [second_element, set_second_element] = useState([]);
+  const [swapping, set_swapping] = useState(false);
+  const [step, set_step] = useState(-1);
+  const [prev_step, set_prev_step] = useState(-1);
 
   var grid_step = 0;
   var element_offset = 0;
@@ -310,57 +312,73 @@ export default function GameField({ width, height, onStrike }) {
     context.canvas.style.top = `${(window.innerHeight - context.canvas.width) / 2}px`;
     context.canvas.style.left = `${(window.innerWidth - context.canvas.height) / 2}px`;
 
-    update_game_state(context, -1, -1);
-  });
-
-  const update_game_state = (context, prev_step, step) => {
-    const steps = 4;
-    let next_step = (step + 1) % steps;
-    switch (step) {
-      case 0:
-        const removed_groups_details = field_data.remove_groups(1);
-        const changed = removed_groups_details.length > 0;
-        if (changed) {
-          next_step = step;
-          for (let removed_group_details of removed_groups_details)
-            onStrike(removed_group_details.value, removed_group_details.size);
-        }
-        if (prev_step === 3) {
-          if (!changed)
-            next_step = 3;
-          else {
-            first_element = [];
-            second_element = [];
-          }
-        }
-        break;
-      case 1:
-        field_data.move_elements();
-        break;
-      case 2:
-        field_data.spawn_new_values();
-        break;
-      case 3:
-        if (first_element.length !== 0 && second_element.length !== 0) {
-          field_data.swap_cells(first_element[0], first_element[1], second_element[0], second_element[1]);
-          if (prev_step === 0 && swapping) {
-            first_element = [];
-            second_element = [];
-            swapping = false;
-          } else
-            swapping = !swapping;
-        }
-        break;
-      default:
-        break;
-    }
     var highlighted_elements = [];
     if (first_element.length > 0)
       highlighted_elements.push(first_element);
     if (second_element.length > 0)
       highlighted_elements.push(second_element);
     render(context, field_data, grid_step, element_offset, highlighted_elements);
-    setTimeout(update_game_state, 500, context, step, next_step);
+    setTimeout(update_game_state, 500);
+  });
+
+  const update_game_state = () => {
+    console.log(prev_step, step);
+    const steps = 4;
+    let next_step = (step + 1) % steps;
+    switch (step) {
+      case 0:
+        const removed_groups_details = field_data.remove_groups(1);
+        const changed = removed_groups_details.length > 0;
+        set_prev_step(step);
+        if (changed) {
+          for (let removed_group_details of removed_groups_details)
+            onStrike(removed_group_details.value, removed_group_details.size);
+          set_field_data(field_data.clone());
+          if (prev_step === 3) {
+            set_first_element([]);
+            set_second_element([]);
+          }
+        } else if (prev_step === 3) {
+          set_prev_step(0);
+          set_step(3);
+        } else if (prev_step != step) {
+          set_step(-1);
+          set_prev_step(-1);
+        } else 
+          set_step(1);
+        break;
+      case 1:
+        field_data.move_elements();
+        set_field_data(field_data.clone());
+        set_prev_step(step);
+        set_step(next_step);
+        break;
+      case 2:
+        field_data.spawn_new_values();
+        set_field_data(field_data.clone());
+        set_prev_step(step);
+        set_step(0);
+        break;
+      case 3:
+        if (first_element.length !== 0 && second_element.length !== 0) {
+          field_data.swap_cells(first_element[0], first_element[1], second_element[0], second_element[1]);
+          set_field_data(field_data.clone());
+          if (prev_step === 0 && swapping) {
+            set_first_element([]);
+            set_second_element([]);
+            set_swapping(false);
+            set_step(-1);
+            set_prev_step(-1);
+          } else {
+            set_prev_step(step);
+            set_step(0);
+            set_swapping(!swapping);
+          }
+        }
+        break;
+      default:
+        break;
+    }
   }
 
   const on_click = (event) => {
@@ -374,9 +392,11 @@ export default function GameField({ width, height, onStrike }) {
         field_element_coordinates[0], field_element_coordinates[1]
       );
       if (first_element.length === 0 || distance > 1)
-        first_element = field_element_coordinates;
-      else
-        second_element = field_element_coordinates;
+        set_first_element(field_element_coordinates);
+      else {
+        set_second_element(field_element_coordinates);
+        set_step(3);
+      }
     }
   };
 
