@@ -322,7 +322,6 @@ export default function GameField({ width, height, onStrike }) {
   });
 
   const update_game_state = () => {
-    console.log(prev_step, step);
     const steps = 4;
     let next_step = (step + 1) % steps;
     switch (step) {
@@ -393,6 +392,8 @@ export default function GameField({ width, height, onStrike }) {
       );
       if (first_element.length === 0 || distance > 1)
         set_first_element(field_element_coordinates);
+      else  if (distance === 0)
+        set_first_element([]);
       else {
         set_second_element(field_element_coordinates);
         set_step(3);
