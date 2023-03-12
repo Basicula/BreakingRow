@@ -3,11 +3,21 @@ import styled from 'styled-components'
 
 import GameField from "./GameField.js";
 import Statistics from "./Statistics.js";
+import Infos from "./Infos.js";
 
 export default function App() {
   const [window_size, set_window_size] = useState([]);
   const [score, set_score] = useState(0);
   const [elements_count, set_elements_count] = useState({});
+  const [strikes_statistics, set_strike_statistics] = useState({});
+
+  const score_bonuses = {
+    3: 1,
+    4: 2,
+    5: 5,
+    6: 5,
+    7: 10
+  };
 
   const update_statistics = (value, count) => {
     set_score(score + value * count);
@@ -17,6 +27,12 @@ export default function App() {
     else
       new_elements_count[value] = count;
     set_elements_count(new_elements_count);
+    var new_strike_statistics = strikes_statistics;
+    if (count in strikes_statistics)
+      ++new_strike_statistics[count]
+    else
+      new_strike_statistics[count] = 1
+    set_strike_statistics(new_strike_statistics);
   }
 
   useEffect(() => {
@@ -30,14 +46,15 @@ export default function App() {
 
   return (
     <AppContainer>
-      <Statistics elements_count={elements_count} />
+      <Statistics elements_count={elements_count} strikes_statistics={strikes_statistics}/>
       <GameFieldContainer>
         <ScoreContainer>
           <ScoreTitleContainer>Score</ScoreTitleContainer>
           <ScoreValueContainer>{score}</ScoreValueContainer>
         </ScoreContainer>
-        <GameField width={7} height={7} onStrike={update_statistics} />
+        <GameField width={10} height={10} onStrike={update_statistics} />
       </GameFieldContainer>
+      <Infos score_bonuses={score_bonuses}></Infos>
     </AppContainer>
   );
 }
