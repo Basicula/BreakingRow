@@ -1,7 +1,7 @@
 import { useRef, useEffect, useState } from "react";
 
 import { init_array, manhattan_distance } from "./Utils.js";
-import { draw_line, draw_rect } from "./CanvasUtils.js";
+import { draw_line, draw_rect, } from "./CanvasUtils.js";
 
 class FieldData {
   #field;
@@ -248,7 +248,66 @@ function render_grid(context, field_data, grid_step) {
   }
 }
 
-function render_field_elements(context, field_data, grid_step, element_offset) {
+function render_element(context, x, y, value, element_size, element_offset, is_highlighted = false) {
+  var pow = 0;
+  var val = value;
+  while (val > 1) {
+    ++pow;
+    val = val >> 1;
+  }
+  var color = "#000000";
+  switch (pow) {
+    case 0:
+      color = "#3DFF53";
+      break;
+    case 1:
+      color = "#FF4828";
+      break;
+    case 2:
+      color = "#0008FF";
+      break;
+    case 3:
+      color = "#14FFF3";
+      break;
+    case 4:
+      color = "#FF05FA";
+      break;
+    case 5:
+      color = "#FFFB28";
+      break;
+  }
+  context.beginPath();
+
+  if (!is_highlighted) {
+    context.shadowBlur = element_offset;
+    context.shadowColor = "rgba(0,0,0,1)";
+  }
+
+  context.lineWidth = 4;
+  context.strokeStyle = "#000000";
+  context.rect(x, y, element_size, element_size);
+  context.stroke();
+
+  context.fillStyle = color;
+  context.rect(x, y, element_size, element_size);
+  context.fill();
+
+  context.shadowBlur = 0;
+
+  context.font = `${element_size * 0.75}px candara`;
+  context.textAlign = "center";
+  context.textBaseline = "middle";
+  context.fillStyle = "#ffffff";
+  context.fillText(value, x + element_size / 2, y + element_size / 2, element_size);
+
+  context.lineWidth = 2;
+  context.strokeStyle = "#000000";
+  context.strokeText(value, x + element_size / 2, y + element_size / 2, element_size);
+
+  context.closePath();
+}
+
+function render_field_elements(context, field_data, grid_step, element_offset, highlighted_elements) {
   const element_size = grid_step - 2 * element_offset;
   for (let row_id = 0; row_id < field_data.height; ++row_id) {
     const y = row_id * grid_step + element_offset;
@@ -257,31 +316,24 @@ function render_field_elements(context, field_data, grid_step, element_offset) {
       const value = field_data.at(row_id, column_id);
       if (value === -1)
         continue;
-      draw_rect(context, x, y, element_size, element_size);
-      context.font = `${element_size * 0.75}px serif`;
-      context.textAlign = "center";
-      context.textBaseline = "middle";
-      context.fillText(value, x + element_size / 2, y + element_size / 2, element_size);
+      var is_highlighted = false;
+      for (let highlighted_element of highlighted_elements)
+        if (row_id === highlighted_element[0] && column_id === highlighted_element[1]) {
+          is_highlighted = true;
+          break;
+        }
+      render_element(context, x, y, value, element_size, element_offset, is_highlighted);
     }
   }
-}
-
-function highlight(context, row, column, grid_step, element_offset) {
-  const element_size = grid_step - 2 * element_offset;
-  const x = column * grid_step + 2 * element_offset;
-  const y = row * grid_step + 2 * element_offset;
-  draw_rect(context, x, y, element_size - 2 * element_offset, element_size - 2 * element_offset, 1, "#ff0000");
 }
 
 function render(context, field_data, grid_step, element_offset, highlighted_elements) {
   const width = context.canvas.width;
   const height = context.canvas.height;
   context.clearRect(0, 0, width, height);
-  for (const highlighted_element of highlighted_elements)
-    highlight(context, highlighted_element[0], highlighted_element[1], grid_step, element_offset);
   draw_rect(context, 0, 0, width, height, 5);
   render_grid(context, field_data, grid_step);
-  render_field_elements(context, field_data, grid_step, element_offset);
+  render_field_elements(context, field_data, grid_step, element_offset, highlighted_elements);
 }
 
 export default function GameField({ width, height, onStrike }) {
@@ -306,7 +358,7 @@ export default function GameField({ width, height, onStrike }) {
     const grid_x_step = Math.floor(context.canvas.width / field_data.width);
     const grid_y_step = Math.floor(context.canvas.height / field_data.height);
     grid_step = Math.min(grid_x_step, grid_y_step);
-    element_offset = Math.floor(0.05 * grid_step);
+    element_offset = Math.floor(0.1 * grid_step);
     context.canvas.width = grid_step * field_data.width;
     context.canvas.height = grid_step * field_data.height;
     context.canvas.style.top = `${(window.innerHeight - context.canvas.width) / 2}px`;
@@ -343,7 +395,7 @@ export default function GameField({ width, height, onStrike }) {
         } else if (prev_step != step) {
           set_step(-1);
           set_prev_step(-1);
-        } else 
+        } else
           set_step(1);
         break;
       case 1:
@@ -392,7 +444,7 @@ export default function GameField({ width, height, onStrike }) {
       );
       if (first_element.length === 0 || distance > 1)
         set_first_element(field_element_coordinates);
-      else  if (distance === 0)
+      else if (distance === 0)
         set_first_element([]);
       else {
         set_second_element(field_element_coordinates);
