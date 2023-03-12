@@ -7,15 +7,6 @@ export function draw_line(context, x1, y1, x2, y2, line_width = 1) {
   context.closePath();
 }
 
-export function draw_rect(context, x, y, width, height, line_width = 1, color = "#000") {
-  context.beginPath();
-  context.lineWidth = line_width;
-  context.strokeStyle = color;
-  context.rect(x, y, width, height);
-  context.stroke();
-  context.closePath();
-}
-
 export function draw_regular_polygon(
   context,
   center,
@@ -109,7 +100,6 @@ export function draw_regular_polygon(
       (points_with_offset[prev_point][0] - arc_center[0])
     );
     context.arc(arc_center[0], arc_center[1], rounding_radius, arc_start_angle, arc_end_angle);
-    context.lineTo(points_with_offset[point_id][0], points_with_offset[point_id][1]);
     context.lineTo(points_with_offset[next_point_id][0], points_with_offset[next_point_id][1]);
   }
 }

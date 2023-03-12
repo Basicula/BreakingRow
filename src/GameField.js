@@ -2,7 +2,7 @@ import { useRef, useEffect, useState } from "react";
 
 import { FieldData } from "./GameFieldData.js";
 import { manhattan_distance } from "./Utils.js";
-import { draw_line, draw_rect, draw_regular_polygon } from "./CanvasUtils.js";
+import { draw_line, draw_regular_polygon } from "./CanvasUtils.js";
 
 function map_coordinates(x, y, grid_step) {
   return [
@@ -86,16 +86,16 @@ function render_element(context, x, y, value, element_size, element_offset, is_h
     context.shadowColor = "rgba(0,0,0,1)";
   }
 
+  context.fillStyle = color;
+  shape_drawer(context, x, y, element_size);
+  context.fill();
+
   context.lineWidth = 1;
   context.strokeStyle = "#000000";
   shape_drawer(context, x, y, element_size);
   context.stroke();
   context.stroke();
   context.stroke();
-
-  context.fillStyle = color;
-  shape_drawer(context, x, y, element_size);
-  context.fill();
 
   context.shadowBlur = 0;
 
@@ -136,7 +136,12 @@ function render(context, field_data, grid_step, element_offset, highlighted_elem
   const width = context.canvas.width;
   const height = context.canvas.height;
   context.clearRect(0, 0, width, height);
-  draw_rect(context, 0, 0, width, height, 5);
+  context.lineWidth = 5;
+  context.fillStyle = "#dddddd";
+  context.strokeStyle = "#000000";
+  context.rect(0, 0, width, height);
+  context.fill();
+  context.stroke();
   render_grid(context, field_data, grid_step);
   render_field_elements(context, field_data, grid_step, element_offset, highlighted_elements);
 }
