@@ -22,29 +22,31 @@ export default function Statistics({ elements_count, strikes_statistics }) {
       </TabsContainer>
       <TabContentContainer>
         {Object.keys(statistics[current_tab]).length > 0 &&
-          Object.keys(statistics[current_tab]).map((element, i) => {
+          Object.keys(statistics[current_tab]).map((info_name, i) => {
             return (
-              <ElementCountInfo key={element}>
-                <ElementContainer>{element}</ElementContainer>
+              <InfoContainer key={info_name}>
+                <InfoNameContainer>{info_name}</InfoNameContainer>
                 :
-                <ElementCountContainer>{statistics[current_tab][element]}</ElementCountContainer>
-              </ElementCountInfo>
+                <InfoDataContainer>{statistics[current_tab][info_name]}</InfoDataContainer>
+              </InfoContainer>
             );
           })}
-        {Object.keys(statistics[current_tab]).length === 0 && (<div>No data</div>)}
+        {Object.keys(statistics[current_tab]).length === 0 && 
+          <NoDataContainer>No data</NoDataContainer>}
       </TabContentContainer>
     </StatisticsContainer>
   );
 }
 
 const StatisticsContainer = styled.div`
-  height: 100%;
   min-width: 100px;
 
   display: flex;
   flex-direction: column;
   justify-content: center;
   align-items: center;
+  border: 1px solid black;
+  border-radius: 5px;
 `;
 
 const TabsContainer = styled.div`
@@ -56,7 +58,7 @@ const TabContainer = styled.div`
   padding: 5px;
   box-sizing: border-box;
   
-  border: 1px solid white;
+  border-radius: 5px;
   color: white;
   background: black;
 
@@ -67,7 +69,7 @@ const SelectedTabContainer = styled.div`
   padding: 5px;
   box-sizing: border-box;
 
-  border: 1px solid white;
+  border-radius: 5px;
   color: white;
   background: grey;
 
@@ -75,14 +77,30 @@ const SelectedTabContainer = styled.div`
 `;
 
 const TabContentContainer = styled.div`
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  padding: 5px;
+  box-sizing: border-box;
+
+  border: 2px solid black;
+  border-radius: 5px;
 `;
 
-const ElementCountInfo = styled.div`
+const InfoContainer = styled.div`
   display: flex;
   flex-direction: row;
 
-  text-align: center;
+  justify-content: center;
 `;
 
-const ElementContainer = styled.div``;
-const ElementCountContainer = styled.div``;
+const InfoNameContainer = styled.div`
+  margin-right: 5px;
+`;
+const InfoDataContainer = styled.div`
+  margin-left: 5px;
+`;
+
+const NoDataContainer = styled.div`
+  text-align: center;
+`;
