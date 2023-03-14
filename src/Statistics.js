@@ -31,7 +31,7 @@ export default function Statistics({ elements_count, strikes_statistics }) {
               </InfoContainer>
             );
           })}
-        {Object.keys(statistics[current_tab]).length === 0 && 
+        {Object.keys(statistics[current_tab]).length === 0 &&
           <NoDataContainer>No data</NoDataContainer>}
       </TabContentContainer>
     </StatisticsContainer>
@@ -98,9 +98,11 @@ const InfoNameContainer = styled.div`
   margin-right: 5px;
 `;
 const InfoDataContainer = styled.div`
+  width: 100%;
   margin-left: 5px;
 `;
 
 const NoDataContainer = styled.div`
+  width: 100%;
   text-align: center;
 `;
