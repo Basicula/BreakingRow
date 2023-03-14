@@ -158,6 +158,45 @@ export class FieldData {
     return group_details;
   }
 
+  accumulate_groups(count = -1) {
+    const groups = this.#get_cross_groups();
+    if (count === -1)
+      count = groups.length;
+    count = Math.min(count, groups.length);
+    if (count === 0)
+      return [];
+    var group_details = [];
+    for (let group_id = 0; group_id < count; ++group_id) {
+      const group = groups[group_id];
+      const value = this.#field[group[0][0]][group[0][1]];
+      group_details.push({
+        size: group.length,
+        value: value
+      });
+      var accumulated_value = value * group.length;
+      var values = [];
+      var pow = 0;
+      while (accumulated_value > 0) {
+        console.log(accumulated_value);
+        if (accumulated_value & 1 === 1)
+          values.push(pow);
+        accumulated_value = accumulated_value >> 1;
+        ++pow;
+      }
+      for (let i = 0; i < group.length; ++i) {
+        const j = Math.floor(Math.random() * group.length);
+        [group[i], group[j]] = [group[j], group[i]];
+      }
+      for (let element of group) {
+        var new_value = -1;
+        if (values.length > 0)
+          new_value = 2 ** values.pop();
+        this.#field[element[0]][element[1]] = new_value;
+      }
+    }
+    return group_details;
+  }
+
   move_elements() {
     for (let column_id = 0; column_id < this.#width; ++column_id) {
       var empty_row_id = -1;
@@ -220,5 +259,16 @@ export class FieldData {
           this.swap_cells(row_id, column_id, neighbor_row_id, neighbor_column_id);
         }
     return moves;
+  }
+
+  shuffle() {
+    do {
+      for (let row_id = 0; row_id < this.#height; ++row_id)
+        for (let column_id = 0; column_id < this.#width; ++column_id) {
+          const other_row_id = Math.floor(Math.random() * this.#height);
+          const other_column_id = Math.floor(Math.random() * this.#width);
+          this.swap_cells(row_id, column_id, other_row_id, other_column_id);
+        }
+    } while (this.get_all_available_moves().length === 0);
   }
 }
