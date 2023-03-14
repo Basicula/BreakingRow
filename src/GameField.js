@@ -1,4 +1,5 @@
 import { useRef, useEffect, useState } from "react";
+import styled from 'styled-components'
 
 import { FieldData } from "./GameFieldData.js";
 import { manhattan_distance } from "./Utils.js";
@@ -33,7 +34,7 @@ function element_style_by_value(value) {
     value = value >> 1;
   }
   var color = "#000000";
-  var shape_drawer = (context, x, y, size) => {};
+  var shape_drawer = (context, x, y, size) => { };
   const rounding_radius = 7;
   switch (pow) {
     case 0:
@@ -66,11 +67,17 @@ function element_style_by_value(value) {
       break;
     case 4:
       color = "#FF05FA";
-      shape_drawer = (context, x, y, size) => { }
+      shape_drawer = (context, x, y, size) => {
+        draw_regular_polygon(context, [x + size / 2, y + 3 * size / 8], 11 * size / 16,
+          3, Math.PI / 2, rounding_radius);
+      }
       break;
     case 5:
       color = "#FFFB28";
-      shape_drawer = (context, x, y, size) => { }
+      shape_drawer = (context, x, y, size) => {
+        draw_regular_polygon(context, [x + size / 2, y + size / 2], 8 * size / 14,
+          4, 0, rounding_radius);
+      }
       break;
   }
   return [color, shape_drawer];
@@ -146,7 +153,7 @@ function render(context, field_data, grid_step, element_offset, highlighted_elem
   render_field_elements(context, field_data, grid_step, element_offset, highlighted_elements);
 }
 
-export default function GameField({ width, height, onStrike }) {
+export default function GameField({ width, height, onStrike, onAvailableMovesCountChange }) {
   const canvas_ref = useRef(null);
 
   const [field_data, set_field_data] = useState(new FieldData(width, height));
@@ -179,6 +186,8 @@ export default function GameField({ width, height, onStrike }) {
       highlighted_elements.push(first_element);
     if (second_element.length > 0)
       highlighted_elements.push(second_element);
+    const moves = field_data.get_all_available_moves();
+    onAvailableMovesCountChange(moves.length);
     render(context, field_data, grid_step, element_offset, highlighted_elements);
     setTimeout(update_game_state, 100);
   });
@@ -188,7 +197,7 @@ export default function GameField({ width, height, onStrike }) {
     let next_step = (step + 1) % steps;
     switch (step) {
       case 0:
-        const removed_groups_details = field_data.remove_groups(1);
+        const removed_groups_details = field_data.accumulate_groups(1);
         const changed = removed_groups_details.length > 0;
         set_prev_step(step);
         if (changed) {
@@ -256,7 +265,7 @@ export default function GameField({ width, height, onStrike }) {
         set_first_element(field_element_coordinates);
       else if (distance === 0)
         set_first_element([]);
-      else {
+      else if (second_element.length === 0) {
         set_second_element(field_element_coordinates);
         set_step(3);
       }
@@ -266,12 +275,33 @@ export default function GameField({ width, height, onStrike }) {
   const on_mouse_move = (event) => {
   };
 
+  const shuffle = () => {
+    field_data.shuffle();
+    set_field_data(field_data.clone());
+    set_step(0);
+  }
+
   return (
-    <canvas
-      className="gamefield"
-      ref={canvas_ref}
-      onMouseDown={on_click}
-      onMouseMove={on_mouse_move}
-    />
+    <ElementsContainer>
+      <canvas
+        className="gamefield"
+        ref={canvas_ref}
+        onMouseDown={on_click}
+        onMouseMove={on_mouse_move}
+      />
+      <AbilitiesContainer>
+        <button onClick={shuffle}>Shuffle</button>
+      </AbilitiesContainer>
+    </ElementsContainer>
   );
 }
+
+const ElementsContainer = styled.div`
+  display: flex;
+  flex-direction: column;
+`;
+
+const AbilitiesContainer = styled.div`
+  display: flex;
+  flex-direction: row;
+`;
