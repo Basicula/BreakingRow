@@ -153,7 +153,7 @@ function render(context, field_data, grid_step, element_offset, highlighted_elem
   render_field_elements(context, field_data, grid_step, element_offset, highlighted_elements);
 }
 
-export default function GameField({ width, height, onStrike, onAvailableMovesCountChange }) {
+export default function GameField({ width, height, onStrike, onMovesCountChange }) {
   const canvas_ref = useRef(null);
 
   const [field_data, set_field_data] = useState(new FieldData(width, height));
@@ -186,8 +186,8 @@ export default function GameField({ width, height, onStrike, onAvailableMovesCou
       highlighted_elements.push(first_element);
     if (second_element.length > 0)
       highlighted_elements.push(second_element);
-    const moves = field_data.get_all_available_moves();
-    onAvailableMovesCountChange(moves.length);
+    const moves = field_data.get_all_moves();
+    onMovesCountChange(moves.length);
     render(context, field_data, grid_step, element_offset, highlighted_elements);
     setTimeout(update_game_state, 100);
   });

@@ -8,6 +8,7 @@ import Infos from "./Infos.js";
 export default function App() {
   const [window_size, set_window_size] = useState([]);
   const [score, set_score] = useState(0);
+  const [moves_count, set_moves_count] = useState(0);
   const [elements_count, set_elements_count] = useState({});
   const [strikes_statistics, set_strike_statistics] = useState({});
 
@@ -20,7 +21,7 @@ export default function App() {
   };
 
   const update_statistics = (value, count) => {
-    set_score(score + value * count);
+    set_score(score + value * count * score_bonuses[count]);
     var new_elements_count = elements_count;
     if (value in elements_count)
       new_elements_count[value] += count;
@@ -34,6 +35,7 @@ export default function App() {
       new_strike_statistics[count] = 1
     set_strike_statistics(new_strike_statistics);
   }
+
 
   useEffect(() => {
     function updateSize() {
@@ -51,8 +53,15 @@ export default function App() {
         <ScoreContainer>
           <ScoreTitleContainer>Score</ScoreTitleContainer>
           <ScoreValueContainer>{score}</ScoreValueContainer>
+          <MovesCountTitleContainer>Moves count</MovesCountTitleContainer>
+          <MovesCountValueContainer>{moves_count}</MovesCountValueContainer>
         </ScoreContainer>
-        <GameField width={10} height={10} onStrike={update_statistics} />
+        <GameField
+          width={7}
+          height={7}
+          onStrike={update_statistics}
+          onMovesCountChange={count=>set_moves_count(count)}
+        />
       </GameFieldContainer>
       <Infos score_bonuses={score_bonuses}></Infos>
     </AppContainer>
@@ -91,6 +100,15 @@ const ScoreTitleContainer = styled.div`
   text-shadow: 2px 2px 5px white;
 `;
 const ScoreValueContainer = styled.div`
+  font-weight: bold;
+  text-shadow: 2px 2px 5px white;
+`;
+
+const MovesCountTitleContainer = styled.div`
+  font-weight: bold;
+  text-shadow: 2px 2px 5px white;
+`;
+const MovesCountValueContainer = styled.div`
   font-weight: bold;
   text-shadow: 2px 2px 5px white;
 `;

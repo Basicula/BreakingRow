@@ -233,7 +233,7 @@ export class FieldData {
       [this.#field[row2][column2], this.#field[row1][column1]];
   }
 
-  get_all_available_moves() {
+  get_all_moves() {
     const neighbors = [[0, 1], [0, -1], [1, 0], [-1, 0]];
     var moves = [];
     for (let row_id = 0; row_id < this.#height; ++row_id)
