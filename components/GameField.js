@@ -1,5 +1,5 @@
 import { useRef, useEffect, useState } from "react";
-import styled from 'styled-components'
+import { StyleSheet, View } from 'react-native';
 
 import { FieldData } from "./GameFieldData.js";
 import { manhattan_distance } from "./Utils.js";
@@ -41,42 +41,42 @@ function element_style_by_value(value) {
       color = "#3DFF53";
       shape_drawer = (context, x, y, size) => {
         draw_regular_polygon(context, [x + size / 2, y + 5 * size / 8], 11 * size / 16,
-          3, -Math.PI / 2, rounding_radius);
+          3, -Math.PI / 2, Math.floor(0.1 * size));
       }
       break;
     case 1:
       color = "#FF4828";
       shape_drawer = (context, x, y, size) => {
         draw_regular_polygon(context, [x + size / 2, y + size / 2], 10 * size / 14,
-          4, -Math.PI / 4, rounding_radius);
+          4, -Math.PI / 4, Math.floor(0.1 * size));
       }
       break;
     case 2:
       color = "#0008FF";
       shape_drawer = (context, x, y, size) => {
         draw_regular_polygon(context, [x + size / 2, y + size / 2], 9 * size / 16,
-          5, -Math.PI / 2, rounding_radius);
+          5, -Math.PI / 2, Math.floor(0.1 * size));
       }
       break;
     case 3:
       color = "#14FFF3";
       shape_drawer = (context, x, y, size) => {
         draw_regular_polygon(context, [x + size / 2, y + size / 2], 9 * size / 16,
-          6, 0, rounding_radius);
+          6, 0, Math.floor(0.1 * size));
       }
       break;
     case 4:
       color = "#FF05FA";
       shape_drawer = (context, x, y, size) => {
         draw_regular_polygon(context, [x + size / 2, y + 3 * size / 8], 11 * size / 16,
-          3, Math.PI / 2, rounding_radius);
+          3, Math.PI / 2, Math.floor(0.1 * size));
       }
       break;
     case 5:
       color = "#FFFB28";
       shape_drawer = (context, x, y, size) => {
         draw_regular_polygon(context, [x + size / 2, y + size / 2], 8 * size / 14,
-          4, 0, rounding_radius);
+          4, 0, Math.floor(0.1 * size));
       }
       break;
   }
@@ -88,7 +88,7 @@ function render_element(context, x, y, value, element_size, element_offset, is_h
 
   context.beginPath();
 
-  if (!is_highlighted) {
+  if (is_highlighted) {
     context.shadowBlur = element_offset;
     context.shadowColor = "rgba(0,0,0,1)";
   }
@@ -112,7 +112,7 @@ function render_element(context, x, y, value, element_size, element_offset, is_h
   context.fillStyle = "#ffffff";
   context.fillText(value, x + element_size / 2, y + element_size / 2, element_size);
 
-  context.lineWidth = 2;
+  context.lineWidth = 1;
   context.strokeStyle = "#000000";
   context.strokeText(value, x + element_size / 2, y + element_size / 2, element_size);
 
@@ -282,26 +282,25 @@ export default function GameField({ width, height, onStrike, onMovesCountChange 
   }
 
   return (
-    <ElementsContainer>
+    <View style={styles.elements_container}>
       <canvas
-        className="gamefield"
         ref={canvas_ref}
         onMouseDown={on_click}
         onMouseMove={on_mouse_move}
       />
-      <AbilitiesContainer>
+      <View style={styles.abilities_container}>
         <button onClick={shuffle}>Shuffle</button>
-      </AbilitiesContainer>
-    </ElementsContainer>
+      </View>
+    </View>
   );
 }
 
-const ElementsContainer = styled.div`
-  display: flex;
-  flex-direction: column;
-`;
+const styles = StyleSheet.create({
+  elements_container: {
+    flexDirection: 'column'
+  },
 
-const AbilitiesContainer = styled.div`
-  display: flex;
-  flex-direction: row;
-`;
+  abilities_container: {
+    flexDirection: 'row'
+  }
+});

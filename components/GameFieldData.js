@@ -177,7 +177,6 @@ export class FieldData {
       var values = [];
       var pow = 0;
       while (accumulated_value > 0) {
-        console.log(accumulated_value);
         if (accumulated_value & 1 === 1)
           values.push(pow);
         accumulated_value = accumulated_value >> 1;
@@ -269,6 +268,6 @@ export class FieldData {
           const other_column_id = Math.floor(Math.random() * this.#width);
           this.swap_cells(row_id, column_id, other_row_id, other_column_id);
         }
-    } while (this.get_all_available_moves().length === 0);
+    } while (this.get_all_moves().length === 0);
   }
 }
