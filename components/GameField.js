@@ -35,7 +35,6 @@ function element_style_by_value(value) {
   }
   var color = "#000000";
   var shape_drawer = (context, x, y, size) => { };
-  const rounding_radius = 7;
   switch (pow) {
     case 0:
       color = "#3DFF53";
@@ -79,6 +78,14 @@ function element_style_by_value(value) {
           4, 0, Math.floor(0.1 * size));
       }
       break;
+    case 6:
+      color = "#FF6D0A";
+      shape_drawer = (context, x, y, size) => {
+        draw_regular_polygon(context, [x + size / 2, y + size / 2], 8 * size / 14,
+          8, Math.PI / 8, Math.floor(0.1 * size));
+      }
+      break;
+
   }
   return [color, shape_drawer];
 }
@@ -88,7 +95,7 @@ function render_element(context, x, y, value, element_size, element_offset, is_h
 
   context.beginPath();
 
-  if (is_highlighted) {
+  if (!is_highlighted) {
     context.shadowBlur = element_offset;
     context.shadowColor = "rgba(0,0,0,1)";
   }
@@ -189,7 +196,7 @@ export default function GameField({ width, height, onStrike, onMovesCountChange 
     const moves = field_data.get_all_moves();
     onMovesCountChange(moves.length);
     render(context, field_data, grid_step, element_offset, highlighted_elements);
-    setTimeout(update_game_state, 100);
+    update_game_state();
   });
 
   const update_game_state = () => {
