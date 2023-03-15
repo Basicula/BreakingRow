@@ -33,61 +33,38 @@ function element_style_by_value(value) {
     ++pow;
     value = value >> 1;
   }
-  var color = "#000000";
-  var shape_drawer = (context, x, y, size) => { };
-  switch (pow) {
-    case 0:
-      color = "#3DFF53";
-      shape_drawer = (context, x, y, size) => {
-        draw_regular_polygon(context, [x + size / 2, y + 5 * size / 8], 11 * size / 16,
-          3, -Math.PI / 2, Math.floor(0.1 * size));
-      }
-      break;
-    case 1:
-      color = "#FF4828";
-      shape_drawer = (context, x, y, size) => {
-        draw_regular_polygon(context, [x + size / 2, y + size / 2], 10 * size / 14,
-          4, -Math.PI / 4, Math.floor(0.1 * size));
-      }
-      break;
-    case 2:
-      color = "#0008FF";
-      shape_drawer = (context, x, y, size) => {
-        draw_regular_polygon(context, [x + size / 2, y + size / 2], 9 * size / 16,
-          5, -Math.PI / 2, Math.floor(0.1 * size));
-      }
-      break;
-    case 3:
-      color = "#14FFF3";
-      shape_drawer = (context, x, y, size) => {
-        draw_regular_polygon(context, [x + size / 2, y + size / 2], 9 * size / 16,
-          6, 0, Math.floor(0.1 * size));
-      }
-      break;
-    case 4:
-      color = "#FF05FA";
-      shape_drawer = (context, x, y, size) => {
-        draw_regular_polygon(context, [x + size / 2, y + 3 * size / 8], 11 * size / 16,
-          3, Math.PI / 2, Math.floor(0.1 * size));
-      }
-      break;
-    case 5:
-      color = "#FFFB28";
-      shape_drawer = (context, x, y, size) => {
-        draw_regular_polygon(context, [x + size / 2, y + size / 2], 8 * size / 14,
-          4, 0, Math.floor(0.1 * size));
-      }
-      break;
-    case 6:
-      color = "#FF6D0A";
-      shape_drawer = (context, x, y, size) => {
-        draw_regular_polygon(context, [x + size / 2, y + size / 2], 8 * size / 14,
-          8, Math.PI / 8, Math.floor(0.1 * size));
-      }
-      break;
-
+  const triangle_drawer = (context, x, y, size) => {
+    draw_regular_polygon(context, [x + size / 2, y + 5 * size / 8], 11 * size / 16,
+      3, -Math.PI / 2, Math.floor(0.1 * size));
+  };
+  const square_drawer = (context, x, y, size) => {
+    draw_regular_polygon(context, [x + size / 2, y + size / 2], 10 * size / 14,
+      4, -Math.PI / 4, Math.floor(0.1 * size));
+  };
+  const pentagon_drawer = (context, x, y, size) => {
+    draw_regular_polygon(context, [x + size / 2, y + size / 2], 9 * size / 16,
+      5, -Math.PI / 2, Math.floor(0.1 * size));
+  };
+  const hexagon_drawer = (context, x, y, size) => {
+    draw_regular_polygon(context, [x + size / 2, y + size / 2], 9 * size / 16,
+      6, 0, Math.floor(0.1 * size));
+  };
+  const rotated_triangle_drawer = (context, x, y, size) => {
+    draw_regular_polygon(context, [x + size / 2, y + 3 * size / 8], 11 * size / 16,
+      3, Math.PI / 2, Math.floor(0.1 * size));
+  };
+  const rotated_square_drawer = (context, x, y, size) => {
+    draw_regular_polygon(context, [x + size / 2, y + size / 2], 8 * size / 14,
+      4, 0, Math.floor(0.1 * size));
+  };
+  const octagon_drawer = (context, x, y, size) => {
+    draw_regular_polygon(context, [x + size / 2, y + size / 2], 8 * size / 14,
+      8, Math.PI / 8, Math.floor(0.1 * size));
   }
-  return [color, shape_drawer];
+  const drawers = [triangle_drawer, square_drawer, pentagon_drawer, hexagon_drawer,
+    rotated_triangle_drawer, rotated_square_drawer, octagon_drawer];
+  const colors = ["#3DFF53", "#FF4828", "#0008FF", "#14FFF3", "#FF05FA", "#FFFB28", "#FF6D0A"];
+  return [colors[pow % colors.length], drawers[pow % drawers.length]];
 }
 
 function render_element(context, x, y, value, element_size, element_offset, is_highlighted = false) {
