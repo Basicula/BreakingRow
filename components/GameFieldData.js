@@ -101,13 +101,17 @@ export class FieldData {
     this.#width = width;
     this.#height = height;
 
-    this.#values_interval = [1, 2, 4, 8];
+    this.#values_interval = [0, 1, 2, 3];
     this.#values_probability_mask = [0.4, 0.3, 0.2, 0.2];
 
     this.#field = init_array(this.#width, this.#height, undefined, () => {
       return this.#get_random_value();
     });
 
+    for (let i = 0; i < this.#height; ++i)
+      for (let j = 0; j < this.#width; ++j)
+        this.#field[i][j] = i * this.#width + j;
+    
     while (true) {
       const removed_groups_sizes = this.remove_groups();
       if (removed_groups_sizes.length === 0)
@@ -173,13 +177,13 @@ export class FieldData {
         size: group.length,
         value: value
       });
-      var accumulated_value = value * group.length;
+      var accumulated_value = 2 ** value * group.length;
       var values = [];
       var pow = 0;
       while (accumulated_value > 0) {
         if (accumulated_value & 1 === 1)
           values.push(pow);
-        accumulated_value = accumulated_value >> 1;
+        accumulated_value = accumulated_value / 2;
         ++pow;
       }
       for (let i = 0; i < group.length; ++i) {
@@ -189,7 +193,7 @@ export class FieldData {
       for (let element of group) {
         var new_value = -1;
         if (values.length > 0)
-          new_value = 2 ** values.pop();
+          new_value = values.pop();
         this.#field[element[0]][element[1]] = new_value;
       }
     }

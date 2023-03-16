@@ -3,7 +3,7 @@ import { StyleSheet, View } from 'react-native';
 
 import { FieldData } from "./GameFieldData.js";
 import { manhattan_distance } from "./Utils.js";
-import { draw_line, draw_regular_polygon } from "./CanvasUtils.js";
+import { draw_line, draw_regular_polygon, draw_star } from "./CanvasUtils.js";
 
 function map_coordinates(x, y, grid_step) {
   return [
@@ -28,11 +28,6 @@ function render_grid(context, field_data, grid_step) {
 }
 
 function element_style_by_value(value) {
-  var pow = 0;
-  while (value > 1) {
-    ++pow;
-    value = value >> 1;
-  }
   const triangle_drawer = (context, x, y, size) => {
     draw_regular_polygon(context, [x + size / 2, y + 5 * size / 8], 11 * size / 16,
       3, -Math.PI / 2, Math.floor(0.1 * size));
@@ -61,10 +56,18 @@ function element_style_by_value(value) {
     draw_regular_polygon(context, [x + size / 2, y + size / 2], 8 * size / 14,
       8, Math.PI / 8, Math.floor(0.1 * size));
   }
+  const star_5 = (context, x, y, size) => {
+    draw_star(context, [x + size / 2, y + size / 2], 8 * size / 14,
+      5, Math.PI / 12, Math.floor(0.05 * size));
+  };
+  const star_7 = (context, x, y, size) => {
+    draw_star(context, [x + size / 2, y + size / 2], 9 * size / 14,
+      7, -Math.PI / 14, Math.floor(0.05 * size));
+  }
   const drawers = [triangle_drawer, square_drawer, pentagon_drawer, hexagon_drawer,
-    rotated_triangle_drawer, rotated_square_drawer, octagon_drawer];
+    rotated_triangle_drawer, rotated_square_drawer, octagon_drawer, star_5, star_7];
   const colors = ["#3DFF53", "#FF4828", "#0008FF", "#14FFF3", "#FF05FA", "#FFFB28", "#FF6D0A"];
-  return [colors[pow % colors.length], drawers[pow % drawers.length]];
+  return [colors[value % colors.length], drawers[value % drawers.length]];
 }
 
 function render_element(context, x, y, value, element_size, element_offset, is_highlighted = false) {
@@ -94,11 +97,18 @@ function render_element(context, x, y, value, element_size, element_offset, is_h
   context.textAlign = "center";
   context.textBaseline = "middle";
   context.fillStyle = "#ffffff";
-  context.fillText(value, x + element_size / 2, y + element_size / 2, element_size);
+  const exponents = {
+    "0": "⁰", "1": "¹", "2": "²", "3": "³", "4": "⁴",
+    "5": "⁵","6": "⁶", "7": "⁷", "8": "⁸", "9": "⁹"
+  }
+  let regex = RegExp(`[${Object.keys(exponents).join("")}]`, "g");
+  const exponent = value.toString().replace(regex, number => exponents[number]);
+  const value_text = value > 12 ? `2${exponent}` : (2 ** value).toString();
+  context.fillText(value_text, x + element_size / 2, y + element_size / 2, element_size);
 
   context.lineWidth = 1;
   context.strokeStyle = "#000000";
-  context.strokeText(value, x + element_size / 2, y + element_size / 2, element_size);
+  context.strokeText(value_text, x + element_size / 2, y + element_size / 2, element_size);
 
   context.closePath();
 }
@@ -186,7 +196,7 @@ export default function GameField({ width, height, onStrike, onMovesCountChange 
         set_prev_step(step);
         if (changed) {
           for (let removed_group_details of removed_groups_details)
-            onStrike(removed_group_details.value, removed_group_details.size);
+            onStrike(2 ** removed_group_details.value, removed_group_details.size);
           set_field_data(field_data.clone());
           if (prev_step === 3) {
             set_first_element([]);
