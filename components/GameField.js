@@ -99,7 +99,7 @@ function render_element(context, x, y, value, element_size, element_offset, is_h
   context.fillStyle = "#ffffff";
   const exponents = {
     "0": "⁰", "1": "¹", "2": "²", "3": "³", "4": "⁴",
-    "5": "⁵","6": "⁶", "7": "⁷", "8": "⁸", "9": "⁹"
+    "5": "⁵", "6": "⁶", "7": "⁷", "8": "⁸", "9": "⁹"
   }
   let regex = RegExp(`[${Object.keys(exponents).join("")}]`, "g");
   const exponent = value.toString().replace(regex, number => exponents[number]);
@@ -149,7 +149,7 @@ function render(context, field_data, grid_step, element_offset, highlighted_elem
 
 export default function GameField({ width, height, onStrike, onMovesCountChange }) {
   const canvas_ref = useRef(null);
-
+  const [mouse_down_position, set_mouse_down_position] = useState([]);
   const [field_data, set_field_data] = useState(new FieldData(width, height));
   const [first_element, set_first_element] = useState([]);
   const [second_element, set_second_element] = useState([]);
@@ -201,6 +201,7 @@ export default function GameField({ width, height, onStrike, onMovesCountChange 
           if (prev_step === 3) {
             set_first_element([]);
             set_second_element([]);
+            set_swapping(false);
           }
         } else if (prev_step === 3) {
           set_prev_step(0);
@@ -245,7 +246,7 @@ export default function GameField({ width, height, onStrike, onMovesCountChange 
     }
   }
 
-  const on_click = (event) => {
+  const on_mouse_down = (event) => {
     const x = event.nativeEvent.offsetX;
     const y = event.nativeEvent.offsetY;
 
@@ -255,10 +256,14 @@ export default function GameField({ width, height, onStrike, onMovesCountChange 
         first_element[0], first_element[1],
         field_element_coordinates[0], field_element_coordinates[1]
       );
-      if (first_element.length === 0 || distance > 1)
+      if (first_element.length === 0 || distance > 1) {
         set_first_element(field_element_coordinates);
-      else if (distance === 0)
+        set_mouse_down_position([x, y]);
+      }
+      else if (distance === 0) {
         set_first_element([]);
+        set_mouse_down_position([]);
+      }
       else if (second_element.length === 0) {
         set_second_element(field_element_coordinates);
         set_step(3);
@@ -266,7 +271,32 @@ export default function GameField({ width, height, onStrike, onMovesCountChange 
     }
   };
 
-  const on_mouse_move = (event) => {
+  const on_mouse_move = () => {
+  };
+
+  const on_mouse_up = (event) => {
+    if (swapping)
+      return;
+    if (mouse_down_position.length === 0)
+      return;
+    if (second_element.length > 0)
+      return;
+    if (first_element.length === 0)
+      return;
+    const x = event.nativeEvent.offsetX;
+    const y = event.nativeEvent.offsetY;
+    const dx = x - mouse_down_position[0];
+    const dy = y - mouse_down_position[1];
+    if (Math.abs(dx) < grid_step / 4 && Math.abs(dy) < grid_step / 4)
+      return;
+    var factors = [0, 0];
+    if (Math.abs(dx) > Math.abs(dy))
+      factors[0] = 1 * Math.sign(dx);
+    else
+      factors[1] = 1 * Math.sign(dy);
+    set_second_element([first_element[0] + factors[1], first_element[1] + factors[0]])
+    set_step(3);
+    set_mouse_down_position([]);
   };
 
   const shuffle = () => {
@@ -277,11 +307,14 @@ export default function GameField({ width, height, onStrike, onMovesCountChange 
 
   return (
     <View style={styles.elements_container}>
-      <canvas
-        ref={canvas_ref}
-        onMouseDown={on_click}
+      <View
+        style={styles.canvas_container}
+        onMouseDown={on_mouse_down}
+        onMouseUp={on_mouse_up}
         onMouseMove={on_mouse_move}
-      />
+      >
+        <canvas ref={canvas_ref} />
+      </View>
       <View style={styles.abilities_container}>
         <button onClick={shuffle}>Shuffle</button>
       </View>
@@ -292,6 +325,10 @@ export default function GameField({ width, height, onStrike, onMovesCountChange 
 const styles = StyleSheet.create({
   elements_container: {
     flexDirection: 'column'
+  },
+
+  canvas_container: {
+
   },
 
   abilities_container: {
