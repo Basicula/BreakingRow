@@ -108,10 +108,6 @@ export class FieldData {
       return this.#get_random_value();
     });
 
-    for (let i = 0; i < this.#height; ++i)
-      for (let j = 0; j < this.#width; ++j)
-        this.#field[i][j] = i * this.#width + j;
-    
     while (true) {
       const removed_groups_sizes = this.remove_groups();
       if (removed_groups_sizes.length === 0)
