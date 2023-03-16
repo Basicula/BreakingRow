@@ -158,8 +158,8 @@ export default function Game({ width, height, score_bonuses, onStrike }) {
   const [prev_step, set_prev_step] = useState(-1);
   const [score, set_score] = useState(0);
   const [moves_count, set_moves_count] = useState(0);
-  const [shuffle_price, set_shuffle_price] = useState(100);
-  const [generator_upgrade_price, set_generator_upgrade_price] = useState(100);
+  const [shuffle_price, set_shuffle_price] = useState(128);
+  const [generator_upgrade_price, set_generator_upgrade_price] = useState(128);
 
   var grid_step = 0;
   var element_offset = 0;
@@ -307,9 +307,13 @@ export default function Game({ width, height, score_bonuses, onStrike }) {
   };
 
   const shuffle = () => {
+    if (score < shuffle_price)
+      return;
     field_data.shuffle();
     set_field_data(field_data.clone());
     set_step(0);
+    set_score(score - shuffle_price);
+    set_shuffle_price(shuffle_price * 2);
   };
 
   const upgrade_generator = () => {
