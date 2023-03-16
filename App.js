@@ -19,13 +19,13 @@ export default function App() {
   };
 
   const update_statistics = (value, count) => {
-    var new_elements_count = elements_count;
+    var new_elements_count = Object.assign({}, elements_count);
     if (value in elements_count)
       new_elements_count[value] += count;
     else
       new_elements_count[value] = count;
     set_elements_count(new_elements_count);
-    var new_strike_statistics = strikes_statistics;
+    var new_strike_statistics = Object.assign({}, strikes_statistics);
     if (count in strikes_statistics)
       ++new_strike_statistics[count]
     else
