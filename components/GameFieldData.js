@@ -134,6 +134,10 @@ export class FieldData {
     return this.#height;
   }
 
+  get values_interval() {
+    return this.#values_interval;
+  }
+
   at(row, column) {
     return this.#field[row][column];
   }
@@ -141,6 +145,17 @@ export class FieldData {
   increase_values_interval() {
     for (let i = 0; i < this.#values_interval.length; ++i)
       ++this.#values_interval[i];
+  }
+
+  remove_value(value) {
+    var count = 0;
+    for (let row_id = 0; row_id < this.#height; ++row_id)
+      for (let column_id = 0; column_id < this.#width; ++column_id)
+        if (this.#field[row_id][column_id] === value) {
+          ++count;
+          this.#field[row_id][column_id] = -1;
+        }
+    return count;
   }
 
   remove_groups(count = -1) {

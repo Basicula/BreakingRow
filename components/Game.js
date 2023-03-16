@@ -158,8 +158,8 @@ export default function Game({ width, height, score_bonuses, onStrike }) {
   const [prev_step, set_prev_step] = useState(-1);
   const [score, set_score] = useState(0);
   const [moves_count, set_moves_count] = useState(0);
-  const [shuffle_price, set_shuffle_price] = useState(128);
-  const [generator_upgrade_price, set_generator_upgrade_price] = useState(128);
+  const [shuffle_price, set_shuffle_price] = useState(1024);
+  const [generator_upgrade_price, set_generator_upgrade_price] = useState(1024);
 
   var grid_step = 0;
   var element_offset = 0;
@@ -201,7 +201,9 @@ export default function Game({ width, height, score_bonuses, onStrike }) {
             const value = 2 ** removed_group_details.value;
             const count = removed_group_details.size;
             onStrike(value, count);
-            set_score(score + value * count * score_bonuses[count]);
+            const bonus = count in score_bonuses ? score_bonuses[count] : 10;
+            const new_score = score + value * count * bonus;
+            set_score(new_score);
           }
           set_field_data(field_data.clone());
           if (prev_step === 3) {
@@ -320,9 +322,13 @@ export default function Game({ width, height, score_bonuses, onStrike }) {
     if (score < generator_upgrade_price)
       return;
     field_data.increase_values_interval();
+    const small_value = field_data.values_interval[0] - 1;
+    const values_count = field_data.remove_value(small_value);
     set_field_data(field_data.clone());
-    set_score(score - generator_upgrade_price);
-    set_generator_upgrade_price(generator_upgrade_price * 2);
+    set_step(1);
+    const new_score = score - generator_upgrade_price + values_count * 2 ** small_value;
+    set_score(new_score);
+    set_generator_upgrade_price(generator_upgrade_price * 4);
   };
 
   return (
@@ -399,7 +405,8 @@ const styles = StyleSheet.create({
   },
 
   abilities_container: {
-    flexDirection: 'row'
+    flexDirection: 'row',
+    justifyContent: 'center'
   },
 
   ability_button: {
