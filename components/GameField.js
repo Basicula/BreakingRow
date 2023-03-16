@@ -1,5 +1,5 @@
 import { useRef, useEffect, useState } from "react";
-import { StyleSheet, View } from 'react-native';
+import { StyleSheet, View, TouchableOpacity, Text } from 'react-native';
 
 import { FieldData } from "./GameFieldData.js";
 import { manhattan_distance } from "./Utils.js";
@@ -156,6 +156,8 @@ export default function GameField({ width, height, onStrike, onMovesCountChange 
   const [swapping, set_swapping] = useState(false);
   const [step, set_step] = useState(-1);
   const [prev_step, set_prev_step] = useState(-1);
+  const [shuffle_price, set_shuffle_price] = useState(100);
+  const [generator_upgrade_price, set_generator_upgrade_price] = useState(100);
 
   var grid_step = 0;
   var element_offset = 0;
@@ -303,7 +305,11 @@ export default function GameField({ width, height, onStrike, onMovesCountChange 
     field_data.shuffle();
     set_field_data(field_data.clone());
     set_step(0);
-  }
+  };
+
+  const upgrade_generator = () => {
+
+  };
 
   return (
     <View style={styles.elements_container}>
@@ -316,7 +322,14 @@ export default function GameField({ width, height, onStrike, onMovesCountChange 
         <canvas ref={canvas_ref} />
       </View>
       <View style={styles.abilities_container}>
-        <button onClick={shuffle}>Shuffle</button>
+        <TouchableOpacity style={styles.ability_button} onPress={shuffle} >
+          <Text style={styles.ability_button_text}>Shuffle</Text>
+          <Text style={styles.ability_button_price}>{shuffle_price}</Text>
+        </TouchableOpacity>
+        <TouchableOpacity style={styles.ability_button} onPress={upgrade_generator}>
+          <Text style={styles.ability_button_text}>Upgrade generator</Text>
+          <Text style={styles.ability_button_price}>{generator_upgrade_price}</Text>
+        </TouchableOpacity>
       </View>
     </View>
   );
@@ -333,5 +346,27 @@ const styles = StyleSheet.create({
 
   abilities_container: {
     flexDirection: 'row'
+  },
+
+  ability_button: {
+    borderWidth: 1,
+    borderRadius: 5,
+    borderColor: "black",
+    backgroundColor: "#007AFF",
+    paddingLeft: 5,
+    paddingRight: 5,
+    margin: 1,
+    flexDirection: 'column'
+  },
+
+  ability_button_text: {
+    fontSize: 18,
+    fontWeight: 'bold'
+  },
+  
+  ability_button_price: {
+    fontSize: 14,
+    fontWeight: 'bold',
+    textAlign: 'center'
   }
 });
