@@ -147,7 +147,7 @@ function render(context, field_data, grid_step, element_offset, highlighted_elem
   render_field_elements(context, field_data, grid_step, element_offset, highlighted_elements);
 }
 
-export default function GameField({ width, height, onStrike, onMovesCountChange }) {
+export default function Game({ width, height, onStrike, onMovesCountChange }) {
   const canvas_ref = useRef(null);
   const [mouse_down_position, set_mouse_down_position] = useState([]);
   const [field_data, set_field_data] = useState(new FieldData(width, height));

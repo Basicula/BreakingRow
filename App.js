@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { StyleSheet, View, Text } from 'react-native';
 
-import GameField from "./components/GameField.js";
+import Game from "./components/Game.js";
 import Statistics from "./components/Statistics.js";
 import Infos from "./components/Infos.js";
 
@@ -36,7 +36,6 @@ export default function App() {
     set_strike_statistics(new_strike_statistics);
   }
 
-
   useEffect(() => {
     function updateSize() {
       set_window_size([window.innerWidth, window.innerHeight]);
@@ -56,7 +55,7 @@ export default function App() {
           <Text style={styles.moves_count_title_container}>Moves count</Text>
           <Text style={styles.moves_count_value_container}>{moves_count}</Text>
         </View>
-        <GameField
+        <Game
           width={7}
           height={7}
           onStrike={update_statistics}
