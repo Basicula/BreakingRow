@@ -138,6 +138,11 @@ export class FieldData {
     return this.#field[row][column];
   }
 
+  increase_values_interval() {
+    for (let i = 0; i < this.#values_interval.length; ++i)
+      ++this.#values_interval[i];
+  }
+
   remove_groups(count = -1) {
     const groups = this.#get_cross_groups();
     if (count === -1)

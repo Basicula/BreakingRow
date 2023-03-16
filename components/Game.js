@@ -317,7 +317,12 @@ export default function Game({ width, height, score_bonuses, onStrike }) {
   };
 
   const upgrade_generator = () => {
-
+    if (score < generator_upgrade_price)
+      return;
+    field_data.increase_values_interval();
+    set_field_data(field_data.clone());
+    set_score(score - generator_upgrade_price);
+    set_generator_upgrade_price(generator_upgrade_price * 2);
   };
 
   return (
