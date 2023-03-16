@@ -147,7 +147,7 @@ function render(context, field_data, grid_step, element_offset, highlighted_elem
   render_field_elements(context, field_data, grid_step, element_offset, highlighted_elements);
 }
 
-export default function Game({ width, height, onStrike, onMovesCountChange }) {
+export default function Game({ width, height, score_bonuses, onStrike }) {
   const canvas_ref = useRef(null);
   const [mouse_down_position, set_mouse_down_position] = useState([]);
   const [field_data, set_field_data] = useState(new FieldData(width, height));
@@ -156,6 +156,8 @@ export default function Game({ width, height, onStrike, onMovesCountChange }) {
   const [swapping, set_swapping] = useState(false);
   const [step, set_step] = useState(-1);
   const [prev_step, set_prev_step] = useState(-1);
+  const [score, set_score] = useState(0);
+  const [moves_count, set_moves_count] = useState(0);
   const [shuffle_price, set_shuffle_price] = useState(100);
   const [generator_upgrade_price, set_generator_upgrade_price] = useState(100);
 
@@ -182,8 +184,6 @@ export default function Game({ width, height, onStrike, onMovesCountChange }) {
       highlighted_elements.push(first_element);
     if (second_element.length > 0)
       highlighted_elements.push(second_element);
-    const moves = field_data.get_all_moves();
-    onMovesCountChange(moves.length);
     render(context, field_data, grid_step, element_offset, highlighted_elements);
     update_game_state();
   });
@@ -197,8 +197,12 @@ export default function Game({ width, height, onStrike, onMovesCountChange }) {
         const changed = removed_groups_details.length > 0;
         set_prev_step(step);
         if (changed) {
-          for (let removed_group_details of removed_groups_details)
-            onStrike(2 ** removed_group_details.value, removed_group_details.size);
+          for (let removed_group_details of removed_groups_details) {
+            const value = 2 ** removed_group_details.value;
+            const count = removed_group_details.size;
+            onStrike(value, count);
+            set_score(score + value * count * score_bonuses[count]);
+          }
           set_field_data(field_data.clone());
           if (prev_step === 3) {
             set_first_element([]);
@@ -213,6 +217,7 @@ export default function Game({ width, height, onStrike, onMovesCountChange }) {
           set_prev_step(-1);
         } else
           set_step(1);
+        set_moves_count(field_data.get_all_moves().length);
         break;
       case 1:
         field_data.move_elements();
@@ -313,6 +318,12 @@ export default function Game({ width, height, onStrike, onMovesCountChange }) {
 
   return (
     <View style={styles.elements_container}>
+      <View style={styles.score_container}>
+        <Text style={styles.score_title_container}>Score</Text>
+        <Text style={styles.score_value_container}>{score}</Text>
+        <Text style={styles.moves_count_title_container}>Moves count</Text>
+        <Text style={styles.moves_count_value_container}>{moves_count}</Text>
+      </View>
       <View
         style={styles.canvas_container}
         onMouseDown={on_mouse_down}
@@ -340,6 +351,40 @@ const styles = StyleSheet.create({
     flexDirection: 'column'
   },
 
+  score_container: {
+    width: '100%',
+
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    padding: '5px',
+    marginBottom: '2px',
+    boxSizing: 'border-box',
+
+    backgroundColor: '#aaa',
+
+    fontSize: '48px',
+
+    borderRadius: '10px',
+  },
+
+  score_title_container: {
+    fontWeight: 'bold',
+    textShadow: '2px 2px 5px white',
+  },
+  score_value_container: {
+    fontWeight: 'bold',
+    textShadow: '2px 2px 5px white',
+  },
+
+  moves_count_title_container: {
+    fontWeight: 'bold',
+    textShadow: '2px 2px 5px white',
+  },
+  moves_count_value_container: {
+    fontWeight: 'bold',
+    textShadow: '2px 2px 5px white',
+  },
+
   canvas_container: {
 
   },
@@ -363,7 +408,7 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: 'bold'
   },
-  
+
   ability_button_price: {
     fontSize: 14,
     fontWeight: 'bold',
