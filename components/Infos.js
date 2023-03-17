@@ -25,11 +25,11 @@ const styles = StyleSheet.create({
   },
 
   info_condition_container: {
-    marginRight: '5px'
+    marginRight: 5
   },
 
   info_result_container: {
-    marginLeft: '5px'
+    marginLeft: 5
   }
 });
 

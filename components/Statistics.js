@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { StyleSheet, View, Text } from 'react-native';
+import { StyleSheet, View, Text, TouchableOpacity } from 'react-native';
 
 export default function Statistics({ elements_count, strikes_statistics }) {
   const [current_tab, set_current_tab] = useState(0);
@@ -13,11 +13,15 @@ export default function Statistics({ elements_count, strikes_statistics }) {
         {tab_names.map((tab_name, i) => {
           if (i === current_tab)
             return (
-              <Text style={styles.selected_tab_container} key={i} onClick={() => set_current_tab(i)}>
+              <Text style={styles.selected_tab_container} key={i} onClick={() => { }}>
                 {tab_name}
               </Text>
             );
-          return (<Text style={styles.tab_container} key={i} onClick={() => set_current_tab(i)}>{tab_name}</Text>);
+          return (
+            <TouchableOpacity style={styles.tab_container} key={i} onPress={() => set_current_tab(i)}>
+              <Text style={styles.tab_title_wrapper}>{tab_name}</Text>
+            </TouchableOpacity>
+          );
         })}
       </View>
       <View style={styles.tab_content_container}>
@@ -40,13 +44,13 @@ export default function Statistics({ elements_count, strikes_statistics }) {
 
 const styles = StyleSheet.create({
   statistics_container: {
-    minWidth: '100px',
+    minWidth: 100,
 
     flexDirection: 'column',
     justifyContent: 'center',
     alignItems: 'center',
     border: '1px solid black',
-    borderRadius: '5px',
+    borderRadius: 5,
   },
 
   tabs_container: {
@@ -54,35 +58,31 @@ const styles = StyleSheet.create({
   },
 
   tab_container: {
-    padding: '5px',
-    boxSizing: 'border-box',
+    padding: 5,
 
-    borderRadius: '5px',
-    color: 'white',
+    borderRadius: 5,
     backgroundColor: 'black',
+  },
 
-    cursor: 'pointer',
+  tab_title_wrapper: {
+    color: 'white'
   },
 
   selected_tab_container: {
-    padding: '5px',
-    boxSizing: 'border-box',
+    padding: 5,
 
-    borderRadius: '5px',
+    borderRadius: 5,
     color: 'white',
     backgroundColor: 'grey',
-
-    cursor: 'default',
   },
 
   tab_content_container: {
     width: '100%',
     flexDirection: 'column',
-    padding: '5px',
-    boxSizing: 'border-box',
+    padding: 5,
 
     border: '2px solid black',
-    borderRadius: '5px',
+    borderRadius: 5,
   },
 
   info_container: {
@@ -92,12 +92,12 @@ const styles = StyleSheet.create({
   },
 
   info_name_container: {
-    marginRight: '5px',
+    marginRight: 5,
   },
 
   info_data_container: {
     width: '100%',
-    marginLeft: '5px',
+    marginLeft: 5,
   },
 
   no_data_container: {

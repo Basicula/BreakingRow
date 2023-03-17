@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { StyleSheet, View, Text } from 'react-native';
+import { Platform, StyleSheet, View } from 'react-native';
 
 import Game from "./components/Game.js";
 import Statistics from "./components/Statistics.js";
@@ -34,25 +34,25 @@ export default function App() {
   }
 
   useEffect(() => {
-    function updateSize() {
-      set_window_size([window.innerWidth, window.innerHeight]);
+    if (Platform.OS === "web") {
+      function updateSize() {
+        set_window_size([window.innerWidth, window.innerHeight]);
+      }
+      window.addEventListener('resize', updateSize);
+      updateSize();
+      return () => window.removeEventListener('resize', updateSize);
     }
-    window.addEventListener('resize', updateSize);
-    updateSize();
-    return () => window.removeEventListener('resize', updateSize);
   }, []);
 
   return (
     <View style={styles.app_container}>
       <Statistics elements_count={elements_count} strikes_statistics={strikes_statistics} />
-      <View style={styles.game_field_container}>
-        <Game
-          width={7}
-          height={7}
-          score_bonuses={score_bonuses}
-          onStrike={update_statistics}
-        />
-      </View>
+      <Game
+        width={7}
+        height={7}
+        score_bonuses={score_bonuses}
+        onStrike={update_statistics}
+      />
       <Infos score_bonuses={score_bonuses}></Infos>
     </View>
   );
@@ -60,18 +60,10 @@ export default function App() {
 
 const styles = StyleSheet.create({
   app_container: {
-    width: '100%',
-    height: '100%',
+    flex: 1,
 
     flexDirection: 'row',
     justifyContent: 'center',
     alignItems: 'center',
-  },
-
-  game_field_container: {
-    flexDirection: 'column',
-    justifyContent: 'center',
-    alignItems: 'center',
-    padding: '5px',
   }
 });

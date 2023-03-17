@@ -1,5 +1,6 @@
 import { useRef, useEffect, useState } from "react";
-import { StyleSheet, View, TouchableOpacity, Text } from 'react-native';
+import { StyleSheet, View, TouchableOpacity, Text, Platform, Dimensions } from 'react-native';
+import Canvas, {Path2D as ReactNativeCanvasPath2D} from 'react-native-canvas';
 
 import { FieldData } from "./GameFieldData.js";
 import { manhattan_distance } from "./Utils.js";
@@ -28,40 +29,40 @@ function render_grid(context, field_data, grid_step) {
 }
 
 function element_style_by_value(value) {
-  const triangle_drawer = (context, x, y, size) => {
-    draw_regular_polygon(context, [x + size / 2, y + 5 * size / 8], 11 * size / 16,
+  const triangle_drawer = (path, x, y, size) => {
+    draw_regular_polygon(path, [x + size / 2, y + 5 * size / 8], 11 * size / 16,
       3, -Math.PI / 2, Math.floor(0.1 * size));
   };
-  const square_drawer = (context, x, y, size) => {
-    draw_regular_polygon(context, [x + size / 2, y + size / 2], 10 * size / 14,
+  const square_drawer = (path, x, y, size) => {
+    draw_regular_polygon(path, [x + size / 2, y + size / 2], 10 * size / 14,
       4, -Math.PI / 4, Math.floor(0.1 * size));
   };
-  const pentagon_drawer = (context, x, y, size) => {
-    draw_regular_polygon(context, [x + size / 2, y + size / 2], 9 * size / 16,
+  const pentagon_drawer = (path, x, y, size) => {
+    draw_regular_polygon(path, [x + size / 2, y + size / 2], 9 * size / 16,
       5, -Math.PI / 2, Math.floor(0.1 * size));
   };
-  const hexagon_drawer = (context, x, y, size) => {
-    draw_regular_polygon(context, [x + size / 2, y + size / 2], 9 * size / 16,
+  const hexagon_drawer = (path, x, y, size) => {
+    draw_regular_polygon(path, [x + size / 2, y + size / 2], 9 * size / 16,
       6, 0, Math.floor(0.1 * size));
   };
-  const rotated_triangle_drawer = (context, x, y, size) => {
-    draw_regular_polygon(context, [x + size / 2, y + 3 * size / 8], 11 * size / 16,
+  const rotated_triangle_drawer = (path, x, y, size) => {
+    draw_regular_polygon(path, [x + size / 2, y + 3 * size / 8], 11 * size / 16,
       3, Math.PI / 2, Math.floor(0.1 * size));
   };
-  const rotated_square_drawer = (context, x, y, size) => {
-    draw_regular_polygon(context, [x + size / 2, y + size / 2], 8 * size / 14,
+  const rotated_square_drawer = (path, x, y, size) => {
+    draw_regular_polygon(path, [x + size / 2, y + size / 2], 8 * size / 14,
       4, 0, Math.floor(0.1 * size));
   };
-  const octagon_drawer = (context, x, y, size) => {
-    draw_regular_polygon(context, [x + size / 2, y + size / 2], 8 * size / 14,
+  const octagon_drawer = (path, x, y, size) => {
+    draw_regular_polygon(path, [x + size / 2, y + size / 2], 8 * size / 14,
       8, Math.PI / 8, Math.floor(0.1 * size));
   }
-  const star_5 = (context, x, y, size) => {
-    draw_star(context, [x + size / 2, y + size / 2], 8 * size / 14,
+  const star_5 = (path, x, y, size) => {
+    draw_star(path, [x + size / 2, y + size / 2], 8 * size / 14,
       5, Math.PI / 12, Math.floor(0.05 * size));
   };
-  const star_7 = (context, x, y, size) => {
-    draw_star(context, [x + size / 2, y + size / 2], 9 * size / 14,
+  const star_7 = (path, x, y, size) => {
+    draw_star(path, [x + size / 2, y + size / 2], 9 * size / 14,
       7, -Math.PI / 14, Math.floor(0.05 * size));
   }
   const drawers = [triangle_drawer, square_drawer, pentagon_drawer, hexagon_drawer,
@@ -73,23 +74,25 @@ function element_style_by_value(value) {
 function render_element(context, x, y, value, element_size, element_offset, is_highlighted = false) {
   const [color, shape_drawer] = element_style_by_value(value);
 
-  context.beginPath();
-
   if (!is_highlighted) {
     context.shadowBlur = element_offset;
     context.shadowColor = "rgba(0,0,0,1)";
   }
 
   context.fillStyle = color;
-  shape_drawer(context, x, y, element_size);
-  context.fill();
+  var shape_path = undefined;
+  if (Platform.OS === "web")
+    shape_path = new Path2D();
+  else
+    shape_path = new ReactNativeCanvasPath2D(context.canvas);
+  shape_drawer(shape_path, x, y, element_size);
+  context.fill(shape_path);
 
   context.lineWidth = 1;
   context.strokeStyle = "#000000";
-  shape_drawer(context, x, y, element_size);
-  context.stroke();
-  context.stroke();
-  context.stroke();
+  context.stroke(shape_path);
+  context.stroke(shape_path);
+  context.stroke(shape_path);
 
   context.shadowBlur = 0;
 
@@ -109,8 +112,6 @@ function render_element(context, x, y, value, element_size, element_offset, is_h
   context.lineWidth = 1;
   context.strokeStyle = "#000000";
   context.strokeText(value_text, x + element_size / 2, y + element_size / 2, element_size);
-
-  context.closePath();
 }
 
 function render_field_elements(context, field_data, grid_step, element_offset, highlighted_elements) {
@@ -165,19 +166,24 @@ export default function Game({ width, height, score_bonuses, onStrike }) {
   var element_offset = 0;
 
   useEffect(() => {
+    if (!canvas_ref.current)
+      return;
     const canvas = canvas_ref.current;
     const context = canvas.getContext("2d");
     const active_zone_fraction = 0.75;
-    context.canvas.height = window.innerHeight * active_zone_fraction;
-    context.canvas.width = window.innerWidth * active_zone_fraction;
+    if (Platform.OS === "web") {
+      context.canvas.height = window.innerHeight * active_zone_fraction;
+      context.canvas.width = window.innerWidth * active_zone_fraction;
+    } else {
+      context.canvas.height = Dimensions.get("window").height * active_zone_fraction;
+      context.canvas.width = Dimensions.get("window").width * active_zone_fraction;
+    }
     const grid_x_step = Math.floor(context.canvas.width / field_data.width);
     const grid_y_step = Math.floor(context.canvas.height / field_data.height);
     grid_step = Math.min(grid_x_step, grid_y_step);
     element_offset = Math.floor(0.1 * grid_step);
     context.canvas.width = grid_step * field_data.width;
     context.canvas.height = grid_step * field_data.height;
-    context.canvas.style.top = `${(window.innerHeight - context.canvas.width) / 2}px`;
-    context.canvas.style.left = `${(window.innerWidth - context.canvas.height) / 2}px`;
 
     var highlighted_elements = [];
     if (first_element.length > 0)
@@ -255,10 +261,20 @@ export default function Game({ width, height, score_bonuses, onStrike }) {
     }
   }
 
-  const on_mouse_down = (event) => {
-    const x = event.nativeEvent.offsetX;
-    const y = event.nativeEvent.offsetY;
+  const get_event_position = (event) => {
+    var x, y;
+    if (Platform.OS === "web") {
+      x = event.nativeEvent.offsetX;
+      y = event.nativeEvent.offsetY;
+    } else {
+      x = event.nativeEvent.locationX;
+      y = event.nativeEvent.locationY;
+    }
+    return [x, y];
+  }
 
+  const on_mouse_down = (event) => {
+    const [x, y] = get_event_position(event);
     const field_element_coordinates = map_coordinates(x, y, grid_step);
     if (field_element_coordinates.length !== 0) {
       const distance = manhattan_distance(
@@ -292,8 +308,7 @@ export default function Game({ width, height, score_bonuses, onStrike }) {
       return;
     if (first_element.length === 0)
       return;
-    const x = event.nativeEvent.offsetX;
-    const y = event.nativeEvent.offsetY;
+    const [x, y] = get_event_position(event);
     const dx = x - mouse_down_position[0];
     const dy = y - mouse_down_position[1];
     if (Math.abs(dx) < grid_step / 4 && Math.abs(dy) < grid_step / 4)
@@ -342,10 +357,13 @@ export default function Game({ width, height, score_bonuses, onStrike }) {
       <View
         style={styles.canvas_container}
         onMouseDown={on_mouse_down}
+        onTouchStart={on_mouse_down}
         onMouseUp={on_mouse_up}
+        onTouchEnd={on_mouse_up}
         onMouseMove={on_mouse_move}
       >
-        <canvas ref={canvas_ref} />
+        {Platform.OS === 'web' && <canvas ref={canvas_ref} />}
+        {Platform.OS === 'android' && <Canvas ref={canvas_ref} />}
       </View>
       <View style={styles.abilities_container}>
         <TouchableOpacity style={styles.ability_button} onPress={shuffle} >
@@ -367,37 +385,40 @@ const styles = StyleSheet.create({
   },
 
   score_container: {
-    width: '100%',
-
     flexDirection: 'row',
     justifyContent: 'space-between',
-    padding: '5px',
-    marginBottom: '2px',
-    boxSizing: 'border-box',
+    padding: 5,
+    marginBottom: 2,
 
     backgroundColor: '#aaa',
-
-    fontSize: '48px',
-
-    borderRadius: '10px',
+    fontSize: 48,
+    borderRadius: 10,
   },
 
   score_title_container: {
     fontWeight: 'bold',
-    textShadow: '2px 2px 5px white',
+    textShadowColor: 'white',
+    textShadowOffset: { width: 2, height: 2 },
+    textShadowRadius: 5,
   },
   score_value_container: {
     fontWeight: 'bold',
-    textShadow: '2px 2px 5px white',
+    textShadowColor: 'white',
+    textShadowOffset: { width: 2, height: 2 },
+    textShadowRadius: 5,
   },
 
   moves_count_title_container: {
     fontWeight: 'bold',
-    textShadow: '2px 2px 5px white',
+    textShadowColor: 'white',
+    textShadowOffset: { width: 2, height: 2 },
+    textShadowRadius: 5,
   },
   moves_count_value_container: {
     fontWeight: 'bold',
-    textShadow: '2px 2px 5px white',
+    textShadowColor: 'white',
+    textShadowOffset: { width: 2, height: 2 },
+    textShadowRadius: 5,
   },
 
   canvas_container: {

@@ -7,7 +7,7 @@ export function draw_line(context, x1, y1, x2, y2, line_width = 1) {
   context.closePath();
 }
 
-function draw_rounded_path(context, points, rounding_radius) {
+function draw_rounded_path(path, points, rounding_radius) {
   var points_with_offset = [];
   var arc_centers = [];
   var arc_directions = [];
@@ -57,7 +57,7 @@ function draw_rounded_path(context, points, rounding_radius) {
     arc_directions.push(cross > 0);
   }
 
-  context.moveTo(points_with_offset[0][0], points_with_offset[0][1]);
+  path.moveTo(points_with_offset[0][0], points_with_offset[0][1]);
   for (let point_id = 1; point_id < points_with_offset.length; point_id += 2) {
     const prev_point = point_id - 1;
     var next_point_id = point_id + 1;
@@ -73,23 +73,21 @@ function draw_rounded_path(context, points, rounding_radius) {
       (points_with_offset[prev_point][1] - arc_center[1]),
       (points_with_offset[prev_point][0] - arc_center[0])
     );
-    context.arc(arc_center[0], arc_center[1], rounding_radius, arc_start_angle, arc_end_angle, arc_directions[arc_center_id]);
-    context.lineTo(points_with_offset[next_point_id][0], points_with_offset[next_point_id][1]);
+    path.arc(arc_center[0], arc_center[1], rounding_radius, arc_start_angle, arc_end_angle, arc_directions[arc_center_id]);
+    path.lineTo(points_with_offset[next_point_id][0], points_with_offset[next_point_id][1]);
   }
 }
 
 export function draw_regular_polygon(
-  context,
+  path,
   center,
   size,
   angle_count,
   start_angle = 0,
   rounding_radius = 0) {
 
-  if (angle_count === 0) {
-    context.arc(center[0], center[1], size, 0, 2 * Math.PI);
-    return;
-  }
+  if (angle_count === 0)
+    path.arc(center[0], center[1], size, 0, 2 * Math.PI);
 
   const angle_step = (Math.PI * 2) / angle_count;
   var points = [];
@@ -102,18 +100,17 @@ export function draw_regular_polygon(
   }
 
   if (rounding_radius === 0) {
-    context.moveTo(points[0][0], points[0][1]);
+    path.moveTo(points[0][0], points[0][1]);
     for (let point_id = 1; point_id < points.length; ++point_id)
-      context.lineTo(points[point_id][0], points[point_id][1]);
-    context.lineTo(points[0][0], points[0][1]);
-    return;
+      path.lineTo(points[point_id][0], points[point_id][1]);
+    path.lineTo(points[0][0], points[0][1]);
   }
 
-  draw_rounded_path(context, points, rounding_radius);
+  draw_rounded_path(path, points, rounding_radius);
 }
 
 export function draw_star(
-  context,
+  path,
   center,
   size,
   corner_count,
@@ -132,11 +129,11 @@ export function draw_star(
   }
 
   if (rounding_radius === 0) {
-    context.moveTo(points[0][0], points[0][1]);
+    path.moveTo(points[0][0], points[0][1]);
     for (let point_id = 1; point_id < points.length; ++point_id)
-      context.lineTo(points[point_id][0], points[point_id][1]);
-    context.lineTo(points[0][0], points[0][1]);
+      path.lineTo(points[point_id][0], points[point_id][1]);
+    path.lineTo(points[0][0], points[0][1]);
   }
 
-  draw_rounded_path(context, points, rounding_radius);
+  draw_rounded_path(path, points, rounding_radius);
 }
