@@ -2,7 +2,6 @@ import { useState, useEffect } from "react";
 import { Platform, StyleSheet, View } from 'react-native';
 
 import Game from "./components/Game.js";
-import Statistics from "./components/Statistics.js";
 import Infos from "./components/Infos.js";
 
 export default function App() {
@@ -46,14 +45,17 @@ export default function App() {
 
   return (
     <View style={styles.app_container}>
-      <Statistics elements_count={elements_count} strikes_statistics={strikes_statistics} />
       <Game
         width={7}
         height={7}
         score_bonuses={score_bonuses}
         onStrike={update_statistics}
       />
-      <Infos score_bonuses={score_bonuses}></Infos>
+      <Infos
+        score_bonuses={score_bonuses}
+        elements_count={elements_count}
+        strikes_statistics={strikes_statistics}
+      />
     </View>
   );
 }
@@ -65,5 +67,6 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'center',
     alignItems: 'center',
+    backgroundColor: "#aaddff"
   }
 });
