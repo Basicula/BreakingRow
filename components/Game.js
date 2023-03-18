@@ -1,10 +1,10 @@
 import { useRef, useEffect, useState } from "react";
 import { StyleSheet, View, TouchableOpacity, Text, Platform, Dimensions } from 'react-native';
-import Canvas, {Path2D as ReactNativeCanvasPath2D} from 'react-native-canvas';
+import { Path, Svg, Text as SvgText, Rect } from 'react-native-svg';
 
 import { FieldData } from "./GameFieldData.js";
 import { manhattan_distance } from "./Utils.js";
-import { draw_line, draw_regular_polygon, draw_star } from "./CanvasUtils.js";
+import { regular_polygon_path, star_path, circle_path, line_path } from "./CanvasUtils.js";
 
 function map_coordinates(x, y, grid_step) {
   return [
@@ -13,93 +13,63 @@ function map_coordinates(x, y, grid_step) {
   ];
 }
 
-function render_grid(context, field_data, grid_step) {
-  const width = context.canvas.width;
-  const height = context.canvas.height;
+function grid_path(width, height, field_data, grid_step) {
+  var total_grid_path = "";
   for (let line_id = 0; line_id <= field_data.width || line_id <= field_data.height; ++line_id) {
     if (line_id <= field_data.width) {
       const x = line_id * grid_step;
-      draw_line(context, x, 0, x, height);
+      total_grid_path += line_path(x, 0, x, height);
     }
     if (line_id <= field_data.height) {
       const y = line_id * grid_step;
-      draw_line(context, 0, y, width, y);
+      total_grid_path += line_path(0, y, width, y);
     }
   }
+  return total_grid_path;
 }
 
-function element_style_by_value(value) {
-  const triangle_drawer = (path, x, y, size) => {
-    draw_regular_polygon(path, [x + size / 2, y + 5 * size / 8], 11 * size / 16,
+
+class ElementStyleProvider {
+  constructor(size) {
+    this.size = size;
+    const circle_shape_path = circle_path([size / 2, size / 2], size / 2);
+    const triangle_shape_path = regular_polygon_path([size / 2, 5 * size / 8], 11 * size / 16,
+      3, -Math.PI / 2);
+    const rounded_triangle_shape_path = regular_polygon_path([size / 2, 5 * size / 8], 11 * size / 16,
       3, -Math.PI / 2, Math.floor(0.1 * size));
-  };
-  const square_drawer = (path, x, y, size) => {
-    draw_regular_polygon(path, [x + size / 2, y + size / 2], 10 * size / 14,
+    const rounded_square_shape_path = regular_polygon_path([size / 2, size / 2], 10 * size / 14,
       4, -Math.PI / 4, Math.floor(0.1 * size));
-  };
-  const pentagon_drawer = (path, x, y, size) => {
-    draw_regular_polygon(path, [x + size / 2, y + size / 2], 9 * size / 16,
+    const rounded_pentagon_shape_path = regular_polygon_path([size / 2, size / 2], 9 * size / 16,
       5, -Math.PI / 2, Math.floor(0.1 * size));
-  };
-  const hexagon_drawer = (path, x, y, size) => {
-    draw_regular_polygon(path, [x + size / 2, y + size / 2], 9 * size / 16,
+    const rounded_hexagon_shape_path = regular_polygon_path([size / 2, size / 2], 9 * size / 16,
       6, 0, Math.floor(0.1 * size));
-  };
-  const rotated_triangle_drawer = (path, x, y, size) => {
-    draw_regular_polygon(path, [x + size / 2, y + 3 * size / 8], 11 * size / 16,
+    const rounded_rotated_triangle_shape_path = regular_polygon_path([size / 2, 3 * size / 8], 11 * size / 16,
       3, Math.PI / 2, Math.floor(0.1 * size));
-  };
-  const rotated_square_drawer = (path, x, y, size) => {
-    draw_regular_polygon(path, [x + size / 2, y + size / 2], 8 * size / 14,
+    const rounded_rotated_square_shape_path = regular_polygon_path([size / 2, size / 2], 8 * size / 14,
       4, 0, Math.floor(0.1 * size));
-  };
-  const octagon_drawer = (path, x, y, size) => {
-    draw_regular_polygon(path, [x + size / 2, y + size / 2], 8 * size / 14,
+    const rounded_octagon_shape_path = regular_polygon_path([size / 2, size / 2], 8 * size / 14,
       8, Math.PI / 8, Math.floor(0.1 * size));
-  }
-  const star_5 = (path, x, y, size) => {
-    draw_star(path, [x + size / 2, y + size / 2], 8 * size / 14,
+    const star_5_shape_path = star_path([size / 2, size / 2], 8 * size / 14,
+      5, Math.PI / 12);
+    const rounded_star_5_shape_path = star_path([size / 2, size / 2], 9 * size / 14,
       5, Math.PI / 12, Math.floor(0.05 * size));
-  };
-  const star_7 = (path, x, y, size) => {
-    draw_star(path, [x + size / 2, y + size / 2], 9 * size / 14,
+    const rounded_star_7_shape_path = star_path([size / 2, size / 2], 9 * size / 14,
       7, -Math.PI / 14, Math.floor(0.05 * size));
+    this.shape_paths = [circle_shape_path, triangle_shape_path, star_5_shape_path,
+      rounded_triangle_shape_path, rounded_square_shape_path, rounded_pentagon_shape_path,
+      rounded_hexagon_shape_path, rounded_rotated_triangle_shape_path,
+      rounded_rotated_square_shape_path, rounded_octagon_shape_path, rounded_star_5_shape_path,
+      rounded_star_7_shape_path
+    ];
+    this.colors = ["#3DFF53", "#FF4828", "#0008FF", "#14FFF3", "#FF05FA", "#FFFB28", "#FF6D0A"];
   }
-  const drawers = [triangle_drawer, square_drawer, pentagon_drawer, hexagon_drawer,
-    rotated_triangle_drawer, rotated_square_drawer, octagon_drawer, star_5, star_7];
-  const colors = ["#3DFF53", "#FF4828", "#0008FF", "#14FFF3", "#FF05FA", "#FFFB28", "#FF6D0A"];
-  return [colors[value % colors.length], drawers[value % drawers.length]];
+
+  get(value) {
+    return [this.colors[value % this.colors.length], this.shape_paths[value % this.shape_paths.length]];
+  }
 }
 
-function render_element(context, x, y, value, element_size, element_offset, is_highlighted = false) {
-  const [color, shape_drawer] = element_style_by_value(value);
-
-  if (!is_highlighted) {
-    context.shadowBlur = element_offset;
-    context.shadowColor = "rgba(0,0,0,1)";
-  }
-
-  context.fillStyle = color;
-  var shape_path = undefined;
-  if (Platform.OS === "web")
-    shape_path = new Path2D();
-  else
-    shape_path = new ReactNativeCanvasPath2D(context.canvas);
-  shape_drawer(shape_path, x, y, element_size);
-  context.fill(shape_path);
-
-  context.lineWidth = 1;
-  context.strokeStyle = "#000000";
-  context.stroke(shape_path);
-  context.stroke(shape_path);
-  context.stroke(shape_path);
-
-  context.shadowBlur = 0;
-
-  context.font = `${element_size * 0.75}px candara`;
-  context.textAlign = "center";
-  context.textBaseline = "middle";
-  context.fillStyle = "#ffffff";
+const GameElement = ({ x, y, value, size, color, shape_path, selected }) => {
   const exponents = {
     "0": "⁰", "1": "¹", "2": "²", "3": "³", "4": "⁴",
     "5": "⁵", "6": "⁶", "7": "⁷", "8": "⁸", "9": "⁹"
@@ -107,51 +77,119 @@ function render_element(context, x, y, value, element_size, element_offset, is_h
   let regex = RegExp(`[${Object.keys(exponents).join("")}]`, "g");
   const exponent = value.toString().replace(regex, number => exponents[number]);
   const value_text = value > 12 ? `2${exponent}` : (2 ** value).toString();
-  context.fillText(value_text, x + element_size / 2, y + element_size / 2, element_size);
-
-  context.lineWidth = 1;
-  context.strokeStyle = "#000000";
-  context.strokeText(value_text, x + element_size / 2, y + element_size / 2, element_size);
+  var specific_text_style = {};
+  if (Platform.OS === "web")
+    specific_text_style = {
+      cursor: "default"
+    };
+  return (
+    <Svg>
+      {selected && <Path
+        d={shape_path}
+        strokeWidth={1}
+        fill="rgba(0,0,0,0.5)"
+        scale={1.1}
+        translate={[x - size * 0.05, y - size * 0.05]}
+      />}
+      <Path
+        d={shape_path}
+        strokeWidth={1}
+        stroke="#000000"
+        fill={color}
+        opacity={1}
+        translate={[x, y]}
+      />
+      <Path
+        d={shape_path}
+        strokeWidth={1}
+        fill="#000000"
+        opacity={0.075}
+        translate={[x, y]}
+      />
+      {selected && <Path
+        d={shape_path}
+        strokeWidth={1}
+        fill={color}
+        opacity={1}
+        scale={0.9}
+        translate={[x + size * 0.05, y + size * 0.05]}
+      />}
+      <SvgText
+        x={x + size / 2}
+        y={y + size / 2}
+        stroke="#000000"
+        fill="#ffffff"
+        alignmentBaseline="central"
+        textAnchor="middle"
+        fontFamily="candara"
+        fontSize={size * 0.5}
+        style={specific_text_style}
+      >
+        {value_text}
+      </SvgText>
+    </Svg>
+  );
 }
 
-function render_field_elements(context, field_data, grid_step, element_offset, highlighted_elements) {
-  const element_size = grid_step - 2 * element_offset;
-  for (let row_id = 0; row_id < field_data.height; ++row_id) {
-    const y = row_id * grid_step + element_offset;
-    for (let column_id = 0; column_id < field_data.width; ++column_id) {
-      const x = column_id * grid_step + element_offset;
-      const value = field_data.at(row_id, column_id);
-      if (value === -1)
-        continue;
-      var is_highlighted = false;
-      for (let highlighted_element of highlighted_elements)
-        if (row_id === highlighted_element[0] && column_id === highlighted_element[1]) {
-          is_highlighted = true;
-          break;
-        }
-      render_element(context, x, y, value, element_size, element_offset, is_highlighted);
-    }
-  }
-}
-
-function render(context, field_data, grid_step, element_offset, highlighted_elements) {
-  const width = context.canvas.width;
-  const height = context.canvas.height;
-  context.clearRect(0, 0, width, height);
-  context.lineWidth = 5;
-  context.fillStyle = "#dddddd";
-  context.strokeStyle = "#000000";
-  context.rect(0, 0, width, height);
-  context.fill();
-  context.stroke();
-  render_grid(context, field_data, grid_step);
-  render_field_elements(context, field_data, grid_step, element_offset, highlighted_elements);
+const GameField = ({ field_data, grid_step, element_offset, selected_elements, element_style_provider }) => {
+  const width = grid_step * field_data.width;
+  const height = grid_step * field_data.height;
+  return (
+    <Svg
+      width={width}
+      height={height}
+      viewBox={`0 0 ${width} ${height}`}>
+      <Rect
+        x={0}
+        y={0}
+        width={width}
+        height={height}
+        fill="#dddddd"
+        strokeWidth={5}
+        stroke="#000000"
+      />
+      <Path
+        d={grid_path(width, height, field_data, grid_step)}
+        strokeWidth={2}
+        stroke="black"
+        fill="grey"
+      />
+      {element_style_provider && Array.from(Array(field_data.height)).map((_, row_id) => {
+        return Array.from(Array(field_data.width)).map((_, column_id) => {
+          const value = field_data.at(row_id, column_id);
+          if (value === -1)
+            return;
+          var is_selected = false;
+          for (let selected_element of selected_elements)
+            if (selected_element[0] == row_id && selected_element[1] == column_id) {
+              is_selected = true;
+              break;
+            }
+          const [color, shape_path] = element_style_provider.get(value);
+          return <GameElement
+            key={row_id * field_data.width + column_id}
+            x={column_id * grid_step + element_offset}
+            y={row_id * grid_step + element_offset}
+            value={value}
+            size={element_style_provider.size}
+            color={color}
+            shape_path={shape_path}
+            selected={is_selected}
+          />;
+        });
+      })}
+    </Svg>
+  );
 }
 
 export default function Game({ width, height, score_bonuses, onStrike }) {
-  const canvas_ref = useRef(null);
+  const request_animation_ref = useRef(null);
+  const prev_animation_ref = useRef(null);
+  const [grid_step, set_grid_step] = useState(0);
+  const [element_offset, set_element_offset] = useState(0);
   const [mouse_down_position, set_mouse_down_position] = useState([]);
   const [field_data, set_field_data] = useState(new FieldData(width, height));
+  const [element_style_provider, set_element_style_provider] = useState(undefined);
   const [first_element, set_first_element] = useState([]);
   const [second_element, set_second_element] = useState([]);
   const [swapping, set_swapping] = useState(false);
@@ -162,44 +200,39 @@ export default function Game({ width, height, score_bonuses, onStrike }) {
   const [shuffle_price, set_shuffle_price] = useState(1024);
   const [generator_upgrade_price, set_generator_upgrade_price] = useState(1024);
 
-  var grid_step = 0;
-  var element_offset = 0;
+  var selected_elements = [];
+  if (first_element.length > 0)
+    selected_elements.push(first_element);
+  if (second_element.length > 0)
+    selected_elements.push(second_element);
 
   useEffect(() => {
-    if (!canvas_ref.current)
-      return;
-    const canvas = canvas_ref.current;
-    const context = canvas.getContext("2d");
-    const active_zone_fraction = 0.75;
+    var width = Dimensions.get("window").width;
+    var height = Dimensions.get("window").height;
     if (Platform.OS === "web") {
-      context.canvas.height = window.innerHeight * active_zone_fraction;
-      context.canvas.width = window.innerWidth * active_zone_fraction;
-    } else {
-      context.canvas.height = Dimensions.get("window").height * active_zone_fraction;
-      context.canvas.width = Dimensions.get("window").width * active_zone_fraction;
+      width = 0.75 * window.innerWidth;
+      height = 0.75 * window.innerHeight;
     }
-    const grid_x_step = Math.floor(context.canvas.width / field_data.width);
-    const grid_y_step = Math.floor(context.canvas.height / field_data.height);
-    grid_step = Math.min(grid_x_step, grid_y_step);
-    element_offset = Math.floor(0.1 * grid_step);
-    context.canvas.width = grid_step * field_data.width;
-    context.canvas.height = grid_step * field_data.height;
-
-    var highlighted_elements = [];
-    if (first_element.length > 0)
-      highlighted_elements.push(first_element);
-    if (second_element.length > 0)
-      highlighted_elements.push(second_element);
-    render(context, field_data, grid_step, element_offset, highlighted_elements);
-    update_game_state();
+    const grid_x_step = Math.floor(width / field_data.width);
+    const grid_y_step = Math.floor(height / field_data.height);
+    const grid_step = Math.min(grid_x_step, grid_y_step);
+    const element_offset = Math.floor(0.1 * grid_step);
+    const element_size = grid_step - 2 * element_offset;
+    if (!element_style_provider || element_size !== element_style_provider.size)
+      set_element_style_provider(new ElementStyleProvider(element_size));
+    set_grid_step(grid_step);
+    set_element_offset(element_offset);
+    request_animation_ref.current = requestAnimationFrame(update_game_state);
+    return () => cancelAnimationFrame(request_animation_ref.current);
   });
 
-  const update_game_state = () => {
+  const update_game_state = (time) => {
+    prev_animation_ref.current = time;
     const steps = 4;
     let next_step = (step + 1) % steps;
     switch (step) {
       case 0:
-        const removed_groups_details = field_data.accumulate_groups(1);
+        const removed_groups_details = field_data.accumulate_groups();
         const changed = removed_groups_details.length > 0;
         set_prev_step(step);
         if (changed) {
@@ -274,6 +307,7 @@ export default function Game({ width, height, score_bonuses, onStrike }) {
   }
 
   const on_mouse_down = (event) => {
+    event.preventDefault();
     const [x, y] = get_event_position(event);
     const field_element_coordinates = map_coordinates(x, y, grid_step);
     if (field_element_coordinates.length !== 0) {
@@ -362,8 +396,14 @@ export default function Game({ width, height, score_bonuses, onStrike }) {
         onTouchEnd={on_mouse_up}
         onMouseMove={on_mouse_move}
       >
-        {Platform.OS === 'web' && <canvas ref={canvas_ref} />}
-        {Platform.OS === 'android' && <Canvas ref={canvas_ref} />}
+        {grid_step > 0 && <GameField
+          grid_step={grid_step}
+          element_offset={element_offset}
+          field_data={field_data}
+          selected_elements={selected_elements}
+          element_style_provider={element_style_provider}
+        />
+        }
       </View>
       <View style={styles.abilities_container}>
         <TouchableOpacity style={styles.ability_button} onPress={shuffle} >

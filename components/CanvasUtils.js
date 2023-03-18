@@ -1,15 +1,11 @@
-export function draw_line(context, x1, y1, x2, y2, line_width = 1) {
-  context.beginPath();
-  context.lineWidth = line_width;
-  context.moveTo(x1, y1);
-  context.lineTo(x2, y2);
-  context.stroke();
-  context.closePath();
+export function line_path(x1, y1, x2, y2) {
+  var svg_path = `M ${x1},${y1}\n`;
+  svg_path += `L ${x2},${y2}`;
+  return svg_path;
 }
 
-function draw_rounded_path(path, points, rounding_radius) {
+function rounded_path(points, rounding_radius) {
   var points_with_offset = [];
-  var arc_centers = [];
   var arc_directions = [];
   for (let point_id = 0; point_id < points.length; ++point_id) {
     const curr_point = points[point_id];
@@ -35,60 +31,43 @@ function draw_rounded_path(path, points, rounding_radius) {
     points_with_offset.push([
       curr_point[0] + vector2_normalized[0] * point_offset,
       curr_point[1] + vector2_normalized[1] * point_offset]);
-
-    const vector_to_arc_center = [
-      vector1_normalized[0] + vector2_normalized[0],
-      vector1_normalized[1] + vector2_normalized[1]
-    ];
-    const vector_to_arc_center_length = Math.sqrt(
-      vector_to_arc_center[0] * vector_to_arc_center[0] +
-      vector_to_arc_center[1] * vector_to_arc_center[1]
-    );
-    const vector_to_arc_center_normalized = [
-      vector_to_arc_center[0] / vector_to_arc_center_length,
-      vector_to_arc_center[1] / vector_to_arc_center_length
-    ];
-    const dist_to_arc_center = Math.sqrt(rounding_radius * rounding_radius + point_offset * point_offset);
-    arc_centers.push([
-      curr_point[0] + vector_to_arc_center_normalized[0] * dist_to_arc_center,
-      curr_point[1] + vector_to_arc_center_normalized[1] * dist_to_arc_center
-    ]);
     const cross = vector1[0] * vector2[1] - vector1[1] * vector2[0];
     arc_directions.push(cross > 0);
   }
 
-  path.moveTo(points_with_offset[0][0], points_with_offset[0][1]);
+  var svg_path = `M ${points_with_offset[0][0]},${points_with_offset[0][1]}\n`;
   for (let point_id = 1; point_id < points_with_offset.length; point_id += 2) {
-    const prev_point = point_id - 1;
     var next_point_id = point_id + 1;
     if (next_point_id === points_with_offset.length)
       next_point_id = 0;
-    const arc_center_id = Math.trunc(point_id / 2);
-    const arc_center = arc_centers[arc_center_id];
-    const arc_end_angle = Math.atan2(
-      (points_with_offset[point_id][1] - arc_center[1]),
-      (points_with_offset[point_id][0] - arc_center[0])
-    );
-    const arc_start_angle = Math.atan2(
-      (points_with_offset[prev_point][1] - arc_center[1]),
-      (points_with_offset[prev_point][0] - arc_center[0])
-    );
-    path.arc(arc_center[0], arc_center[1], rounding_radius, arc_start_angle, arc_end_angle, arc_directions[arc_center_id]);
-    path.lineTo(points_with_offset[next_point_id][0], points_with_offset[next_point_id][1]);
+    const arc_id = Math.trunc(point_id / 2);
+    svg_path += `A ${rounding_radius} ${rounding_radius} 0 0 ${arc_directions[arc_id] ? 0:1} ${points_with_offset[point_id][0]},${points_with_offset[point_id][1]}\n`;
+    svg_path += `L ${points_with_offset[next_point_id][0]},${points_with_offset[next_point_id][1]}\n`;
   }
+  return svg_path;
 }
 
-export function draw_regular_polygon(
-  path,
+function polyline_path(points) {
+  var svg_path = `M ${points[0][0]},${points[0][1]}\n`;
+  for (let point_id = 1; point_id < points.length; ++point_id)
+    svg_path += `L ${points[point_id][0]},${points[point_id][1]}\n`;
+  svg_path += `L ${points[0][0]},${points[0][1]}\n`;
+  return svg_path;
+}
+
+export function circle_path(center, radius) {
+  var svg_path = `M ${center[0] + radius},${center[1]}\n`;
+  svg_path += `A ${radius} ${radius} 0 0 1 ${center[0] - radius},${center[1]}\n`;
+  svg_path += `A ${radius} ${radius} 0 0 1 ${center[0] + radius},${center[1]}\n`;
+  return svg_path;
+}
+
+export function regular_polygon_path(
   center,
   size,
   angle_count,
   start_angle = 0,
   rounding_radius = 0) {
-
-  if (angle_count === 0)
-    path.arc(center[0], center[1], size, 0, 2 * Math.PI);
-
   const angle_step = (Math.PI * 2) / angle_count;
   var points = [];
   for (let point_id = 0; point_id < angle_count; ++point_id) {
@@ -99,18 +78,13 @@ export function draw_regular_polygon(
     ]);
   }
 
-  if (rounding_radius === 0) {
-    path.moveTo(points[0][0], points[0][1]);
-    for (let point_id = 1; point_id < points.length; ++point_id)
-      path.lineTo(points[point_id][0], points[point_id][1]);
-    path.lineTo(points[0][0], points[0][1]);
-  }
+  if (rounding_radius === 0)
+    return polyline_path(points);
 
-  draw_rounded_path(path, points, rounding_radius);
+  return rounded_path(points, rounding_radius);
 }
 
-export function draw_star(
-  path,
+export function star_path(
   center,
   size,
   corner_count,
@@ -128,12 +102,8 @@ export function draw_star(
     ]);
   }
 
-  if (rounding_radius === 0) {
-    path.moveTo(points[0][0], points[0][1]);
-    for (let point_id = 1; point_id < points.length; ++point_id)
-      path.lineTo(points[point_id][0], points[point_id][1]);
-    path.lineTo(points[0][0], points[0][1]);
-  }
+  if (rounding_radius === 0)
+    polyline_path(points);
 
-  draw_rounded_path(path, points, rounding_radius);
+  return rounded_path(points, rounding_radius);
 }
