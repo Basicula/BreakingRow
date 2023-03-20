@@ -196,7 +196,7 @@ export default function Game({ width, height, score_bonuses, onStrike }) {
   const [step, set_step] = useState(-1);
   const [prev_step, set_prev_step] = useState(-1);
   const [score, set_score] = useState(0);
-  const [moves_count, set_moves_count] = useState(0);
+  const [moves_count, set_moves_count] = useState(field_data.get_all_moves().length);
   const [shuffle_price, set_shuffle_price] = useState(1024);
   const [generator_upgrade_price, set_generator_upgrade_price] = useState(1024);
 
@@ -207,12 +207,9 @@ export default function Game({ width, height, score_bonuses, onStrike }) {
     selected_elements.push(second_element);
 
   useEffect(() => {
-    var width = Dimensions.get("window").width;
-    var height = Dimensions.get("window").height;
-    if (Platform.OS === "web") {
-      width = 0.75 * window.innerWidth;
-      height = 0.75 * window.innerHeight;
-    }
+    const scale_factor = 1;
+    var width = scale_factor * Dimensions.get("window").width;
+    var height = scale_factor * Dimensions.get("window").height;
     const grid_x_step = Math.floor(width / field_data.width);
     const grid_y_step = Math.floor(height / field_data.height);
     const grid_step = Math.min(grid_x_step, grid_y_step);
@@ -296,18 +293,21 @@ export default function Game({ width, height, score_bonuses, onStrike }) {
 
   const get_event_position = (event) => {
     var x, y;
-    if (Platform.OS === "web") {
-      x = event.nativeEvent.offsetX;
-      y = event.nativeEvent.offsetY;
+    const native_event = event.nativeEvent;
+    if (event.type === "touchstart" || event.type === "touchend") {
+      x = native_event.touches[0].pageX - native_event.touches[0].clientX;
+      y = native_event.touches[0].pageY - native_event.touches[0].clientY;
+    } else if (event.type === "mousedown" || event.type === "mouseup") {
+      x = native_event.offsetX;
+      y = native_event.offsetY;
     } else {
-      x = event.nativeEvent.locationX;
-      y = event.nativeEvent.locationY;
+      x = native_event.locationX;
+      y = native_event.locationY;
     }
     return [x, y];
   }
 
   const on_mouse_down = (event) => {
-    event.preventDefault();
     const [x, y] = get_event_position(event);
     const field_element_coordinates = map_coordinates(x, y, grid_step);
     if (field_element_coordinates.length !== 0) {
@@ -330,7 +330,8 @@ export default function Game({ width, height, score_bonuses, onStrike }) {
     }
   };
 
-  const on_mouse_move = () => {
+  const on_mouse_move = (event) => {
+    event.preventDefault();
   };
 
   const on_mouse_up = (event) => {
@@ -421,7 +422,8 @@ export default function Game({ width, height, score_bonuses, onStrike }) {
 
 const styles = StyleSheet.create({
   elements_container: {
-    flexDirection: 'column'
+    flexDirection: 'column',
+    alignContent: "center"
   },
 
   score_container: {
@@ -441,6 +443,7 @@ const styles = StyleSheet.create({
     textShadowOffset: { width: 2, height: 2 },
     textShadowRadius: 5,
   },
+
   score_value_container: {
     fontWeight: 'bold',
     textShadowColor: 'white',
@@ -454,6 +457,7 @@ const styles = StyleSheet.create({
     textShadowOffset: { width: 2, height: 2 },
     textShadowRadius: 5,
   },
+
   moves_count_value_container: {
     fontWeight: 'bold',
     textShadowColor: 'white',
@@ -462,7 +466,6 @@ const styles = StyleSheet.create({
   },
 
   canvas_container: {
-
   },
 
   abilities_container: {
