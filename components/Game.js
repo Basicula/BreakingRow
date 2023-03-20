@@ -206,10 +206,69 @@ function GameOver({ visible, onRestart }) {
   );
 }
 
-export default function Game({ width, height, score_bonuses, onStrike }) {
-  const starting_shuffle_price = 2 ** 8;
-  const starting_upgrade_price = 2 ** 10;
+class Ability {
+  #name;
+  #starting_price;
+  #price_step;
+  #price_factor;
+  #current_price;
+  constructor(name, starting_price, price_step = undefined, price_factor = undefined) {
+    this.#starting_price = starting_price;
+    this.#price_step = price_step;
+    this.#price_factor = price_factor;
+    this.#name = name;
+    this.#current_price = starting_price;
+  }
 
+  next_price() {
+    if (this.#price_factor !== undefined && this.#price_step !== undefined) {
+      console.log("Price factor and step can't be set simultaneously");
+      return;
+    }
+    if (this.#price_step !== undefined)
+      this.#current_price += this.#price_step;
+    else if (this.#price_factor !== undefined)
+      this.#current_price *= this.#price_factor;
+  }
+
+  reset() {
+    this.#current_price = this.#starting_price;
+  }
+
+  get price() {
+    return this.#current_price;
+  }
+
+  get name() {
+    return this.#name;
+  }
+}
+
+class Abilities {
+  #shuffle;
+  #upgrade_generator;
+  constructor() {
+    this.#shuffle = new Ability("Shuffle", 2 ** 8, undefined, 2);
+    this.#upgrade_generator = new Ability("Upgrade generator", 2 ** 10, undefined, 2);
+  }
+
+  get shuffle() {
+    return this.#shuffle;
+  }
+
+  get upgrade_generator() {
+    return this.#upgrade_generator;
+  }
+
+  clone() {
+    var new_abilities = new Abilities();
+    new_abilities.#shuffle = this.#shuffle;
+    new_abilities.#upgrade_generator = this.#upgrade_generator;
+    return new_abilities;
+  }
+}
+
+export default function Game({ width, height, score_bonuses, onStrike }) {
   const request_animation_ref = useRef(null);
   const prev_animation_ref = useRef(null);
   const [grid_step, set_grid_step] = useState(0);
@@ -224,9 +283,9 @@ export default function Game({ width, height, score_bonuses, onStrike }) {
   const [prev_step, set_prev_step] = useState(-1);
   const [score, set_score] = useState(0);
   const [moves_count, set_moves_count] = useState(field_data.get_all_moves().length);
-  const [shuffle_price, set_shuffle_price] = useState(starting_shuffle_price);
-  const [generator_upgrade_price, set_generator_upgrade_price] = useState(starting_upgrade_price);
+  const [abilities, set_abilities] = useState(new Abilities());
   const [is_game_over, set_is_game_over] = useState(false);
+  const [autoplay, set_autoplay] = useState(false);
 
   var selected_elements = [];
   if (first_element.length > 0)
@@ -254,14 +313,37 @@ export default function Game({ width, height, score_bonuses, onStrike }) {
   const check_for_game_over = () => {
     if (field_data.get_all_moves().length > 0)
       return;
-    if (shuffle_price <= score)
+    if (abilities.shuffle.price <= score)
       return;
-    if (generator_upgrade_price <= score)
+    if (abilities.upgrade_generator.price <= score)
       return;
     set_is_game_over(true);
   };
 
+  const auto_move = () => {
+    if (!autoplay)
+      return;
+    if (is_game_over) {
+      set_autoplay(false);
+      return;
+    }
+    if (step !== -1)
+      return;
+    const moves = field_data.get_all_moves();
+    if (moves.length > 0) {
+      const index = Math.trunc(Math.random() * moves.length);
+      const move = moves[index];
+      set_first_element(move[0]);
+      set_second_element(move[1]);
+      set_step(3);
+    } else if (score > abilities.upgrade_generator.price)
+      upgrade_generator();
+    else if (score > abilities.shuffle.price)
+      shuffle();
+  };
+
   const update_game_state = (time) => {
+    auto_move();
     prev_animation_ref.current = time;
     const steps = 4;
     let next_step = (step + 1) % steps;
@@ -395,26 +477,28 @@ export default function Game({ width, height, score_bonuses, onStrike }) {
   };
 
   const shuffle = () => {
-    if (score < shuffle_price)
+    if (score < abilities.shuffle.price)
       return;
     field_data.shuffle();
     set_field_data(field_data.clone());
     set_step(0);
-    set_score(score - shuffle_price);
-    set_shuffle_price(shuffle_price * 2);
+    set_score(score - abilities.shuffle.price);
+    abilities.shuffle.next_price();
+    set_abilities(abilities.clone());
   };
 
   const upgrade_generator = () => {
-    if (score < generator_upgrade_price)
+    if (score < abilities.upgrade_generator.price)
       return;
     field_data.increase_values_interval();
     const small_value = field_data.values_interval[0] - 1;
     const values_count = field_data.remove_value(small_value);
     set_field_data(field_data.clone());
     set_step(1);
-    const new_score = score - generator_upgrade_price + values_count * 2 ** small_value;
+    const new_score = score - abilities.upgrade_generator.price + values_count * 2 ** small_value;
     set_score(new_score);
-    set_generator_upgrade_price(generator_upgrade_price * 4);
+    abilities.upgrade_generator.next_price();
+    set_abilities(abilities.clone());
   };
 
   const restart = () => {
@@ -423,8 +507,7 @@ export default function Game({ width, height, score_bonuses, onStrike }) {
     set_step(-1);
     set_prev_step(-1);
     set_is_game_over(false);
-    set_shuffle_price(starting_shuffle_price);
-    set_generator_upgrade_price(starting_upgrade_price);
+    set_abilities(new Abilities());
   }
 
   return (
@@ -454,13 +537,17 @@ export default function Game({ width, height, score_bonuses, onStrike }) {
         }
       </View>
       <View style={styles.abilities_container}>
-        <TouchableOpacity style={styles.ability_button} onPress={shuffle} >
-          <Text style={styles.ability_button_text}>Shuffle</Text>
-          <Text style={styles.ability_button_price}>{shuffle_price}</Text>
+        <TouchableOpacity style={styles.ability_button} onPress={shuffle}>
+          <Text style={styles.ability_button_text}>{abilities.shuffle.name}</Text>
+          <Text style={styles.ability_button_price}>{abilities.shuffle.price}</Text>
         </TouchableOpacity>
         <TouchableOpacity style={styles.ability_button} onPress={upgrade_generator}>
-          <Text style={styles.ability_button_text}>Upgrade generator</Text>
-          <Text style={styles.ability_button_price}>{generator_upgrade_price}</Text>
+          <Text style={styles.ability_button_text}>{abilities.upgrade_generator.name}</Text>
+          <Text style={styles.ability_button_price}>{abilities.upgrade_generator.price}</Text>
+        </TouchableOpacity>
+        <TouchableOpacity style={styles.ability_button} onPress={() => set_autoplay(!autoplay)}>
+          <Text style={styles.ability_button_text}>Autoplay</Text>
+          <Text style={styles.ability_button_price}>0</Text>
         </TouchableOpacity>
       </View>
     </View>
@@ -550,7 +637,7 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     backgroundColor: "rgba(0.25,0.25,0.25,0.75)",
   },
-  
+
   game_over_view_container: {
     padding: 10,
     backgroundColor: "#222222",
