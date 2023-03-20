@@ -162,6 +162,24 @@ export class FieldData {
     return count;
   }
 
+  remove_zone(row1, column1, row2, column2) {
+    row1 = Math.min(Math.max(row1, 0), this.#height - 1);
+    row2 = Math.min(Math.max(row2, 0), this.#height - 1);
+    column1 = Math.min(Math.max(column1, 0), this.#width - 1);
+    column2 = Math.min(Math.max(column2, 0), this.#width - 1);
+    var removed_values = {};
+    for (let row_id = row1; row_id <= row2; ++row_id)
+      for (let column_id = column1; column_id <= column2; ++column_id) {
+        const value = this.#field[row_id][column_id];
+        if (value in removed_values)
+          ++removed_values[value];
+        else
+          removed_values[value] = 1;
+        this.#field[row_id][column_id] = -1;
+      }
+    return removed_values;
+  }
+
   remove_groups(count = -1) {
     const groups = this.#get_cross_groups();
     if (count === -1)

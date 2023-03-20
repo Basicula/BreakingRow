@@ -245,25 +245,37 @@ class Ability {
 }
 
 class Abilities {
-  #shuffle;
-  #upgrade_generator;
+  #all;
   constructor() {
-    this.#shuffle = new Ability("Shuffle", 2 ** 8, undefined, 2);
-    this.#upgrade_generator = new Ability("Upgrade generator", 2 ** 10, undefined, 2);
+    this.#all = [
+      new Ability("Shuffle", 2 ** 8, undefined, 2),
+      new Ability("Bomb", 2 ** 7, undefined, 2),
+      new Ability("Upgrade generator", 2 ** 10, undefined, 4)
+    ];
   }
 
   get shuffle() {
-    return this.#shuffle;
+    return this.#all[0];
+  }
+
+  get bomb() {
+    return this.#all[1];
   }
 
   get upgrade_generator() {
-    return this.#upgrade_generator;
+    return this.#all[2];
+  }
+
+  get all_prices() {
+    var prices = [];
+    for (let ability of this.#all)
+      prices.push(ability.price);
+    return prices;
   }
 
   clone() {
     var new_abilities = new Abilities();
-    new_abilities.#shuffle = this.#shuffle;
-    new_abilities.#upgrade_generator = this.#upgrade_generator;
+    new_abilities.#all = this.#all;
     return new_abilities;
   }
 }
@@ -313,10 +325,10 @@ export default function Game({ width, height, score_bonuses, onStrike }) {
   const check_for_game_over = () => {
     if (field_data.get_all_moves().length > 0)
       return;
-    if (abilities.shuffle.price <= score)
-      return;
-    if (abilities.upgrade_generator.price <= score)
-      return;
+    const abilities_prices = abilities.all_prices;
+    for (let price of abilities_prices)
+      if (price <= score)
+        return;
     set_is_game_over(true);
   };
 
@@ -340,6 +352,14 @@ export default function Game({ width, height, score_bonuses, onStrike }) {
       upgrade_generator();
     else if (score > abilities.shuffle.price)
       shuffle();
+    else if (score > abilities.bomb.price) {
+      if (first_element.length === 0) {
+        const row_id = Math.trunc(Math.random() * field_data.height);
+        const column_id = Math.trunc(Math.random() * field_data.width);
+        set_first_element([row_id, column_id]);
+      } else
+        apply_bomb()
+    }
   };
 
   const update_game_state = (time) => {
@@ -453,6 +473,7 @@ export default function Game({ width, height, score_bonuses, onStrike }) {
   };
 
   const on_mouse_up = (event) => {
+    set_mouse_down_position([]);
     if (swapping)
       return;
     if (mouse_down_position.length === 0)
@@ -473,7 +494,6 @@ export default function Game({ width, height, score_bonuses, onStrike }) {
       factors[1] = 1 * Math.sign(dy);
     set_second_element([first_element[0] + factors[1], first_element[1] + factors[0]])
     set_step(3);
-    set_mouse_down_position([]);
   };
 
   const shuffle = () => {
@@ -499,6 +519,26 @@ export default function Game({ width, height, score_bonuses, onStrike }) {
     set_score(new_score);
     abilities.upgrade_generator.next_price();
     set_abilities(abilities.clone());
+  };
+
+  const apply_bomb = () => {
+    if (score < abilities.bomb.price)
+      return;
+    if (first_element.length === 0)
+      return;
+    const removed_values = field_data.remove_zone(
+      first_element[0] - 1, first_element[1] - 1,
+      first_element[0] + 1, first_element[1] + 1
+    );
+    var new_score = score;
+    for (let [value, count] of Object.entries(removed_values))
+      new_score += 2 ** value * count;
+    set_score(new_score);
+    set_field_data(field_data.clone());
+    abilities.bomb.next_price();
+    set_abilities(abilities.clone());
+    set_step(1);
+    set_first_element([]);
   };
 
   const restart = () => {
@@ -540,6 +580,10 @@ export default function Game({ width, height, score_bonuses, onStrike }) {
         <TouchableOpacity style={styles.ability_button} onPress={shuffle}>
           <Text style={styles.ability_button_text}>{abilities.shuffle.name}</Text>
           <Text style={styles.ability_button_price}>{abilities.shuffle.price}</Text>
+        </TouchableOpacity>
+        <TouchableOpacity style={styles.ability_button} onPress={apply_bomb}>
+          <Text style={styles.ability_button_text}>{abilities.bomb.name}</Text>
+          <Text style={styles.ability_button_price}>{abilities.bomb.price}</Text>
         </TouchableOpacity>
         <TouchableOpacity style={styles.ability_button} onPress={upgrade_generator}>
           <Text style={styles.ability_button_text}>{abilities.upgrade_generator.name}</Text>
