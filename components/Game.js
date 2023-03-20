@@ -1,5 +1,5 @@
 import { useRef, useEffect, useState } from "react";
-import { StyleSheet, View, TouchableOpacity, Text, Platform, Dimensions } from 'react-native';
+import { StyleSheet, View, TouchableOpacity, Text, Platform, Dimensions, Modal } from 'react-native';
 import { Path, Svg, Text as SvgText, Rect } from 'react-native-svg';
 
 import { FieldData } from "./GameFieldData.js";
@@ -182,7 +182,34 @@ const GameField = ({ field_data, grid_step, element_offset, selected_elements, e
   );
 }
 
+function GameOver({ visible, onRestart }) {
+  return (
+    <Modal
+      animationType="slide"
+      transparent={true}
+      visible={visible}
+    >
+      <View style={styles.game_over_container}>
+        <View style={styles.game_over_view_container}>
+          <Text style={styles.game_over_text_title}>Game Over</Text>
+          <View style={styles.game_over_buttons_container}>
+            <TouchableOpacity style={styles.game_over_button} onPress={onRestart}>
+              <Text style={styles.game_over_button_text}>Restart</Text>
+            </TouchableOpacity>
+            <TouchableOpacity style={styles.game_over_button}>
+              <Text style={styles.game_over_button_text}>Free Shuffle</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </View>
+    </Modal>
+  );
+}
+
 export default function Game({ width, height, score_bonuses, onStrike }) {
+  const starting_shuffle_price = 2 ** 8;
+  const starting_upgrade_price = 2 ** 10;
+
   const request_animation_ref = useRef(null);
   const prev_animation_ref = useRef(null);
   const [grid_step, set_grid_step] = useState(0);
@@ -197,8 +224,9 @@ export default function Game({ width, height, score_bonuses, onStrike }) {
   const [prev_step, set_prev_step] = useState(-1);
   const [score, set_score] = useState(0);
   const [moves_count, set_moves_count] = useState(field_data.get_all_moves().length);
-  const [shuffle_price, set_shuffle_price] = useState(1024);
-  const [generator_upgrade_price, set_generator_upgrade_price] = useState(1024);
+  const [shuffle_price, set_shuffle_price] = useState(starting_shuffle_price);
+  const [generator_upgrade_price, set_generator_upgrade_price] = useState(starting_upgrade_price);
+  const [is_game_over, set_is_game_over] = useState(false);
 
   var selected_elements = [];
   if (first_element.length > 0)
@@ -222,6 +250,16 @@ export default function Game({ width, height, score_bonuses, onStrike }) {
     request_animation_ref.current = requestAnimationFrame(update_game_state);
     return () => cancelAnimationFrame(request_animation_ref.current);
   });
+
+  const check_for_game_over = () => {
+    if (field_data.get_all_moves().length > 0)
+      return;
+    if (shuffle_price <= score)
+      return;
+    if (generator_upgrade_price <= score)
+      return;
+    set_is_game_over(true);
+  };
 
   const update_game_state = (time) => {
     prev_animation_ref.current = time;
@@ -253,6 +291,7 @@ export default function Game({ width, height, score_bonuses, onStrike }) {
         } else if (prev_step != step) {
           set_step(-1);
           set_prev_step(-1);
+          check_for_game_over();
         } else
           set_step(1);
         set_moves_count(field_data.get_all_moves().length);
@@ -294,10 +333,7 @@ export default function Game({ width, height, score_bonuses, onStrike }) {
   const get_event_position = (event) => {
     var x, y;
     const native_event = event.nativeEvent;
-    if (event.type === "touchstart" || event.type === "touchend") {
-      x = native_event.touches[0].pageX - native_event.touches[0].clientX;
-      y = native_event.touches[0].pageY - native_event.touches[0].clientY;
-    } else if (event.type === "mousedown" || event.type === "mouseup") {
+    if (event.type === "mousedown" || event.type === "mouseup") {
       x = native_event.offsetX;
       y = native_event.offsetY;
     } else {
@@ -381,8 +417,19 @@ export default function Game({ width, height, score_bonuses, onStrike }) {
     set_generator_upgrade_price(generator_upgrade_price * 4);
   };
 
+  const restart = () => {
+    set_score(0);
+    set_field_data(new FieldData(width, height));
+    set_step(-1);
+    set_prev_step(-1);
+    set_is_game_over(false);
+    set_shuffle_price(starting_shuffle_price);
+    set_generator_upgrade_price(starting_upgrade_price);
+  }
+
   return (
     <View style={styles.elements_container}>
+      <GameOver visible={is_game_over} onRestart={restart} />
       <View style={styles.score_container}>
         <Text style={styles.score_title_container}>Score</Text>
         <Text style={styles.score_value_container}>{score}</Text>
@@ -493,5 +540,52 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: 'bold',
     textAlign: 'center'
+  },
+
+  game_over_container: {
+    flex: 1,
+    flexDirection: "column",
+    alignContent: "center",
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "rgba(0.25,0.25,0.25,0.75)",
+  },
+  
+  game_over_view_container: {
+    padding: 10,
+    backgroundColor: "#222222",
+    borderRadius: 15,
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.25,
+    shadowRadius: 4,
+    elevation: 5,
+  },
+
+  game_over_text_title: {
+    fontSize: 80
+  },
+
+  game_over_buttons_container: {
+    flexDirection: "row",
+    justifyContent: "center"
+  },
+
+  game_over_button: {
+    marginLeft: 1,
+    marginRight: 1,
+    padding: 5,
+    borderRadius: 5,
+    backgroundColor: "#000000"
+  },
+
+  game_over_button_text: {
+    textAlign: "center",
+    fontWeight: "bold",
+    fontSize: 24,
+    color: "#ffffff"
   }
 });
