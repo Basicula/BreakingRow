@@ -182,7 +182,7 @@ const GameField = ({ field_data, grid_step, element_offset, selected_elements, e
   );
 }
 
-function GameOver({ visible, onRestart }) {
+function GameOver({ total_score, spent_score, visible, onRestart }) {
   return (
     <Modal
       animationType="slide"
@@ -192,6 +192,10 @@ function GameOver({ visible, onRestart }) {
       <View style={styles.game_over_container}>
         <View style={styles.game_over_view_container}>
           <Text style={styles.game_over_text_title}>Game Over</Text>
+          <View style={styles.game_over_score_container}>
+            <Text style={styles.game_over_score_text}>Total Earned Score: {total_score}</Text>
+            <Text style={styles.game_over_score_text}>Spent Score: {spent_score}</Text>
+          </View>
           <View style={styles.game_over_buttons_container}>
             <TouchableOpacity style={styles.game_over_button} onPress={onRestart}>
               <Text style={styles.game_over_button_text}>Restart</Text>
@@ -294,6 +298,8 @@ export default function Game({ width, height, score_bonuses, onStrike }) {
   const [step, set_step] = useState(-1);
   const [prev_step, set_prev_step] = useState(-1);
   const [score, set_score] = useState(0);
+  const [total_score, set_total_score] = useState(0);
+  const [spent_score, set_spent_score] = useState(0);
   const [moves_count, set_moves_count] = useState(field_data.get_all_moves().length);
   const [abilities, set_abilities] = useState(new Abilities());
   const [is_game_over, set_is_game_over] = useState(false);
@@ -306,7 +312,7 @@ export default function Game({ width, height, score_bonuses, onStrike }) {
     selected_elements.push(second_element);
 
   useEffect(() => {
-    const scale_factor = 1;
+    const scale_factor = Platform.OS === "web" ? 0.75:1;
     var width = scale_factor * Dimensions.get("window").width;
     var height = scale_factor * Dimensions.get("window").height;
     const grid_x_step = Math.floor(width / field_data.width);
@@ -378,8 +384,9 @@ export default function Game({ width, height, score_bonuses, onStrike }) {
             const count = removed_group_details.size;
             onStrike(value, count);
             const bonus = count in score_bonuses ? score_bonuses[count] : 10;
-            const new_score = score + value * count * bonus;
-            set_score(new_score);
+            const score_delta = value * count * bonus;
+            set_score(score + score_delta);
+            set_total_score(total_score + score_delta);
           }
           set_field_data(field_data.clone());
           if (prev_step === 3) {
@@ -503,6 +510,7 @@ export default function Game({ width, height, score_bonuses, onStrike }) {
     set_field_data(field_data.clone());
     set_step(0);
     set_score(score - abilities.shuffle.price);
+    set_spent_score(spent_score + abilities.shuffle.price);
     abilities.shuffle.next_price();
     set_abilities(abilities.clone());
   };
@@ -515,8 +523,11 @@ export default function Game({ width, height, score_bonuses, onStrike }) {
     const values_count = field_data.remove_value(small_value);
     set_field_data(field_data.clone());
     set_step(1);
-    const new_score = score - abilities.upgrade_generator.price + values_count * 2 ** small_value;
-    set_score(new_score);
+    const positive_score_value = values_count * 2 ** small_value;
+    const negative_score_value = abilities.upgrade_generator.price;
+    set_score(score + positive_score_value - negative_score_value);
+    set_total_score(total_score + positive_score_value);
+    set_spent_score(spent_score + negative_score_value)
     abilities.upgrade_generator.next_price();
     set_abilities(abilities.clone());
   };
@@ -530,10 +541,13 @@ export default function Game({ width, height, score_bonuses, onStrike }) {
       first_element[0] - 1, first_element[1] - 1,
       first_element[0] + 1, first_element[1] + 1
     );
-    var new_score = score;
+    var positive_score_value = 0;
     for (let [value, count] of Object.entries(removed_values))
-      new_score += 2 ** value * count;
-    set_score(new_score);
+      positive_score_value += 2 ** value * count;
+    const negative_score_value = abilities.bomb.price;
+    set_score(score + positive_score_value - negative_score_value);
+    set_total_score(total_score + positive_score_value);
+    set_spent_score(spent_score + negative_score_value);
     set_field_data(field_data.clone());
     abilities.bomb.next_price();
     set_abilities(abilities.clone());
@@ -543,6 +557,8 @@ export default function Game({ width, height, score_bonuses, onStrike }) {
 
   const restart = () => {
     set_score(0);
+    set_total_score(0);
+    set_spent_score(0);
     set_field_data(new FieldData(width, height));
     set_step(-1);
     set_prev_step(-1);
@@ -552,7 +568,12 @@ export default function Game({ width, height, score_bonuses, onStrike }) {
 
   return (
     <View style={styles.elements_container}>
-      <GameOver visible={is_game_over} onRestart={restart} />
+      <GameOver
+        total_score={total_score}
+        spent_score={spent_score}
+        visible={is_game_over}
+        onRestart={restart}
+      />
       <View style={styles.score_container}>
         <Text style={styles.score_title_container}>Score</Text>
         <Text style={styles.score_value_container}>{score}</Text>
@@ -698,6 +719,16 @@ const styles = StyleSheet.create({
 
   game_over_text_title: {
     fontSize: 80
+  },
+
+  game_over_score_container: {
+    flexDirection: "row"
+  },
+
+  game_over_score_text: {
+    fontSize: 24,
+    marginLeft: 5,
+    marginRight: 5
   },
 
   game_over_buttons_container: {
