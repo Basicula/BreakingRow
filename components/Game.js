@@ -1,10 +1,10 @@
 import { useRef, useEffect, useState } from "react";
 import { StyleSheet, View, TouchableOpacity, Text, Platform, Dimensions, Modal } from 'react-native';
-import { Path, Svg, Text as SvgText, Rect } from 'react-native-svg';
 
 import { FieldData } from "./GameFieldData.js";
+import GameField from "./GameField.js";
 import { manhattan_distance } from "./Utils.js";
-import { regular_polygon_path, star_path, circle_path, line_path } from "./CanvasUtils.js";
+import { regular_polygon_path, star_path, circle_path } from "./CanvasUtils.js";
 
 function map_coordinates(x, y, grid_step) {
   return [
@@ -12,22 +12,6 @@ function map_coordinates(x, y, grid_step) {
     Math.floor(x / grid_step)
   ];
 }
-
-function grid_path(width, height, field_data, grid_step) {
-  var total_grid_path = "";
-  for (let line_id = 0; line_id <= field_data.width || line_id <= field_data.height; ++line_id) {
-    if (line_id <= field_data.width) {
-      const x = line_id * grid_step;
-      total_grid_path += line_path(x, 0, x, height);
-    }
-    if (line_id <= field_data.height) {
-      const y = line_id * grid_step;
-      total_grid_path += line_path(0, y, width, y);
-    }
-  }
-  return total_grid_path;
-}
-
 
 class ElementStyleProvider {
   constructor(size) {
@@ -67,119 +51,6 @@ class ElementStyleProvider {
   get(value) {
     return [this.colors[value % this.colors.length], this.shape_paths[value % this.shape_paths.length]];
   }
-}
-
-const GameElement = ({ x, y, value, size, color, shape_path, selected }) => {
-  const exponents = {
-    "0": "⁰", "1": "¹", "2": "²", "3": "³", "4": "⁴",
-    "5": "⁵", "6": "⁶", "7": "⁷", "8": "⁸", "9": "⁹"
-  }
-  let regex = RegExp(`[${Object.keys(exponents).join("")}]`, "g");
-  const exponent = value.toString().replace(regex, number => exponents[number]);
-  const value_text = value > 12 ? `2${exponent}` : (2 ** value).toString();
-  var specific_text_style = {};
-  if (Platform.OS === "web")
-    specific_text_style = {
-      cursor: "default"
-    };
-  return (
-    <Svg>
-      {selected && <Path
-        d={shape_path}
-        strokeWidth={1}
-        fill="rgba(0,0,0,0.5)"
-        scale={1.1}
-        translate={[x - size * 0.05, y - size * 0.05]}
-      />}
-      <Path
-        d={shape_path}
-        strokeWidth={1}
-        stroke="#000000"
-        fill={color}
-        opacity={1}
-        translate={[x, y]}
-      />
-      <Path
-        d={shape_path}
-        strokeWidth={1}
-        fill="#000000"
-        opacity={0.075}
-        translate={[x, y]}
-      />
-      {selected && <Path
-        d={shape_path}
-        strokeWidth={1}
-        fill={color}
-        opacity={1}
-        scale={0.9}
-        translate={[x + size * 0.05, y + size * 0.05]}
-      />}
-      <SvgText
-        x={x + size / 2}
-        y={y + size / 2}
-        stroke="#000000"
-        fill="#ffffff"
-        alignmentBaseline="central"
-        textAnchor="middle"
-        fontFamily="candara"
-        fontSize={size * 0.5}
-        style={specific_text_style}
-      >
-        {value_text}
-      </SvgText>
-    </Svg>
-  );
-}
-
-const GameField = ({ field_data, grid_step, element_offset, selected_elements, element_style_provider }) => {
-  const width = grid_step * field_data.width;
-  const height = grid_step * field_data.height;
-  return (
-    <Svg
-      width={width}
-      height={height}
-      viewBox={`0 0 ${width} ${height}`}>
-      <Rect
-        x={0}
-        y={0}
-        width={width}
-        height={height}
-        fill="#dddddd"
-        strokeWidth={5}
-        stroke="#000000"
-      />
-      <Path
-        d={grid_path(width, height, field_data, grid_step)}
-        strokeWidth={2}
-        stroke="black"
-        fill="grey"
-      />
-      {element_style_provider && Array.from(Array(field_data.height)).map((_, row_id) => {
-        return Array.from(Array(field_data.width)).map((_, column_id) => {
-          const value = field_data.at(row_id, column_id);
-          if (value === -1)
-            return;
-          var is_selected = false;
-          for (let selected_element of selected_elements)
-            if (selected_element[0] == row_id && selected_element[1] == column_id) {
-              is_selected = true;
-              break;
-            }
-          const [color, shape_path] = element_style_provider.get(value);
-          return <GameElement
-            key={row_id * field_data.width + column_id}
-            x={column_id * grid_step + element_offset}
-            y={row_id * grid_step + element_offset}
-            value={value}
-            size={element_style_provider.size}
-            color={color}
-            shape_path={shape_path}
-            selected={is_selected}
-          />;
-        });
-      })}
-    </Svg>
-  );
 }
 
 function GameOver({ total_score, spent_score, visible, onRestart }) {
@@ -292,8 +163,7 @@ export default function Game({ width, height, score_bonuses, onStrike }) {
   const [mouse_down_position, set_mouse_down_position] = useState([]);
   const [field_data, set_field_data] = useState(new FieldData(width, height));
   const [element_style_provider, set_element_style_provider] = useState(undefined);
-  const [first_element, set_first_element] = useState([]);
-  const [second_element, set_second_element] = useState([]);
+  const [selected_elements, set_selected_elements] = useState([]);
   const [swapping, set_swapping] = useState(false);
   const [step, set_step] = useState(-1);
   const [prev_step, set_prev_step] = useState(-1);
@@ -305,14 +175,8 @@ export default function Game({ width, height, score_bonuses, onStrike }) {
   const [is_game_over, set_is_game_over] = useState(false);
   const [autoplay, set_autoplay] = useState(false);
 
-  var selected_elements = [];
-  if (first_element.length > 0)
-    selected_elements.push(first_element);
-  if (second_element.length > 0)
-    selected_elements.push(second_element);
-
   useEffect(() => {
-    const scale_factor = Platform.OS === "web" ? 0.75:1;
+    const scale_factor = Platform.OS === "web" ? 0.75 : 1;
     var width = scale_factor * Dimensions.get("window").width;
     var height = scale_factor * Dimensions.get("window").height;
     const grid_x_step = Math.floor(width / field_data.width);
@@ -351,18 +215,17 @@ export default function Game({ width, height, score_bonuses, onStrike }) {
     if (moves.length > 0) {
       const index = Math.trunc(Math.random() * moves.length);
       const move = moves[index];
-      set_first_element(move[0]);
-      set_second_element(move[1]);
+      set_selected_elements(move);
       set_step(3);
     } else if (score > abilities.upgrade_generator.price)
       upgrade_generator();
     else if (score > abilities.shuffle.price)
       shuffle();
     else if (score > abilities.bomb.price) {
-      if (first_element.length === 0) {
+      if (selected_elements.length === 0) {
         const row_id = Math.trunc(Math.random() * field_data.height);
         const column_id = Math.trunc(Math.random() * field_data.width);
-        set_first_element([row_id, column_id]);
+        set_selected_elements([[row_id, column_id]]);
       } else
         apply_bomb()
     }
@@ -390,8 +253,7 @@ export default function Game({ width, height, score_bonuses, onStrike }) {
           }
           set_field_data(field_data.clone());
           if (prev_step === 3) {
-            set_first_element([]);
-            set_second_element([]);
+            set_selected_elements([]);
             set_swapping(false);
           }
         } else if (prev_step === 3) {
@@ -418,12 +280,14 @@ export default function Game({ width, height, score_bonuses, onStrike }) {
         set_step(0);
         break;
       case 3:
-        if (first_element.length !== 0 && second_element.length !== 0) {
-          field_data.swap_cells(first_element[0], first_element[1], second_element[0], second_element[1]);
+        if (selected_elements.length === 2) {
+          field_data.swap_cells(
+            selected_elements[0][0], selected_elements[0][1],
+            selected_elements[1][0], selected_elements[1][1]
+          );
           set_field_data(field_data.clone());
           if (prev_step === 0 && swapping) {
-            set_first_element([]);
-            set_second_element([]);
+            set_selected_elements([]);
             set_swapping(false);
             set_step(-1);
             set_prev_step(-1);
@@ -456,20 +320,22 @@ export default function Game({ width, height, score_bonuses, onStrike }) {
     const [x, y] = get_event_position(event);
     const field_element_coordinates = map_coordinates(x, y, grid_step);
     if (field_element_coordinates.length !== 0) {
-      const distance = manhattan_distance(
-        first_element[0], first_element[1],
-        field_element_coordinates[0], field_element_coordinates[1]
-      );
-      if (first_element.length === 0 || distance > 1) {
-        set_first_element(field_element_coordinates);
+      var distance = -1;
+      if (selected_elements.length === 1)
+        distance = manhattan_distance(
+          selected_elements[0][0], selected_elements[0][1],
+          field_element_coordinates[0], field_element_coordinates[1]
+        );
+      if (selected_elements.length === 0 || distance > 1) {
+        set_selected_elements([field_element_coordinates]);
         set_mouse_down_position([x, y]);
       }
       else if (distance === 0) {
-        set_first_element([]);
+        set_selected_elements([]);
         set_mouse_down_position([]);
       }
-      else if (second_element.length === 0) {
-        set_second_element(field_element_coordinates);
+      else if (selected_elements.length === 1) {
+        set_selected_elements([...selected_elements, field_element_coordinates]);
         set_step(3);
       }
     }
@@ -485,9 +351,9 @@ export default function Game({ width, height, score_bonuses, onStrike }) {
       return;
     if (mouse_down_position.length === 0)
       return;
-    if (second_element.length > 0)
+    if (selected_elements.length === 2)
       return;
-    if (first_element.length === 0)
+    if (selected_elements.length === 0)
       return;
     const [x, y] = get_event_position(event);
     const dx = x - mouse_down_position[0];
@@ -499,7 +365,10 @@ export default function Game({ width, height, score_bonuses, onStrike }) {
       factors[0] = 1 * Math.sign(dx);
     else
       factors[1] = 1 * Math.sign(dy);
-    set_second_element([first_element[0] + factors[1], first_element[1] + factors[0]])
+    set_selected_elements([
+      ...selected_elements,
+      [selected_elements[0][0] + factors[1], selected_elements[0][1] + factors[0]]
+    ])
     set_step(3);
   };
 
@@ -535,11 +404,11 @@ export default function Game({ width, height, score_bonuses, onStrike }) {
   const apply_bomb = () => {
     if (score < abilities.bomb.price)
       return;
-    if (first_element.length === 0)
+    if (selected_elements.length === 0)
       return;
     const removed_values = field_data.remove_zone(
-      first_element[0] - 1, first_element[1] - 1,
-      first_element[0] + 1, first_element[1] + 1
+      selected_elements[0][0] - 1, selected_elements[0][1] - 1,
+      selected_elements[0][0] + 1, selected_elements[0][1] + 1
     );
     var positive_score_value = 0;
     for (let [value, count] of Object.entries(removed_values))
@@ -552,7 +421,7 @@ export default function Game({ width, height, score_bonuses, onStrike }) {
     abilities.bomb.next_price();
     set_abilities(abilities.clone());
     set_step(1);
-    set_first_element([]);
+    set_selected_elements([]);
   };
 
   const restart = () => {
@@ -594,8 +463,7 @@ export default function Game({ width, height, score_bonuses, onStrike }) {
           field_data={field_data}
           selected_elements={selected_elements}
           element_style_provider={element_style_provider}
-        />
-        }
+        />}
       </View>
       <View style={styles.abilities_container}>
         <TouchableOpacity style={styles.ability_button} onPress={shuffle}>
