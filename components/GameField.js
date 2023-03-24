@@ -32,9 +32,6 @@ const GameElement = memo(function ({ x, y, value, size, color, shape_path, selec
     specific_text_style = {
       cursor: "default"
     };
-  useEffect(() => {
-    console.log(`GameElement ${x},${y}`);
-  });
   return (
     <Svg>
       {selected && <Path
@@ -87,9 +84,6 @@ const GameElement = memo(function ({ x, y, value, size, color, shape_path, selec
 function GameField({ field_data, grid_step, element_offset, selected_elements, element_style_provider }) {
   const width = grid_step * field_data.width;
   const height = grid_step * field_data.height;
-  useEffect(() => {
-    console.log("GameField");
-  });
   return (
     <Svg
       width={width}
