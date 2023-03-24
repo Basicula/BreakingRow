@@ -1,4 +1,4 @@
-import { useRef, useEffect, useState } from "react";
+import { useRef, useEffect, useState, memo } from "react";
 import { StyleSheet, View, TouchableOpacity, Text, Platform, Dimensions, Modal } from 'react-native';
 
 import { FieldData } from "./GameFieldData.js";
@@ -125,7 +125,7 @@ class Abilities {
     this.#all = [
       new Ability("Shuffle", 2 ** 8, undefined, 2),
       new Ability("Bomb", 2 ** 7, undefined, 2),
-      new Ability("Upgrade generator", 2 ** 10, undefined, 4)
+      new Ability("Upgrade generator", 2 ** 11, 2 ** 12, undefined)
     ];
   }
 
@@ -155,23 +155,25 @@ class Abilities {
   }
 }
 
-export default function Game({ width, height, score_bonuses, onStrike }) {
+function Game({ width, height, score_bonuses, onStrike }) {
   const request_animation_ref = useRef(null);
   const prev_animation_ref = useRef(null);
+  const [game_state, set_game_state] = useState({
+    field_data: new FieldData(width, height),
+    selected_elements: [],
+    step: -1,
+    prev_step: -1,
+    abilities: new Abilities(),
+    score_state: {
+      score: 0,
+      total_score: 0,
+      spent_score: 0
+    }
+  });
+  const [element_style_provider, set_element_style_provider] = useState(undefined);
   const [grid_step, set_grid_step] = useState(0);
   const [element_offset, set_element_offset] = useState(0);
-  const [mouse_down_position, set_mouse_down_position] = useState([]);
-  const [field_data, set_field_data] = useState(new FieldData(width, height));
-  const [element_style_provider, set_element_style_provider] = useState(undefined);
-  const [selected_elements, set_selected_elements] = useState([]);
-  const [swapping, set_swapping] = useState(false);
-  const [step, set_step] = useState(-1);
-  const [prev_step, set_prev_step] = useState(-1);
-  const [score, set_score] = useState(0);
-  const [total_score, set_total_score] = useState(0);
-  const [spent_score, set_spent_score] = useState(0);
-  const [moves_count, set_moves_count] = useState(field_data.get_all_moves().length);
-  const [abilities, set_abilities] = useState(new Abilities());
+  const mouse_down_position_ref = useRef([]);
   const [is_game_over, set_is_game_over] = useState(false);
   const [autoplay, set_autoplay] = useState(false);
 
@@ -179,8 +181,8 @@ export default function Game({ width, height, score_bonuses, onStrike }) {
     const scale_factor = Platform.OS === "web" ? 0.75 : 1;
     var width = scale_factor * Dimensions.get("window").width;
     var height = scale_factor * Dimensions.get("window").height;
-    const grid_x_step = Math.floor(width / field_data.width);
-    const grid_y_step = Math.floor(height / field_data.height);
+    const grid_x_step = Math.floor(width / game_state.field_data.width);
+    const grid_y_step = Math.floor(height / game_state.field_data.height);
     const grid_step = Math.min(grid_x_step, grid_y_step);
     const element_offset = Math.floor(0.1 * grid_step);
     const element_size = grid_step - 2 * element_offset;
@@ -193,11 +195,11 @@ export default function Game({ width, height, score_bonuses, onStrike }) {
   });
 
   const check_for_game_over = () => {
-    if (field_data.get_all_moves().length > 0)
+    if (game_state.field_data.get_all_moves().length > 0)
       return;
-    const abilities_prices = abilities.all_prices;
+    const abilities_prices = game_state.abilities.all_prices;
     for (let price of abilities_prices)
-      if (price <= score)
+      if (price <= game_state.score_state.score)
         return;
     set_is_game_over(true);
   };
@@ -209,23 +211,29 @@ export default function Game({ width, height, score_bonuses, onStrike }) {
       set_autoplay(false);
       return;
     }
-    if (step !== -1)
+    if (game_state.step !== -1)
       return;
-    const moves = field_data.get_all_moves();
+    const moves = game_state.field_data.get_all_moves();
     if (moves.length > 0) {
       const index = Math.trunc(Math.random() * moves.length);
       const move = moves[index];
-      set_selected_elements(move);
-      set_step(3);
-    } else if (score > abilities.upgrade_generator.price)
+      set_game_state({
+        ...game_state,
+        selected_elements: move,
+        step: 3
+      });
+    } else if (game_state.score_state.score > game_state.abilities.upgrade_generator.price)
       upgrade_generator();
-    else if (score > abilities.shuffle.price)
+    else if (game_state.score_state.score > game_state.abilities.shuffle.price)
       shuffle();
-    else if (score > abilities.bomb.price) {
-      if (selected_elements.length === 0) {
-        const row_id = Math.trunc(Math.random() * field_data.height);
-        const column_id = Math.trunc(Math.random() * field_data.width);
-        set_selected_elements([[row_id, column_id]]);
+    else if (game_state.score_state.score > game_state.abilities.bomb.price) {
+      if (game_state.selected_elements.length === 0) {
+        const row_id = Math.trunc(Math.random() * game_state.field_data.height);
+        const column_id = Math.trunc(Math.random() * game_state.field_data.width);
+        set_game_state({
+          ...game_state,
+          selected_elements: [[row_id, column_id]]
+        });
       } else
         apply_bomb()
     }
@@ -235,72 +243,84 @@ export default function Game({ width, height, score_bonuses, onStrike }) {
     auto_move();
     prev_animation_ref.current = time;
     const steps = 4;
-    let next_step = (step + 1) % steps;
-    switch (step) {
+    let next_step = (game_state.step + 1) % steps;
+    var prev_step = game_state.step;
+    var field_data = undefined;
+    var selected_elements = undefined;
+    var swapping = game_state.swapping;
+    var new_score_state = undefined;
+    switch (game_state.step) {
+      case -1:
+        return;
       case 0:
-        const removed_groups_details = field_data.accumulate_groups();
+        const removed_groups_details = game_state.field_data.accumulate_groups();
         const changed = removed_groups_details.length > 0;
-        set_prev_step(step);
         if (changed) {
+          var total_score_delta = 0;
           for (let removed_group_details of removed_groups_details) {
             const value = 2 ** removed_group_details.value;
             const count = removed_group_details.size;
             onStrike(value, count);
             const bonus = count in score_bonuses ? score_bonuses[count] : 10;
             const score_delta = value * count * bonus;
-            set_score(score + score_delta);
-            set_total_score(total_score + score_delta);
+            total_score_delta += score_delta;
           }
-          set_field_data(field_data.clone());
-          if (prev_step === 3) {
-            set_selected_elements([]);
-            set_swapping(false);
+          new_score_state = {
+            score: game_state.score_state.score + total_score_delta,
+            total_score: game_state.score_state.total_score + total_score_delta,
+            spent_score: game_state.score_state.spent_score
           }
-        } else if (prev_step === 3) {
-          set_prev_step(0);
-          set_step(3);
-        } else if (prev_step != step) {
-          set_step(-1);
-          set_prev_step(-1);
+          field_data = game_state.field_data.clone();
+          if (game_state.prev_step === 3) {
+            selected_elements = [];
+            swapping = false;
+          }
+        } else if (game_state.prev_step === 3) {
+          prev_step = 0;
+          next_step = 3;
+        } else if (game_state.prev_step != game_state.step) {
+          next_step = -1;
+          prev_step = -1;
           check_for_game_over();
-        } else
-          set_step(1);
-        set_moves_count(field_data.get_all_moves().length);
+        }
         break;
       case 1:
-        field_data.move_elements();
-        set_field_data(field_data.clone());
-        set_prev_step(step);
-        set_step(next_step);
+        game_state.field_data.move_elements();
+        field_data = game_state.field_data.clone();
         break;
       case 2:
-        field_data.spawn_new_values();
-        set_field_data(field_data.clone());
-        set_prev_step(step);
-        set_step(0);
+        game_state.field_data.spawn_new_values();
+        field_data = game_state.field_data.clone();
+        next_step = 0;
         break;
       case 3:
-        if (selected_elements.length === 2) {
-          field_data.swap_cells(
-            selected_elements[0][0], selected_elements[0][1],
-            selected_elements[1][0], selected_elements[1][1]
+        if (game_state.selected_elements.length === 2) {
+          game_state.field_data.swap_cells(
+            game_state.selected_elements[0][0], game_state.selected_elements[0][1],
+            game_state.selected_elements[1][0], game_state.selected_elements[1][1]
           );
-          set_field_data(field_data.clone());
-          if (prev_step === 0 && swapping) {
-            set_selected_elements([]);
-            set_swapping(false);
-            set_step(-1);
-            set_prev_step(-1);
-          } else {
-            set_prev_step(step);
-            set_step(0);
-            set_swapping(!swapping);
-          }
+          field_data = game_state.field_data.clone();
+          if (game_state.prev_step === 0 && game_state.swapping) {
+            selected_elements = [];
+            swapping = false;
+            next_step = -1;
+            prev_step = -1;
+          } else
+            swapping = !swapping;
         }
         break;
       default:
         break;
     }
+    set_game_state({
+      ...game_state,
+      field_data: field_data !== undefined ? field_data : game_state.field_data,
+      step: next_step,
+      prev_step: prev_step,
+      selected_elements: selected_elements !== undefined ? selected_elements : game_state.selected_elements,
+      swapping: swapping,
+      score_state: new_score_state !== undefined ? new_score_state : game_state.score_state
+    });
   }
 
   const get_event_position = (event) => {
@@ -321,23 +341,30 @@ export default function Game({ width, height, score_bonuses, onStrike }) {
     const field_element_coordinates = map_coordinates(x, y, grid_step);
     if (field_element_coordinates.length !== 0) {
       var distance = -1;
-      if (selected_elements.length === 1)
+      var selected_elements = [];
+      var step = game_state.step;
+      if (game_state.selected_elements.length === 1)
         distance = manhattan_distance(
-          selected_elements[0][0], selected_elements[0][1],
+          game_state.selected_elements[0][0], game_state.selected_elements[0][1],
           field_element_coordinates[0], field_element_coordinates[1]
         );
-      if (selected_elements.length === 0 || distance > 1) {
-        set_selected_elements([field_element_coordinates]);
-        set_mouse_down_position([x, y]);
+      if (game_state.selected_elements.length === 0 || distance > 1) {
+        selected_elements.push(field_element_coordinates);
+        mouse_down_position_ref.current = [x, y];
       }
       else if (distance === 0) {
-        set_selected_elements([]);
-        set_mouse_down_position([]);
+        selected_elements = [];
+        mouse_down_position_ref.current = [];
       }
-      else if (selected_elements.length === 1) {
-        set_selected_elements([...selected_elements, field_element_coordinates]);
-        set_step(3);
+      else if (game_state.selected_elements.length === 1) {
+        selected_elements = [...game_state.selected_elements, field_element_coordinates];
+        step = 3;
       }
+      set_game_state({
+        ...game_state,
+        step: step,
+        selected_elements: selected_elements
+      });
     }
   };
 
@@ -346,18 +373,17 @@ export default function Game({ width, height, score_bonuses, onStrike }) {
   };
 
   const on_mouse_up = (event) => {
-    set_mouse_down_position([]);
-    if (swapping)
+    if (game_state.swapping)
       return;
-    if (mouse_down_position.length === 0)
+    if (mouse_down_position_ref.current.length === 0)
       return;
-    if (selected_elements.length === 2)
+    if (game_state.selected_elements.length === 2)
       return;
-    if (selected_elements.length === 0)
+    if (game_state.selected_elements.length === 0)
       return;
     const [x, y] = get_event_position(event);
-    const dx = x - mouse_down_position[0];
-    const dy = y - mouse_down_position[1];
+    const dx = x - mouse_down_position_ref.current[0];
+    const dy = y - mouse_down_position_ref.current[1];
     if (Math.abs(dx) < grid_step / 4 && Math.abs(dy) < grid_step / 4)
       return;
     var factors = [0, 0];
@@ -365,89 +391,116 @@ export default function Game({ width, height, score_bonuses, onStrike }) {
       factors[0] = 1 * Math.sign(dx);
     else
       factors[1] = 1 * Math.sign(dy);
-    set_selected_elements([
-      ...selected_elements,
-      [selected_elements[0][0] + factors[1], selected_elements[0][1] + factors[0]]
-    ])
-    set_step(3);
+    set_game_state({
+      ...game_state,
+      step: 3,
+      selected_elements: [...game_state.selected_elements,
+      [
+        game_state.selected_elements[0][0] + factors[1],
+        game_state.selected_elements[0][1] + factors[0]
+      ]]
+    });
   };
 
   const shuffle = () => {
-    if (score < abilities.shuffle.price)
+    if (game_state.score_state.score < game_state.abilities.shuffle.price)
       return;
-    field_data.shuffle();
-    set_field_data(field_data.clone());
-    set_step(0);
-    set_score(score - abilities.shuffle.price);
-    set_spent_score(spent_score + abilities.shuffle.price);
-    abilities.shuffle.next_price();
-    set_abilities(abilities.clone());
+    game_state.field_data.shuffle();
+    const negative_score_value = game_state.abilities.shuffle.price;
+    game_state.abilities.shuffle.next_price();
+    set_game_state({
+      ...game_state,
+      field_data: game_state.field_data.clone(),
+      step: 0,
+      abilities: game_state.abilities.clone(),
+      score_state: {
+        score: game_state.score_state.score - negative_score_value,
+        total_score: game_state.score_state.total_score,
+        spent_score: game_state.score_state.spent_score + negative_score_value
+      }
+    });
   };
 
   const upgrade_generator = () => {
-    if (score < abilities.upgrade_generator.price)
+    if (game_state.score_state.score < game_state.abilities.upgrade_generator.price)
       return;
-    field_data.increase_values_interval();
-    const small_value = field_data.values_interval[0] - 1;
-    const values_count = field_data.remove_value(small_value);
-    set_field_data(field_data.clone());
-    set_step(1);
+    game_state.field_data.increase_values_interval();
+    const small_value = game_state.field_data.values_interval[0] - 1;
+    const values_count = game_state.field_data.remove_value(small_value);
     const positive_score_value = values_count * 2 ** small_value;
-    const negative_score_value = abilities.upgrade_generator.price;
-    set_score(score + positive_score_value - negative_score_value);
-    set_total_score(total_score + positive_score_value);
-    set_spent_score(spent_score + negative_score_value)
-    abilities.upgrade_generator.next_price();
-    set_abilities(abilities.clone());
+    const negative_score_value = game_state.abilities.upgrade_generator.price;
+    game_state.abilities.upgrade_generator.next_price();
+    set_game_state({
+      ...game_state,
+      field_data: game_state.field_data.clone(),
+      step: 1,
+      abilities: game_state.abilities.clone(),
+      score_state: {
+        score: game_state.score_state.score + positive_score_value - negative_score_value,
+        total_score: game_state.score_state.total_score + positive_score_value,
+        spent_score: game_state.score_state.spent_score + negative_score_value
+      }
+    });
   };
 
   const apply_bomb = () => {
-    if (score < abilities.bomb.price)
+    if (game_state.score_state.score < game_state.abilities.bomb.price)
       return;
-    if (selected_elements.length === 0)
+    if (game_state.selected_elements.length === 0)
       return;
-    const removed_values = field_data.remove_zone(
-      selected_elements[0][0] - 1, selected_elements[0][1] - 1,
-      selected_elements[0][0] + 1, selected_elements[0][1] + 1
+    const removed_values = game_state.field_data.remove_zone(
+      game_state.selected_elements[0][0] - 1, game_state.selected_elements[0][1] - 1,
+      game_state.selected_elements[0][0] + 1, game_state.selected_elements[0][1] + 1
     );
     var positive_score_value = 0;
     for (let [value, count] of Object.entries(removed_values))
       positive_score_value += 2 ** value * count;
-    const negative_score_value = abilities.bomb.price;
-    set_score(score + positive_score_value - negative_score_value);
-    set_total_score(total_score + positive_score_value);
-    set_spent_score(spent_score + negative_score_value);
-    set_field_data(field_data.clone());
-    abilities.bomb.next_price();
-    set_abilities(abilities.clone());
-    set_step(1);
-    set_selected_elements([]);
+    const negative_score_value = game_state.abilities.bomb.price;
+    game_state.abilities.bomb.next_price();
+    set_game_state({
+      ...game_state,
+      field_data: game_state.field_data.clone(),
+      step: 1,
+      selected_elements: [],
+      abilities: game_state.abilities.clone(),
+      score_state: {
+        score: game_state.score_state.score + positive_score_value - negative_score_value,
+        total_score: game_state.score_state.total_score + positive_score_value,
+        spent_score: game_state.score_state.spent_score + negative_score_value
+      }
+    });
   };
 
   const restart = () => {
-    set_score(0);
-    set_total_score(0);
-    set_spent_score(0);
-    set_field_data(new FieldData(width, height));
-    set_step(-1);
-    set_prev_step(-1);
+    set_game_state({
+      field_data: new FieldData(width, height),
+      step: -1,
+      prev_step: -1,
+      selected_elements: [],
+      swapping: false,
+      abilities: new Abilities(),
+      score_state: {
+        score: 0,
+        total_score: 0,
+        spent_score: 0
+      }
+    });
     set_is_game_over(false);
-    set_abilities(new Abilities());
   }
 
   return (
     <View style={styles.elements_container}>
       <GameOver
-        total_score={total_score}
-        spent_score={spent_score}
+        total_score={game_state.score_state.total_score}
+        spent_score={game_state.score_state.spent_score}
         visible={is_game_over}
         onRestart={restart}
       />
       <View style={styles.score_container}>
         <Text style={styles.score_title_container}>Score</Text>
-        <Text style={styles.score_value_container}>{score}</Text>
+        <Text style={styles.score_value_container}>{game_state.score_state.score}</Text>
         <Text style={styles.moves_count_title_container}>Moves count</Text>
-        <Text style={styles.moves_count_value_container}>{moves_count}</Text>
+        <Text style={styles.moves_count_value_container}>{game_state.field_data.get_all_moves().length}</Text>
       </View>
       <View
         style={styles.canvas_container}
@@ -460,23 +513,23 @@ export default function Game({ width, height, score_bonuses, onStrike }) {
         {grid_step > 0 && <GameField
           grid_step={grid_step}
           element_offset={element_offset}
-          field_data={field_data}
-          selected_elements={selected_elements}
+          field_data={game_state.field_data}
+          selected_elements={game_state.selected_elements}
           element_style_provider={element_style_provider}
         />}
       </View>
       <View style={styles.abilities_container}>
         <TouchableOpacity style={styles.ability_button} onPress={shuffle}>
-          <Text style={styles.ability_button_text}>{abilities.shuffle.name}</Text>
-          <Text style={styles.ability_button_price}>{abilities.shuffle.price}</Text>
+          <Text style={styles.ability_button_text}>{game_state.abilities.shuffle.name}</Text>
+          <Text style={styles.ability_button_price}>{game_state.abilities.shuffle.price}</Text>
         </TouchableOpacity>
         <TouchableOpacity style={styles.ability_button} onPress={apply_bomb}>
-          <Text style={styles.ability_button_text}>{abilities.bomb.name}</Text>
-          <Text style={styles.ability_button_price}>{abilities.bomb.price}</Text>
+          <Text style={styles.ability_button_text}>{game_state.abilities.bomb.name}</Text>
+          <Text style={styles.ability_button_price}>{game_state.abilities.bomb.price}</Text>
         </TouchableOpacity>
         <TouchableOpacity style={styles.ability_button} onPress={upgrade_generator}>
-          <Text style={styles.ability_button_text}>{abilities.upgrade_generator.name}</Text>
-          <Text style={styles.ability_button_price}>{abilities.upgrade_generator.price}</Text>
+          <Text style={styles.ability_button_text}>{game_state.abilities.upgrade_generator.name}</Text>
+          <Text style={styles.ability_button_price}>{game_state.abilities.upgrade_generator.price}</Text>
         </TouchableOpacity>
         <TouchableOpacity style={styles.ability_button} onPress={() => set_autoplay(!autoplay)}>
           <Text style={styles.ability_button_text}>Autoplay</Text>
@@ -619,3 +672,5 @@ const styles = StyleSheet.create({
     color: "#ffffff"
   }
 });
+
+export default memo(Game);

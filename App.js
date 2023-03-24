@@ -6,8 +6,10 @@ import Infos from "./components/Infos.js";
 
 export default function App() {
   const [window_size, set_window_size] = useState([]);
-  const [elements_count, set_elements_count] = useState({});
-  const [strikes_statistics, set_strike_statistics] = useState({});
+  const [statistics, set_statistics] = useState({
+    elements_count: {},
+    strikes: {}
+  });
 
   const score_bonuses = {
     3: 1,
@@ -18,18 +20,20 @@ export default function App() {
   };
 
   const update_statistics = (value, count) => {
-    var new_elements_count = Object.assign({}, elements_count);
-    if (value in elements_count)
+    var new_elements_count = Object.assign({}, statistics.elements_count);
+    if (value in new_elements_count)
       new_elements_count[value] += count;
     else
       new_elements_count[value] = count;
-    set_elements_count(new_elements_count);
-    var new_strike_statistics = Object.assign({}, strikes_statistics);
-    if (count in strikes_statistics)
+    var new_strike_statistics = Object.assign({}, statistics.strikes);
+    if (count in new_strike_statistics)
       ++new_strike_statistics[count]
     else
       new_strike_statistics[count] = 1
-    set_strike_statistics(new_strike_statistics);
+    set_statistics({
+      elements_count: new_elements_count,
+      strikes: new_strike_statistics
+    });
   }
 
   useEffect(() => {
@@ -53,8 +57,8 @@ export default function App() {
       />
       <Infos
         score_bonuses={score_bonuses}
-        elements_count={elements_count}
-        strikes_statistics={strikes_statistics}
+        elements_count={statistics.elements_count}
+        strikes_statistics={statistics.strikes}
       />
     </View>
   );
