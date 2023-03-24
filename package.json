@@ -1,24 +1,23 @@
 {
   "name": "breakingrow",
   "version": "1.0.0",
-  "main": "node_modules/expo/AppEntry.js",
   "scripts": {
     "start": "expo start",
-    "android": "expo start --android",
-    "ios": "expo start --ios",
+    "android": "expo run:android",
+    "ios": "expo run:ios",
     "web": "expo start --web"
   },
   "dependencies": {
     "@expo/webpack-config": "^18.0.1",
-    "expo": "^48.0.7",
+    "expo": "~48.0.9",
     "expo-status-bar": "~1.4.4",
     "metro-react-native-babel-preset": "^0.76.0",
     "react": "18.2.0",
-    "react-native": "0.71.3",
+    "react-native": "0.71.4",
     "react-native-canvas": "^0.1.38",
+    "react-native-svg": "13.4.0",
     "react-native-web": "^0.18.12",
-    "react-native-webview": "11.26.0",
-    "react-native-svg": "13.4.0"
+    "react-native-webview": "11.26.0"
   },
   "devDependencies": {
     "@babel/core": "^7.20.0",
