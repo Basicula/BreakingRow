@@ -49,13 +49,6 @@ const GameElement = memo(function ({ x, y, value, size, color, shape_path, selec
         opacity={1}
         translate={[x, y]}
       />
-      <Path
-        d={shape_path}
-        strokeWidth={1}
-        fill="#000000"
-        opacity={0.075}
-        translate={[x, y]}
-      />
       {selected && <Path
         d={shape_path}
         strokeWidth={1}
@@ -102,7 +95,7 @@ function GameField({ field_data, grid_step, element_offset, selected_elements, e
       />
       <Path
         d={grid_path(width, height, field_data, grid_step)}
-        strokeWidth={2}
+        strokeWidth={1}
         stroke="black"
         fill="grey"
       />
