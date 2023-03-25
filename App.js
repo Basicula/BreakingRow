@@ -50,8 +50,8 @@ export default function App() {
   return (
     <View style={styles.app_container}>
       <Game
-        width={7}
-        height={7}
+        width={8}
+        height={8}
         score_bonuses={score_bonuses}
         onStrike={update_statistics}
       />

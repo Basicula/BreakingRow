@@ -1,4 +1,4 @@
-import { memo, useEffect, useState } from 'react';
+import { memo } from 'react';
 import { Platform } from 'react-native';
 import { Path, Svg, Text as SvgText, Rect } from 'react-native-svg';
 
@@ -73,6 +73,7 @@ const GameElement = memo(function ({ x, y, value, size, color, shape_path, selec
         textAnchor="middle"
         fontFamily="candara"
         fontSize={size * 0.5}
+        fontWeight="bold"
         style={specific_text_style}
       >
         {value_text}

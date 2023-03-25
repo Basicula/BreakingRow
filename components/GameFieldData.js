@@ -19,7 +19,7 @@ export class FieldData {
     return this.#values_interval[this.#values_interval.length - 1];
   }
 
-  #get_cross_groups() {
+  #cross_group_at(row_id, column_id) {
     const check_row = (row_id, column_id) => {
       var r = column_id + 1;
       var l = column_id - 1;
@@ -50,6 +50,36 @@ export class FieldData {
       }
       return [r, l];
     };
+    var group = [];
+    var [row_r, row_l] = check_row(row_id, column_id);
+    var [column_r, column_l] = check_column(row_id, column_id);
+    if (row_r - row_l >= 4) {
+      for (let i = row_l + 1; i < row_r; ++i) {
+        group.push([row_id, i]);
+        var [sub_column_r, sub_column_l] = check_column(row_id, i);
+        if (sub_column_r - sub_column_l >= 4)
+          for (let j = sub_column_l + 1; j < sub_column_r; ++j) {
+            if (j === row_id)
+              continue;
+            group.push([j, i]);
+          }
+      }
+    } else if (column_r - column_l >= 4) {
+      for (let i = column_l + 1; i < column_r; ++i) {
+        group.push([i, column_id]);
+        var [sub_row_r, sub_row_l] = check_row(i, column_id);
+        if (sub_row_r - sub_row_l >= 4)
+          for (let j = sub_row_l + 1; j < sub_row_r; ++j) {
+            if (j === column_id)
+              continue;
+            group.push([i, j]);
+          }
+      }
+    }
+    return group;
+  }
+
+  #get_cross_groups() {
     var taken = init_array(this.#width, this.#height, false);
     var groups = [];
     for (let row_id = 0; row_id < this.#height; ++row_id) {
@@ -59,38 +89,11 @@ export class FieldData {
           continue;
         if (taken[row_id][column_id])
           continue;
-        var group = [];
-        var [row_r, row_l] = check_row(row_id, column_id);
-        var [column_r, column_l] = check_column(row_id, column_id);
-        if (row_r - row_l >= 4) {
-          for (let i = row_l + 1; i < row_r; ++i) {
-            group.push([row_id, i]);
-            taken[row_id][i] = true;
-            var [sub_column_r, sub_column_l] = check_column(row_id, i);
-            if (sub_column_r - sub_column_l >= 4)
-              for (let j = sub_column_l + 1; j < sub_column_r; ++j) {
-                if (j === row_id)
-                  continue;
-                group.push([j, i]);
-                taken[j][i] = true;
-              }
-          }
-        } else if (column_r - column_l >= 4) {
-          for (let i = column_l + 1; i < column_r; ++i) {
-            group.push([i, column_id]);
-            taken[i][column_id] = true;
-            var [sub_row_r, sub_row_l] = check_row(i, column_id);
-            if (sub_row_r - sub_row_l >= 4)
-              for (let j = sub_row_l + 1; j < sub_row_r; ++j) {
-                if (j === column_id)
-                  continue;
-                group.push([i, j]);
-                taken[i][j] = true;
-              }
-          }
-        }
-        else
+        const group = this.#cross_group_at(row_id, column_id);
+        if (group.length === 0)
           continue;
+        for (let element of group)
+          taken[element[0]][element[1]] = true;
         groups.push(group);
       }
     }
@@ -286,7 +289,8 @@ export class FieldData {
             neighbor_column_id < 0 || neighbor_column_id >= this.#width)
             continue;
           this.swap_cells(row_id, column_id, neighbor_row_id, neighbor_column_id);
-          if (this.#get_cross_groups().length > 0) {
+          if (this.#cross_group_at(row_id, column_id).length > 0 ||
+            this.#cross_group_at(neighbor_row_id, neighbor_column_id) > 0) {
             let move_exists = false;
             for (let move of moves)
               if (row_id === move[1][0] && column_id === move[1][1] &&

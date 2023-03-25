@@ -156,7 +156,7 @@ class Abilities {
     this.#all = [
       new Ability("Shuffle", 2 ** 8, undefined, 2),
       new Ability("Bomb", 2 ** 7, undefined, 2),
-      new Ability("Upgrade generator", 2 ** 11, undefined, 2)
+      new Ability("Upgrade generator", 2 ** 12, undefined, 2)
     ];
   }
 
@@ -186,12 +186,47 @@ class Abilities {
   }
 }
 
+const ScoreVisualizer = memo(function ({ score, moves_count }) {
+  return (
+    <View style={styles.score_container}>
+      <Text style={styles.score_title_container}>Score</Text>
+      <Text style={styles.score_value_container}>{score}</Text>
+      <Text style={styles.moves_count_title_container}>Moves count</Text>
+      <Text style={styles.moves_count_value_container}>{moves_count}</Text>
+    </View>
+  );
+});
+
+const AbilitiesVisualizer = memo(function ({ abilities, onShuffle, onBomb, onUpgradeGenerator, onAutoplay }) {
+  return (
+    <View style={styles.abilities_container}>
+      <TouchableOpacity style={styles.ability_button} onPress={onShuffle}>
+        <Text style={styles.ability_button_text}>{abilities.shuffle.name}</Text>
+        <Text style={styles.ability_button_price}>{abilities.shuffle.price}</Text>
+      </TouchableOpacity>
+      <TouchableOpacity style={styles.ability_button} onPress={onBomb}>
+        <Text style={styles.ability_button_text}>{abilities.bomb.name}</Text>
+        <Text style={styles.ability_button_price}>{abilities.bomb.price}</Text>
+      </TouchableOpacity>
+      <TouchableOpacity style={styles.ability_button} onPress={onUpgradeGenerator}>
+        <Text style={styles.ability_button_text}>{abilities.upgrade_generator.name}</Text>
+        <Text style={styles.ability_button_price}>{abilities.upgrade_generator.price}</Text>
+      </TouchableOpacity>
+      <TouchableOpacity style={styles.ability_button} onPress={onAutoplay}>
+        <Text style={styles.ability_button_text}>Autoplay</Text>
+        <Text style={styles.ability_button_price}>0</Text>
+      </TouchableOpacity>
+    </View>
+  );
+});
+
 function Game({ width, height, score_bonuses, onStrike }) {
   const request_animation_ref = useRef(null);
   const prev_animation_ref = useRef(null);
   const mouse_down_position_ref = useRef([]);
   const [game_state, set_game_state] = useState({
     field_data: new FieldData(width, height),
+    moves_count: 0,
     selected_elements: [],
     step: -1,
     prev_step: -1,
@@ -226,7 +261,7 @@ function Game({ width, height, score_bonuses, onStrike }) {
   }, [game_state.field_data, game_state.step, autoplay]);
 
   const check_for_game_over = () => {
-    if (game_state.field_data.get_all_moves().length > 0)
+    if (game_state.moves_count > 0)
       return;
     const abilities_prices = game_state.abilities.all_prices;
     for (let price of abilities_prices)
@@ -271,6 +306,7 @@ function Game({ width, height, score_bonuses, onStrike }) {
   };
 
   const update_game_state = (time) => {
+    var start = Date.now();
     auto_move();
     prev_animation_ref.current = time;
     const steps = 4;
@@ -346,12 +382,15 @@ function Game({ width, height, score_bonuses, onStrike }) {
     set_game_state({
       ...game_state,
       field_data: field_data !== undefined ? field_data : game_state.field_data,
+      moves_count: field_data !== undefined ? field_data.get_all_moves().length : game_state.moves_count,
       step: next_step,
       prev_step: prev_step,
       selected_elements: selected_elements !== undefined ? selected_elements : game_state.selected_elements,
       swapping: swapping,
       score_state: new_score_state !== undefined ? new_score_state : game_state.score_state
     });
+    var end = Date.now();
+    console.log(`Update time with step ${game_state.step}: ${end - start}`);
   }
 
   const get_event_position = (event) => {
@@ -527,12 +566,10 @@ function Game({ width, height, score_bonuses, onStrike }) {
         visible={is_game_over}
         onRestart={restart}
       />
-      <View style={styles.score_container}>
-        <Text style={styles.score_title_container}>Score</Text>
-        <Text style={styles.score_value_container}>{game_state.score_state.score}</Text>
-        <Text style={styles.moves_count_title_container}>Moves count</Text>
-        <Text style={styles.moves_count_value_container}>{game_state.field_data.get_all_moves().length}</Text>
-      </View>
+      <ScoreVisualizer
+        score={game_state.score_state.score}
+        moves_count={game_state.moves_count}
+      />
       <View
         style={styles.canvas_container}
         onMouseDown={on_mouse_down}
@@ -549,24 +586,13 @@ function Game({ width, height, score_bonuses, onStrike }) {
           element_style_provider={element_style_provider}
         />}
       </View>
-      <View style={styles.abilities_container}>
-        <TouchableOpacity style={styles.ability_button} onPress={shuffle}>
-          <Text style={styles.ability_button_text}>{game_state.abilities.shuffle.name}</Text>
-          <Text style={styles.ability_button_price}>{game_state.abilities.shuffle.price}</Text>
-        </TouchableOpacity>
-        <TouchableOpacity style={styles.ability_button} onPress={apply_bomb}>
-          <Text style={styles.ability_button_text}>{game_state.abilities.bomb.name}</Text>
-          <Text style={styles.ability_button_price}>{game_state.abilities.bomb.price}</Text>
-        </TouchableOpacity>
-        <TouchableOpacity style={styles.ability_button} onPress={upgrade_generator}>
-          <Text style={styles.ability_button_text}>{game_state.abilities.upgrade_generator.name}</Text>
-          <Text style={styles.ability_button_price}>{game_state.abilities.upgrade_generator.price}</Text>
-        </TouchableOpacity>
-        <TouchableOpacity style={styles.ability_button} onPress={() => set_autoplay(!autoplay)}>
-          <Text style={styles.ability_button_text}>Autoplay</Text>
-          <Text style={styles.ability_button_price}>0</Text>
-        </TouchableOpacity>
-      </View>
+      <AbilitiesVisualizer
+        abilities={game_state.abilities}
+        onShuffle={shuffle}
+        onBomb={apply_bomb}
+        onUpgradeGenerator={upgrade_generator}
+        onAutoplay={() => set_autoplay(!autoplay)}
+      />
     </View>
   );
 }
