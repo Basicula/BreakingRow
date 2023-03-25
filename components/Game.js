@@ -66,7 +66,7 @@ class ElementStyleProvider {
       octagon_shape_path, star_5_shape_path, star_7_shape_path,
 
       rounded_triangle_shape_path, rounded_square_shape_path, rounded_pentagon_shape_path,
-      rounded_rotated_triangle_shape_path, rounded_hexagon_shape_path, 
+      rounded_rotated_triangle_shape_path, rounded_hexagon_shape_path,
       rounded_rotated_square_shape_path, rounded_octagon_shape_path, rounded_star_5_shape_path,
       rounded_star_7_shape_path
     ];
@@ -156,7 +156,7 @@ class Abilities {
     this.#all = [
       new Ability("Shuffle", 2 ** 8, undefined, 2),
       new Ability("Bomb", 2 ** 7, undefined, 2),
-      new Ability("Upgrade generator", 2 ** 11, 2 ** 12, undefined)
+      new Ability("Upgrade generator", 2 ** 11, undefined, 2)
     ];
   }
 
@@ -189,6 +189,7 @@ class Abilities {
 function Game({ width, height, score_bonuses, onStrike }) {
   const request_animation_ref = useRef(null);
   const prev_animation_ref = useRef(null);
+  const mouse_down_position_ref = useRef([]);
   const [game_state, set_game_state] = useState({
     field_data: new FieldData(width, height),
     selected_elements: [],
@@ -204,7 +205,6 @@ function Game({ width, height, score_bonuses, onStrike }) {
   const [element_style_provider, set_element_style_provider] = useState(undefined);
   const [grid_step, set_grid_step] = useState(0);
   const [element_offset, set_element_offset] = useState(0);
-  const mouse_down_position_ref = useRef([]);
   const [is_game_over, set_is_game_over] = useState(false);
   const [autoplay, set_autoplay] = useState(false);
 
@@ -223,7 +223,7 @@ function Game({ width, height, score_bonuses, onStrike }) {
     set_element_offset(element_offset);
     request_animation_ref.current = requestAnimationFrame(update_game_state);
     return () => cancelAnimationFrame(request_animation_ref.current);
-  });
+  }, [game_state.field_data, game_state.step, autoplay]);
 
   const check_for_game_over = () => {
     if (game_state.field_data.get_all_moves().length > 0)

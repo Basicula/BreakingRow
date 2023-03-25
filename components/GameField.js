@@ -88,7 +88,8 @@ function GameField({ field_data, grid_step, element_offset, selected_elements, e
     <Svg
       width={width}
       height={height}
-      viewBox={`0 0 ${width} ${height}`}>
+      viewBox={`0 0 ${width} ${height}`}
+    >
       <Rect
         x={0}
         y={0}
