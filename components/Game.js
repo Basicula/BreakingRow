@@ -154,8 +154,9 @@ class Abilities {
   constructor() {
     this.#all = [
       new Ability("Shuffle", 2 ** 8, undefined, 2),
+      new Ability("Remove element", 2, undefined, 2),
       new Ability("Bomb", 2 ** 7, undefined, 2),
-      new Ability("Upgrade generator", 2 ** 12, undefined, 2)
+      new Ability("Upgrade generator", 2 ** 12, undefined, 2),
     ];
   }
 
@@ -163,12 +164,16 @@ class Abilities {
     return this.#all[0];
   }
 
+  get remove_element() {
+    return this.#all[1]
+  }
+
   get bomb() {
-    return this.#all[1];
+    return this.#all[2];
   }
 
   get upgrade_generator() {
-    return this.#all[2];
+    return this.#all[3];
   }
 
   get all_prices() {
@@ -196,12 +201,16 @@ const ScoreVisualizer = memo(function ({ score, moves_count }) {
   );
 });
 
-const AbilitiesVisualizer = memo(function ({ abilities, onShuffle, onBomb, onUpgradeGenerator, onAutoplay }) {
+const AbilitiesVisualizer = memo(function ({ abilities, onShuffle, onRemoveElement, onBomb, onUpgradeGenerator, onAutoplay }) {
   return (
     <View style={styles.abilities_container}>
       <TouchableOpacity style={styles.ability_button} onPress={onShuffle}>
         <Text style={styles.ability_button_text}>{abilities.shuffle.name}</Text>
         <Text style={styles.ability_button_price}>{abilities.shuffle.price}</Text>
+      </TouchableOpacity>
+      <TouchableOpacity style={styles.ability_button} onPress={onRemoveElement}>
+        <Text style={styles.ability_button_text}>{abilities.remove_element.name}</Text>
+        <Text style={styles.ability_button_price}>{abilities.remove_element.price}</Text>
       </TouchableOpacity>
       <TouchableOpacity style={styles.ability_button} onPress={onBomb}>
         <Text style={styles.ability_button_text}>{abilities.bomb.name}</Text>
@@ -540,6 +549,32 @@ function Game({ width, height, score_bonuses, onStrike }) {
     });
   };
 
+  const remove_element = () => {
+    if (game_state.score_state.score < game_state.abilities.remove_element.price)
+      return;
+    if (game_state.selected_elements.length === 0)
+      return;
+    const removed_values = game_state.field_data.remove_zone(
+      game_state.selected_elements[0][0], game_state.selected_elements[0][1],
+      game_state.selected_elements[0][0], game_state.selected_elements[0][1]
+    );
+    const positive_score_value = 2 ** Object.keys(removed_values)[0];
+    const negative_score_value = game_state.abilities.remove_element.price;
+    game_state.abilities.remove_element.next_price();
+    set_game_state({
+      ...game_state,
+      field_data: game_state.field_data.clone(),
+      step: 1,
+      selected_elements: [],
+      abilities: game_state.abilities.clone(),
+      score_state: {
+        score: game_state.score_state.score + positive_score_value - negative_score_value,
+        total_score: game_state.score_state.total_score + positive_score_value,
+        spent_score: game_state.score_state.spent_score + negative_score_value
+      }
+    });
+  };
+
   const restart = () => {
     set_game_state({
       field_data: new FieldData(width, height),
@@ -588,6 +623,7 @@ function Game({ width, height, score_bonuses, onStrike }) {
       <AbilitiesVisualizer
         abilities={game_state.abilities}
         onShuffle={shuffle}
+        onRemoveElement={remove_element}
         onBomb={apply_bomb}
         onUpgradeGenerator={upgrade_generator}
         onAutoplay={() => set_autoplay(!autoplay)}
