@@ -266,7 +266,7 @@ function Game({ width, height, score_bonuses, onStrike }) {
     set_element_offset(element_offset);
     request_animation_ref.current = requestAnimationFrame(update_game_state);
     return () => cancelAnimationFrame(request_animation_ref.current);
-  }, [game_state.field_data, game_state.step, autoplay]);
+  }, [game_state.field_data, game_state.step, autoplay, game_state.selected_elements]);
 
   const check_for_game_over = () => {
     if (game_state.moves_count > 0)
@@ -300,6 +300,17 @@ function Game({ width, height, score_bonuses, onStrike }) {
       upgrade_generator();
     else if (game_state.score_state.score > game_state.abilities.shuffle.price)
       shuffle();
+    else if (game_state.score_state.score > game_state.abilities.remove_element.price){
+      if (game_state.selected_elements.length === 0) {
+        const row_id = Math.trunc(Math.random() * game_state.field_data.height);
+        const column_id = Math.trunc(Math.random() * game_state.field_data.width);
+        set_game_state({
+          ...game_state,
+          selected_elements: [[row_id, column_id]]
+        });
+      } else
+        remove_element()
+    }
     else if (game_state.score_state.score > game_state.abilities.bomb.price) {
       if (game_state.selected_elements.length === 0) {
         const row_id = Math.trunc(Math.random() * game_state.field_data.height);
