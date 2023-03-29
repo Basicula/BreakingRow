@@ -156,7 +156,7 @@ class Abilities {
       new Ability("Shuffle", 2 ** 8, undefined, 2),
       new Ability("Remove element", 2, undefined, 2),
       new Ability("Bomb", 2 ** 7, undefined, 2),
-      new Ability("Upgrade generator", 2 ** 12, undefined, 2),
+      new Ability("Upgrade generator", 2 ** 12, undefined, 4),
     ];
   }
 
@@ -181,6 +181,16 @@ class Abilities {
     for (let ability of this.#all)
       prices.push(ability.price);
     return prices;
+  }
+
+  get cheapest() {
+    var cheapest_ability = this.#all[0];
+    for (let i = 1; i < this.#all.length; ++i) {
+      const ability = this.#all[i];
+      if (ability.price < cheapest_ability.price)
+        cheapest_ability = ability;
+    }
+    return cheapest_ability;
   }
 
   clone() {
@@ -287,45 +297,47 @@ function Game({ width, height, score_bonuses, onStrike }) {
     }
     if (game_state.step !== -1)
       return;
-    const moves = game_state.field_data.get_all_moves();
+    var moves = game_state.field_data.get_all_moves();
     if (moves.length > 0) {
-      const index = Math.trunc(Math.random() * moves.length);
-      const move = moves[index];
+      moves.sort((a, b) => b["strike"] - a["strike"]);
+      const move = moves[0]["move"];
       set_game_state({
         ...game_state,
         selected_elements: move,
         step: 3
       });
-    } else if (game_state.score_state.score > game_state.abilities.upgrade_generator.price)
-      upgrade_generator();
-    else if (game_state.score_state.score > game_state.abilities.shuffle.price)
-      shuffle();
-    else if (game_state.score_state.score > game_state.abilities.remove_element.price){
-      if (game_state.selected_elements.length === 0) {
-        const row_id = Math.trunc(Math.random() * game_state.field_data.height);
-        const column_id = Math.trunc(Math.random() * game_state.field_data.width);
-        set_game_state({
-          ...game_state,
-          selected_elements: [[row_id, column_id]]
-        });
-      } else
-        remove_element()
-    }
-    else if (game_state.score_state.score > game_state.abilities.bomb.price) {
-      if (game_state.selected_elements.length === 0) {
-        const row_id = Math.trunc(Math.random() * game_state.field_data.height);
-        const column_id = Math.trunc(Math.random() * game_state.field_data.width);
-        set_game_state({
-          ...game_state,
-          selected_elements: [[row_id, column_id]]
-        });
-      } else
-        apply_bomb()
+    } else {
+      const cheapest_ability = game_state.abilities.cheapest;
+      if (cheapest_ability === game_state.abilities.upgrade_generator ||
+          game_state.abilities.upgrade_generator.price < game_state.score_state.score)
+        upgrade_generator();
+      else if (cheapest_ability === game_state.abilities.shuffle)
+        shuffle();
+      else if (cheapest_ability === game_state.abilities.bomb) {
+        if (game_state.selected_elements.length === 0) {
+          const row_id = Math.trunc(Math.random() * game_state.field_data.height);
+          const column_id = Math.trunc(Math.random() * game_state.field_data.width);
+          set_game_state({
+            ...game_state,
+            selected_elements: [[row_id, column_id]]
+          });
+        } else
+          apply_bomb()
+      } else if (cheapest_ability === game_state.abilities.remove_element) {
+        if (game_state.selected_elements.length === 0) {
+          const row_id = Math.trunc(Math.random() * game_state.field_data.height);
+          const column_id = Math.trunc(Math.random() * game_state.field_data.width);
+          set_game_state({
+            ...game_state,
+            selected_elements: [[row_id, column_id]]
+          });
+        } else
+          remove_element()
+      }
     }
   };
 
   const update_game_state = (time) => {
-    var start = Date.now();
     auto_move();
     prev_animation_ref.current = time;
     const steps = 4;
@@ -408,8 +420,6 @@ function Game({ width, height, score_bonuses, onStrike }) {
       swapping: swapping,
       score_state: new_score_state !== undefined ? new_score_state : game_state.score_state
     });
-    var end = Date.now();
-    console.log(`Update time with step ${game_state.step}: ${end - start}`);
   }
 
   const get_event_position = (event) => {
