@@ -211,22 +211,52 @@ const ScoreVisualizer = memo(function ({ score, moves_count }) {
   );
 });
 
-const AbilitiesVisualizer = memo(function ({ abilities, onShuffle, onRemoveElement, onBomb, onUpgradeGenerator, onAutoplay }) {
+const AbilitiesVisualizer = memo(function ({ abilities, score,
+  onShuffle, onRemoveElement, onBomb, onUpgradeGenerator, onAutoplay }) {
+  const disabled_opacity = 0.5;
   return (
     <View style={styles.abilities_container}>
-      <TouchableOpacity style={styles.ability_button} onPress={onShuffle}>
+      <TouchableOpacity
+        style={{
+          ...styles.ability_button,
+          opacity: score < abilities.shuffle.price ? disabled_opacity : 1
+        }}
+        disabled={score < abilities.shuffle.price}
+        onPress={onShuffle}
+      >
         <Text style={styles.ability_button_text}>{abilities.shuffle.name}</Text>
         <Text style={styles.ability_button_price}>{abilities.shuffle.price}</Text>
       </TouchableOpacity>
-      <TouchableOpacity style={styles.ability_button} onPress={onRemoveElement}>
+      <TouchableOpacity
+        style={{
+          ...styles.ability_button,
+          opacity: score < abilities.remove_element.price ? disabled_opacity : 1
+        }}
+        disabled={score < abilities.remove_element.price}
+        onPress={onRemoveElement}
+      >
         <Text style={styles.ability_button_text}>{abilities.remove_element.name}</Text>
         <Text style={styles.ability_button_price}>{abilities.remove_element.price}</Text>
       </TouchableOpacity>
-      <TouchableOpacity style={styles.ability_button} onPress={onBomb}>
+      <TouchableOpacity
+        style={{
+          ...styles.ability_button,
+          opacity: score < abilities.bomb.price ? disabled_opacity : 1
+        }}
+        disabled={score < abilities.bomb.price}
+        onPress={onBomb}
+      >
         <Text style={styles.ability_button_text}>{abilities.bomb.name}</Text>
         <Text style={styles.ability_button_price}>{abilities.bomb.price}</Text>
       </TouchableOpacity>
-      <TouchableOpacity style={styles.ability_button} onPress={onUpgradeGenerator}>
+      <TouchableOpacity
+        style={{
+          ...styles.ability_button,
+          opacity: score < abilities.upgrade_generator.price ? disabled_opacity : 1
+        }}
+        disabled={score < abilities.upgrade_generator.price}
+        onPress={onUpgradeGenerator}
+      >
         <Text style={styles.ability_button_text}>{abilities.upgrade_generator.name}</Text>
         <Text style={styles.ability_button_price}>{abilities.upgrade_generator.price}</Text>
       </TouchableOpacity>
@@ -309,7 +339,7 @@ function Game({ width, height, score_bonuses, onStrike }) {
     } else {
       const cheapest_ability = game_state.abilities.cheapest;
       if (cheapest_ability === game_state.abilities.upgrade_generator ||
-          game_state.abilities.upgrade_generator.price < game_state.score_state.score)
+        game_state.abilities.upgrade_generator.price < game_state.score_state.score)
         upgrade_generator();
       else if (cheapest_ability === game_state.abilities.shuffle)
         shuffle();
@@ -643,6 +673,7 @@ function Game({ width, height, score_bonuses, onStrike }) {
       </View>
       <AbilitiesVisualizer
         abilities={game_state.abilities}
+        score={game_state.score_state.score}
         onShuffle={shuffle}
         onRemoveElement={remove_element}
         onBomb={apply_bomb}
