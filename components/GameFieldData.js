@@ -304,7 +304,7 @@ export class FieldData {
             if (!move_exists) {
               moves_data.push({
                 move: [[row_id, column_id], [neighbor_row_id, neighbor_column_id]],
-                strike: first_cross_group.length + second_cross_group.length
+                strike: Math.max(first_cross_group.length, second_cross_group.length)
               });
             }
           }

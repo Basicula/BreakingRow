@@ -277,7 +277,7 @@ const AbilitiesVisualizer = memo(function ({ abilities, score,
   );
 });
 
-function Game({ width, height, score_bonuses, onStrike }) {
+function Game({ width, height, score_bonuses, onStrike, onRestart }) {
   const request_animation_ref = useRef(null);
   const prev_animation_ref = useRef(null);
   const mouse_down_position_ref = useRef([]);
@@ -339,7 +339,15 @@ function Game({ width, height, score_bonuses, onStrike }) {
     var moves = game_state.field_data.get_all_moves();
     if (moves.length > 0) {
       moves.sort((a, b) => b["strike"] - a["strike"]);
-      const move = moves[0]["move"];
+      const max_strike_value = moves[0]["strike"];
+      let max_strike_value_count = 0;
+      for (let move of moves) {
+        if (move["strike"] < max_strike_value)
+          break;
+        ++max_strike_value_count;
+      }
+      const move_index = Math.trunc(Math.random() * max_strike_value_count);
+      const move = moves[move_index]["move"];
       set_game_state({
         ...game_state,
         selected_elements: move,
@@ -650,6 +658,7 @@ function Game({ width, height, score_bonuses, onStrike }) {
       }
     });
     set_is_game_over(false);
+    onRestart();
   }
 
   return (

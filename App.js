@@ -12,10 +12,10 @@ function MenuBar({ onInfo, onSettings }) {
   return (
     <View style={styles.menu_bar_container}>
       <TouchableOpacity style={styles.menu_info_button} onPress={onInfo}>
-        <Info size={menu_icon_size}/>
+        <Info size={menu_icon_size} />
       </TouchableOpacity>
       <TouchableOpacity style={styles.menu_settings_button} onPress={onSettings}>
-        <Settings size={menu_icon_size}/>
+        <Settings size={menu_icon_size} />
       </TouchableOpacity>
     </View>
   );
@@ -61,6 +61,7 @@ export default function App() {
         height={8}
         score_bonuses={score_bonuses}
         onStrike={update_statistics}
+        onRestart={() => set_statistics({ elements_count: {}, strikes: {}})}
       />
       <PopupContainer
         visible={info_visible}
@@ -83,7 +84,7 @@ const styles = StyleSheet.create({
     flex: 1,
 
     flexDirection: 'column',
-    alignItems:"center",
+    alignItems: "center",
     backgroundColor: "#aaddff"
   },
 
