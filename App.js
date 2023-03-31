@@ -1,15 +1,33 @@
-import { useState, useEffect } from "react";
-import { Platform, StyleSheet, View } from 'react-native';
+import { useState } from "react";
+import { StyleSheet, View, Text, TouchableOpacity, StatusBar } from 'react-native';
 
+import PopupContainer from "./components/PopupContainer.js";
 import Game from "./components/Game.js";
 import Infos from "./components/Infos.js";
 
+function MenuBar({ onInfo, onSettings }) {
+  return (
+    <View style={styles.menu_bar_container}>
+      <TouchableOpacity style={styles.menu_info_button} onPress={onInfo}>
+        <Text>
+          Info
+        </Text>
+      </TouchableOpacity>
+      <TouchableOpacity style={styles.menu_settings_button} onPress={onSettings}>
+        <Text>
+          Settings
+        </Text>
+      </TouchableOpacity>
+    </View>
+  );
+}
+
 export default function App() {
-  const [window_size, set_window_size] = useState([]);
   const [statistics, set_statistics] = useState({
     elements_count: {},
     strikes: {}
   });
+  const [info_visible, set_info_visible] = useState(false);
 
   const score_bonuses = {
     3: 1,
@@ -36,41 +54,49 @@ export default function App() {
     });
   }
 
-  useEffect(() => {
-    if (Platform.OS === "web") {
-      function updateSize() {
-        set_window_size([window.innerWidth, window.innerHeight]);
-      }
-      window.addEventListener('resize', updateSize);
-      updateSize();
-      return () => window.removeEventListener('resize', updateSize);
-    }
-  }, []);
-
   return (
     <View style={styles.app_container}>
+      <MenuBar onInfo={() => set_info_visible(true)} />
       <Game
         width={8}
         height={8}
         score_bonuses={score_bonuses}
         onStrike={update_statistics}
       />
-      <Infos
-        score_bonuses={score_bonuses}
-        elements_count={statistics.elements_count}
-        strikes_statistics={statistics.strikes}
-      />
+      <PopupContainer
+        visible={info_visible}
+        title="Info"
+        onClose={() => set_info_visible(false)}
+      >
+        <Infos
+          score_bonuses={score_bonuses}
+          elements_count={statistics.elements_count}
+          strikes_statistics={statistics.strikes}
+        />
+      </PopupContainer>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
   app_container: {
+    paddingTop: StatusBar.currentHeight,
     flex: 1,
 
-    flexDirection: 'row',
-    justifyContent: 'center',
-    alignItems: 'center',
+    flexDirection: 'column',
+    alignItems:"center",
     backgroundColor: "#aaddff"
-  }
+  },
+
+  menu_bar_container: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignSelf: "stretch"
+  },
+  menu_info_button: {
+
+  },
+  menu_settings_button: {
+
+  },
 });
