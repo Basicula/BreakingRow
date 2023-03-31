@@ -2,7 +2,7 @@ import { memo } from 'react';
 import { Platform } from 'react-native';
 import { Path, Svg, Text as SvgText, Rect } from 'react-native-svg';
 
-import { line_path } from "./CanvasUtils.js";
+import { line_path } from "./SvgPath.js";
 
 function grid_path(width, height, field_data, grid_step) {
   var total_grid_path = "";

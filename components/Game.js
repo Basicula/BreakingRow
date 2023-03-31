@@ -4,7 +4,7 @@ import { StyleSheet, View, TouchableOpacity, Text, Platform, Dimensions, Modal }
 import { FieldData } from "./GameFieldData.js";
 import GameField from "./GameField.js";
 import { manhattan_distance } from "./Utils.js";
-import { regular_polygon_path, star_path, circle_path } from "./CanvasUtils.js";
+import { regular_polygon_path, star_path, circle_path } from "./SvgPath.js";
 
 function map_coordinates(x, y, grid_step) {
   return [
