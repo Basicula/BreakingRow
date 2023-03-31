@@ -1,10 +1,9 @@
 import { Modal, View, StyleSheet, Text, TouchableOpacity } from "react-native";
-import { Svg, Circle, Line } from 'react-native-svg';
+
+import Close from "./Icons/Close.js";
 
 function PopupContainer({ children, visible, onClose, title = "" }) {
   const close_button_size = 25;
-  const radius = close_button_size / 2;
-  const coord = radius * Math.SQRT1_2 * 0.75;
 
   return (
     <Modal
@@ -18,31 +17,7 @@ function PopupContainer({ children, visible, onClose, title = "" }) {
           <View style={styles.header_container}>
             <Text style={styles.header_title}>{title}</Text>
             <TouchableOpacity style={styles.close_button} onPress={onClose}>
-              <Svg width={close_button_size} height={close_button_size}>
-                <Circle
-                  r={radius}
-                  cx={radius}
-                  cy={radius}
-                  fill="#ff0000"
-                  stroke="#000000"
-                />
-                <Line
-                  x1={radius - coord}
-                  y1={radius - coord}
-                  x2={radius + coord}
-                  y2={radius + coord}
-                  stroke="#000000"
-                  strokeWidth={2}
-                />
-                <Line
-                  x1={radius - coord}
-                  y1={radius + coord}
-                  x2={radius + coord}
-                  y2={radius - coord}
-                  stroke="#000000"
-                  strokeWidth={2}
-                />
-              </Svg>
+              <Close size={close_button_size} />
             </TouchableOpacity>
           </View>
           {children}

@@ -4,19 +4,18 @@ import { StyleSheet, View, Text, TouchableOpacity, StatusBar } from 'react-nativ
 import PopupContainer from "./components/PopupContainer.js";
 import Game from "./components/Game.js";
 import Infos from "./components/Infos.js";
+import Settings from "./components/Icons/Settings.js";
+import Info from "./components/Icons/Info.js";
 
 function MenuBar({ onInfo, onSettings }) {
+  const menu_icon_size = 25;
   return (
     <View style={styles.menu_bar_container}>
       <TouchableOpacity style={styles.menu_info_button} onPress={onInfo}>
-        <Text>
-          Info
-        </Text>
+        <Info size={menu_icon_size}/>
       </TouchableOpacity>
       <TouchableOpacity style={styles.menu_settings_button} onPress={onSettings}>
-        <Text>
-          Settings
-        </Text>
+        <Settings size={menu_icon_size}/>
       </TouchableOpacity>
     </View>
   );
@@ -90,7 +89,7 @@ const styles = StyleSheet.create({
 
   menu_bar_container: {
     flexDirection: "row",
-    justifyContent: "space-between",
+    justifyContent: "flex-end",
     alignSelf: "stretch"
   },
   menu_info_button: {

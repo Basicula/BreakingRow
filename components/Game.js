@@ -5,6 +5,10 @@ import { FieldData } from "./GameFieldData.js";
 import GameField from "./GameField.js";
 import { manhattan_distance } from "./Utils.js";
 import { regular_polygon_path, star_path, circle_path } from "./SvgPath.js";
+import Bomb from "./Icons/Bomb.js";
+import Shuffle from "./Icons/Shuffle.js";
+import Hammer from "./Icons/Hammer.js";
+import Upgrade from "./Icons/Upgrade.js";
 
 function map_coordinates(x, y, grid_step) {
   return [
@@ -214,6 +218,7 @@ const ScoreVisualizer = memo(function ({ score, moves_count }) {
 const AbilitiesVisualizer = memo(function ({ abilities, score,
   onShuffle, onRemoveElement, onBomb, onUpgradeGenerator, onAutoplay }) {
   const disabled_opacity = 0.5;
+  const ability_icon_size = 32;
   return (
     <View style={styles.abilities_container}>
       <TouchableOpacity
@@ -224,6 +229,7 @@ const AbilitiesVisualizer = memo(function ({ abilities, score,
         disabled={score < abilities.shuffle.price}
         onPress={onShuffle}
       >
+        <Shuffle size={ability_icon_size} />
         <Text style={styles.ability_button_text}>{abilities.shuffle.name}</Text>
         <Text style={styles.ability_button_price}>{abilities.shuffle.price}</Text>
       </TouchableOpacity>
@@ -235,6 +241,7 @@ const AbilitiesVisualizer = memo(function ({ abilities, score,
         disabled={score < abilities.remove_element.price}
         onPress={onRemoveElement}
       >
+        <Hammer size={ability_icon_size} />
         <Text style={styles.ability_button_text}>{abilities.remove_element.name}</Text>
         <Text style={styles.ability_button_price}>{abilities.remove_element.price}</Text>
       </TouchableOpacity>
@@ -246,6 +253,7 @@ const AbilitiesVisualizer = memo(function ({ abilities, score,
         disabled={score < abilities.bomb.price}
         onPress={onBomb}
       >
+        <Bomb size={ability_icon_size} />
         <Text style={styles.ability_button_text}>{abilities.bomb.name}</Text>
         <Text style={styles.ability_button_price}>{abilities.bomb.price}</Text>
       </TouchableOpacity>
@@ -257,6 +265,7 @@ const AbilitiesVisualizer = memo(function ({ abilities, score,
         disabled={score < abilities.upgrade_generator.price}
         onPress={onUpgradeGenerator}
       >
+        <Upgrade size={ability_icon_size} />
         <Text style={styles.ability_button_text}>{abilities.upgrade_generator.name}</Text>
         <Text style={styles.ability_button_price}>{abilities.upgrade_generator.price}</Text>
       </TouchableOpacity>
@@ -722,6 +731,8 @@ const styles = StyleSheet.create({
   },
 
   ability_button: {
+    alignItems: "center",
+    justifyContent: "center",
     borderWidth: 1,
     borderRadius: 5,
     borderColor: "black",
@@ -733,12 +744,11 @@ const styles = StyleSheet.create({
   },
 
   ability_button_text: {
-    fontSize: 14,
-    fontWeight: 'bold'
+    fontSize: 8,
   },
 
   ability_button_price: {
-    fontSize: 12,
+    fontSize: 10,
     fontWeight: 'bold',
     textAlign: 'center'
   },
