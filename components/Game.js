@@ -203,10 +203,10 @@ class Abilities {
 const ScoreVisualizer = memo(function ({ score, moves_count }) {
   return (
     <View style={styles.score_container}>
-      <Text style={styles.score_title_container}>Score</Text>
-      <Text style={styles.score_value_container}>{score}</Text>
-      <Text style={styles.moves_count_title_container}>Moves count</Text>
-      <Text style={styles.moves_count_value_container}>{moves_count}</Text>
+      <Text style={styles.game_state_text_info_container}>Score</Text>
+      <Text style={styles.game_state_text_info_container}>{score}</Text>
+      <Text style={styles.game_state_text_info_container}>Moves count</Text>
+      <Text style={styles.game_state_text_info_container}>{moves_count}</Text>
     </View>
   );
 });
@@ -687,42 +687,22 @@ function Game({ width, height, score_bonuses, onStrike }) {
 const styles = StyleSheet.create({
   elements_container: {
     flexDirection: 'column',
-    alignContent: "center"
+    alignContent: "center",
+    justifyContent: "center",
   },
 
   score_container: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     padding: 5,
-    marginBottom: 2,
 
     backgroundColor: '#aaa',
     fontSize: 48,
-    borderRadius: 10,
+    borderTopLeftRadius: 10,
+    borderTopRightRadius: 10,
   },
 
-  score_title_container: {
-    fontWeight: 'bold',
-    textShadowColor: 'white',
-    textShadowOffset: { width: 2, height: 2 },
-    textShadowRadius: 5,
-  },
-
-  score_value_container: {
-    fontWeight: 'bold',
-    textShadowColor: 'white',
-    textShadowOffset: { width: 2, height: 2 },
-    textShadowRadius: 5,
-  },
-
-  moves_count_title_container: {
-    fontWeight: 'bold',
-    textShadowColor: 'white',
-    textShadowOffset: { width: 2, height: 2 },
-    textShadowRadius: 5,
-  },
-
-  moves_count_value_container: {
+  game_state_text_info_container: {
     fontWeight: 'bold',
     textShadowColor: 'white',
     textShadowOffset: { width: 2, height: 2 },
@@ -732,11 +712,13 @@ const styles = StyleSheet.create({
   canvas_container: {
     justifyContent: "center",
     alignContent: "center",
+    flexWrap: "wrap"
   },
 
   abilities_container: {
     flexDirection: 'row',
-    justifyContent: 'center'
+    justifyContent: 'center',
+    flexWrap: "wrap"
   },
 
   ability_button: {
@@ -751,12 +733,12 @@ const styles = StyleSheet.create({
   },
 
   ability_button_text: {
-    fontSize: 18,
+    fontSize: 14,
     fontWeight: 'bold'
   },
 
   ability_button_price: {
-    fontSize: 14,
+    fontSize: 12,
     fontWeight: 'bold',
     textAlign: 'center'
   },

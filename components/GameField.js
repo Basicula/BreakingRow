@@ -90,7 +90,7 @@ function GameField({ field_data, grid_step, element_offset, selected_elements, e
         width={width}
         height={height}
         fill="#dddddd"
-        strokeWidth={5}
+        strokeWidth={2}
         stroke="#000000"
       />
       <Path
