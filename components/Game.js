@@ -756,14 +756,16 @@ const styles = StyleSheet.create({
   game_over_container: {
     flex: 1,
     flexDirection: "column",
-    alignContent: "center",
     alignItems: "center",
     justifyContent: "center",
     backgroundColor: "rgba(0.25,0.25,0.25,0.75)",
   },
 
   game_over_view_container: {
+    alignItems: "center",
+    justifyContent: "center",
     padding: 10,
+    margin: 10,
     backgroundColor: "#222222",
     borderRadius: 15,
     shadowColor: '#000',
@@ -777,17 +779,22 @@ const styles = StyleSheet.create({
   },
 
   game_over_text_title: {
-    fontSize: 80
+    fontSize: 64,
+    color: "#bbbbbb"
   },
 
   game_over_score_container: {
-    flexDirection: "row"
+    flexDirection: "row",
+    flexWrap: "wrap",
+    alignItems: "center",
+    justifyContent: "center"
   },
 
   game_over_score_text: {
     fontSize: 24,
     marginLeft: 5,
-    marginRight: 5
+    marginRight: 5,
+    color: "#dddddd"
   },
 
   game_over_buttons_container: {
