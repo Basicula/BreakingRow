@@ -1,6 +1,6 @@
-import { memo } from 'react';
-import { Platform } from 'react-native';
-import { Path, Svg, Text as SvgText, Rect, Defs, RadialGradient, LinearGradient, Stop } from 'react-native-svg';
+import { memo, useEffect, useState } from 'react';
+import { Animated, Easing, Platform } from 'react-native';
+import { Path, Svg, Text as SvgText, Rect, G, Defs, RadialGradient, Stop } from 'react-native-svg';
 
 import { line_path } from "./SvgPath.js";
 
@@ -19,7 +19,7 @@ function grid_path(width, height, field_data, grid_step) {
   return total_grid_path;
 }
 
-function get_element_props(x, y, value, size, color, shape_path, with_volume_props = false) {
+function get_element_props(value, size, color, shape_path, with_volume_props = false) {
   const exponents = {
     "0": "⁰", "1": "¹", "2": "²", "3": "³", "4": "⁴",
     "5": "⁵", "6": "⁶", "7": "⁷", "8": "⁸", "9": "⁹"
@@ -32,20 +32,18 @@ function get_element_props(x, y, value, size, color, shape_path, with_volume_pro
     strokeWidth: 1,
     fill: color,
     opacity: 1,
-    translate: [x, y],
-    stroke: "#000000"
+    translate: [-size / 2, -size / 2],
+    stroke: "#000000",
   };
   var text_props = {
-    x: x + size / 2,
-    y: y + size / 2,
-    stroke:"#000000",
-    fill:"#ffffff",
-    alignmentBaseline:"central",
-    textAnchor:"middle",
-    fontFamily:"candara",
-    fontSize:size * 0.5,
-    fontWeight:"bold",
-    style: Platform.OS === "web" ? {cursor: "default"} : {},
+    stroke: "#000000",
+    fill: "#ffffff",
+    alignmentBaseline: "central",
+    textAnchor: "middle",
+    fontFamily: "candara",
+    fontSize: size * 0.5,
+    fontWeight: "bold",
+    style: Platform.OS === "web" ? { cursor: "default" } : {},
   };
   if (with_volume_props) {
     function rgb_to_hex(r, g, b) {
@@ -69,40 +67,99 @@ function get_element_props(x, y, value, size, color, shape_path, with_volume_pro
   return [value_text, shape_props, text_props];
 }
 
+const AnimatedG = Animated.createAnimatedComponent(G);
+
 const GameElement = memo(function ({ x, y, value, size, color, shape_path, selected }) {
   const is_3d_view = false;
   var value_text, start_color, end_color, shape_props, text_props;
   if (is_3d_view)
     [value_text, start_color, end_color, shape_props, text_props] =
-      get_element_props(x, y, value, size, color, shape_path, is_3d_view);
+      get_element_props(value, size, color, shape_path, is_3d_view);
   else
-    [value_text, shape_props, text_props] = 
-      get_element_props(x, y, value, size, color, shape_path, is_3d_view);
+    [value_text, shape_props, text_props] =
+      get_element_props(value, size, color, shape_path, is_3d_view);
+  const default_scale_factor = 1;
+  const default_rotation_angle = 0;
+  const [shake_animation_scale] = useState(new Animated.Value(default_scale_factor));
+  const [shake_animation_rotation] = useState(new Animated.Value(default_rotation_angle));
+  useEffect(() => {
+    if (!selected) {
+      shake_animation_scale.stopAnimation();
+      shake_animation_scale.setValue(default_scale_factor);
+      shake_animation_rotation.stopAnimation();
+      shake_animation_rotation.setValue(default_rotation_angle);
+      return;
+    }
+    const scale_offset = 0.05;
+    const rotation_angle = 10;
+    const rotate_duration = 113;
+    const scale_duration = 219;
+    const use_native_driver = false;
+    const scale_animation_config = (scale) => {
+      return {
+        toValue: scale,
+        duration: scale_duration,
+        useNativeDriver: use_native_driver
+      };
+    };
+    const rotation_animation_config = (angle) => {
+      return {
+        toValue: angle,
+        duration: rotate_duration,
+        easing: Easing.quad,
+        useNativeDriver: use_native_driver
+      };
+    };
+    Animated.parallel([
+      Animated.loop(Animated.sequence([
+        Animated.timing(shake_animation_scale,
+          scale_animation_config(default_scale_factor + scale_offset)),
+        Animated.timing(shake_animation_scale,
+          scale_animation_config(default_scale_factor)),
+        Animated.timing(shake_animation_scale,
+          scale_animation_config(default_scale_factor - scale_offset)),
+        Animated.timing(shake_animation_scale,
+          scale_animation_config(default_scale_factor)),
+      ])),
+      Animated.loop(Animated.sequence([
+        Animated.timing(shake_animation_rotation,
+          rotation_animation_config(rotation_angle)),
+        Animated.timing(shake_animation_rotation,
+          rotation_animation_config(default_rotation_angle)),
+        Animated.timing(shake_animation_rotation,
+          rotation_animation_config(-rotation_angle)),
+        Animated.timing(shake_animation_rotation,
+          rotation_animation_config(default_rotation_angle)),
+      ]))
+    ]).start();
+  }, [selected, shake_animation_rotation, shake_animation_scale]);
   return (
     <Svg>
-      {selected && <Path
-        d={shape_path}
-        strokeWidth={1}
-        fill="rgba(0,0,0,0.5)"
-        scale={1.05}
-        translate={[x, y]}
-      />}
-      {is_3d_view &&
-        <Defs>
-          <LinearGradient id={`lineargradient${value}`} x1="0" y1="0" x2="1" y2="1">
-            <Stop offset="0" stopColor={start_color} stopOpacity="1" />
-            <Stop offset="1" stopColor={end_color} stopOpacity="1" />
-          </LinearGradient>
-          <RadialGradient id={`radialgradient${value}`} cx="15%" cy="15%" r="50%" fx="25%" fy="25%">
-            <Stop offset="0%" stopColor={start_color} stopOpacity="1" />
-            <Stop offset="100%" stopColor={end_color} stopOpacity="1" />
-          </RadialGradient>
-        </Defs>
-      }
-      <Path {...shape_props}/>
-      <SvgText {...text_props}>
-        {value_text}
-      </SvgText>
+      <G x={x + size / 2} y={y + size / 2} >
+        <AnimatedG rotation={shake_animation_rotation} scale={shake_animation_scale}>
+          {selected &&
+            <Path
+              d={shape_path}
+              strokeWidth={1}
+              fill="rgba(0,0,0,0.5)"
+              scale={1.05}
+              translate={[-size / 2, -size / 2]}
+            />
+          }
+          {is_3d_view &&
+            <Defs>
+              <RadialGradient id={`radialgradient${value}`} cx="15%" cy="15%" r="50%" fx="25%" fy="25%">
+                <Stop offset="0%" stopColor={start_color} stopOpacity="1" />
+                <Stop offset="100%" stopColor={end_color} stopOpacity="1" />
+              </RadialGradient>
+            </Defs>
+          }
+          <Path {...shape_props} />
+          <SvgText {...text_props}>
+            {value_text}
+          </SvgText>
+        </AnimatedG>
+      </G>
     </Svg>
   );
 });
