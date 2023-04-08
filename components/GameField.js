@@ -69,7 +69,7 @@ function get_element_props(value, size, color, shape_path, with_volume_props = f
 
 const AnimatedG = Animated.createAnimatedComponent(G);
 
-const GameElement = memo(function ({ x, y, value, size, color, shape_path, selected }) {
+const GameElement = memo(function ({ x, y, value, size, color, shape_path, selected, highlighted }) {
   const is_3d_view = false;
   var value_text, start_color, end_color, shape_props, text_props;
   if (is_3d_view)
@@ -83,7 +83,7 @@ const GameElement = memo(function ({ x, y, value, size, color, shape_path, selec
   const [shake_animation_scale] = useState(new Animated.Value(default_scale_factor));
   const [shake_animation_rotation] = useState(new Animated.Value(default_rotation_angle));
   useEffect(() => {
-    if (!selected) {
+    if (!selected && !highlighted) {
       shake_animation_scale.stopAnimation();
       shake_animation_scale.setValue(default_scale_factor);
       shake_animation_rotation.stopAnimation();
@@ -132,7 +132,7 @@ const GameElement = memo(function ({ x, y, value, size, color, shape_path, selec
           rotation_animation_config(default_rotation_angle)),
       ]))
     ]).start();
-  }, [selected, shake_animation_rotation, shake_animation_scale]);
+  }, [selected, highlighted, shake_animation_rotation, shake_animation_scale]);
   return (
     <Svg>
       <G x={x + size / 2} y={y + size / 2} >
@@ -164,7 +164,7 @@ const GameElement = memo(function ({ x, y, value, size, color, shape_path, selec
   );
 });
 
-function GameField({ field_data, grid_step, element_offset, selected_elements, element_style_provider }) {
+function GameField({ field_data, grid_step, element_offset, selected_elements, highlighted_elements, element_style_provider }) {
   const width = grid_step * field_data.width;
   const height = grid_step * field_data.height;
   return (
@@ -195,8 +195,14 @@ function GameField({ field_data, grid_step, element_offset, selected_elements, e
             return;
           var is_selected = false;
           for (let selected_element of selected_elements)
-            if (selected_element[0] == row_id && selected_element[1] == column_id) {
+            if (selected_element[0] === row_id && selected_element[1] === column_id) {
               is_selected = true;
+              break;
+            }
+          var is_highlighted = false;
+          for (let highlighted_element of highlighted_elements)
+            if (highlighted_element[0] === row_id && highlighted_element[1] === column_id) {
+              is_highlighted = true;
               break;
             }
           const [color, shape_path] = element_style_provider.get(value);
@@ -209,6 +215,7 @@ function GameField({ field_data, grid_step, element_offset, selected_elements, e
             color={color}
             shape_path={shape_path}
             selected={is_selected}
+            highlighted={is_highlighted}
           />;
         });
       })}

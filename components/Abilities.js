@@ -1,5 +1,5 @@
-import { memo } from "react";
-import { StyleSheet, View, Text, TouchableOpacity } from 'react-native';
+import { memo, useMemo, useRef } from "react";
+import { StyleSheet, View, Text, TouchableOpacity, PanResponder, Animated, Platform } from 'react-native';
 
 import Bomb from "./Icons/Bomb.js";
 import Shuffle from "./Icons/Shuffle.js";
@@ -101,34 +101,109 @@ export class Abilities {
   }
 }
 
+function DraggableWrapper({ children, onDragEnd, onDrag }) {
+  const use_native_driver = Platform.OS !== "web";
+  const pan = useRef(new Animated.ValueXY({ x: 0, y: 0 })).current;
+  var start = useRef({ x: 0, y: 0 }).current;
+  const opacity = useRef(new Animated.Value(1)).current;
+  const pan_responder = useMemo(
+    () => PanResponder.create({
+      // Ask to be the responder:
+      onStartShouldSetPanResponder: (evt, gestureState) => true,
+      onStartShouldSetPanResponderCapture: (evt, gestureState) => true,
+      onMoveShouldSetPanResponder: (evt, gestureState) => true,
+      onMoveShouldSetPanResponderCapture: (evt, gestureState) => true,
+      onPanResponderTerminationRequest: (evt, gestureState) => false,
+      onShouldBlockNativeResponder: (evt, gestureState) => false,
+      onPanResponderGrant: (evt, gestureState) => {
+        start.x = gestureState.x0;
+        start.y = gestureState.y0;
+      },
+      onPanResponderMove: (evt, gestureState) => {
+        onDrag(gestureState.moveX, gestureState.moveY);
+        pan.setValue({ x: gestureState.moveX - start.x, y: gestureState.moveY - start.y });
+      },
+      onPanResponderRelease: (evt, gestureState) => {
+        onDragEnd();
+        Animated.sequence([
+          Animated.timing(opacity, {
+            toValue: 0,
+            duration: 250,
+            useNativeDriver: use_native_driver
+          }),
+          Animated.timing(pan, {
+            toValue: { x: 0, y: 0 },
+            duration: 10,
+            useNativeDriver: use_native_driver
+          }),
+          Animated.timing(opacity, {
+            toValue: 1,
+            duration: 250,
+            useNativeDriver: use_native_driver
+          }),
+        ]).start();
+      },
+    }),
+    [onDrag]
+  );
+
+  return (
+    <Animated.View
+      style={{ transform: pan.getTranslateTransform(), opacity: opacity }}
+      {...pan_responder.panHandlers}
+    >
+      {children}
+    </Animated.View>
+  );
+}
+
 export const AbilitiesVisualizer = memo(function ({ abilities, score,
-  onShuffle, onRemoveElement, onBomb, onRemoveElementsByValue, onUpgradeGenerator, onAutoplay }) {
+  onRemoveElement, onBomb, onRemoveElementsByValue, onShuffle, onUpgradeGenerator, onAutoplay,
+  onRemoveElementMove, onBombMove, onRemoveElementsByValueMove }) {
   const disabled_opacity = 0.5;
   const ability_icon_size = 32;
   const abilities_data = [
     {
-      icon: <Shuffle size={ability_icon_size} />,
-      name: abilities.shuffle.name,
-      price: abilities.shuffle.price,
-      callback: onShuffle
-    },
-    {
-      icon: <Hammer size={ability_icon_size} />,
+      icon:
+        <DraggableWrapper
+          onDragEnd={onRemoveElement}
+          onDrag={onRemoveElementMove}
+        >
+          <Hammer size={ability_icon_size} />
+        </DraggableWrapper>,
       name: abilities.remove_element.name,
       price: abilities.remove_element.price,
       callback: onRemoveElement
     },
     {
-      icon: <Bomb size={ability_icon_size} />,
+      icon:
+        <DraggableWrapper
+          onDragEnd={onBomb}
+          onDrag={onBombMove}
+        >
+          <Bomb size={ability_icon_size} />
+        </DraggableWrapper>,
       name: abilities.bomb.name,
       price: abilities.bomb.price,
       callback: onBomb
     },
     {
-      icon: <Lightning size={ability_icon_size} />,
+      icon:
+        <DraggableWrapper
+          onDragEnd={onRemoveElementsByValue}
+          onDrag={onRemoveElementsByValueMove}
+        >
+          <Lightning size={ability_icon_size} />
+        </DraggableWrapper>,
       name: abilities.remove_elements_by_value.name,
       price: abilities.remove_elements_by_value.price,
       callback: onRemoveElementsByValue
+    },
+    {
+      icon: <Shuffle size={ability_icon_size} />,
+      name: abilities.shuffle.name,
+      price: abilities.shuffle.price,
+      callback: onShuffle
     },
     {
       icon: <Upgrade size={ability_icon_size} />,
@@ -137,6 +212,7 @@ export const AbilitiesVisualizer = memo(function ({ abilities, score,
       callback: onUpgradeGenerator
     },
   ];
+
   return (
     <View style={styles.abilities_container}>
       {abilities_data.map((ability_data, i) => {

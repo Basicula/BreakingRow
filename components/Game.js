@@ -1,5 +1,5 @@
 import { useRef, useEffect, useState, memo } from "react";
-import { StyleSheet, View, Text, Platform, Dimensions } from 'react-native';
+import { StatusBar, StyleSheet, View, Text, Platform, Dimensions } from 'react-native';
 
 import { FieldData } from "./GameFieldData.js";
 import GameField from "./GameField.js";
@@ -26,10 +26,19 @@ const ScoreVisualizer = memo(function ({ score, moves_count }) {
   );
 });
 
+const AbilityType = Object.freeze({
+  RemoveElement: "RemoveElement",
+  Bomb: "Bomb",
+  RemoveElementsByValue: "RemoveElementsByValue",
+  None: "None"
+});
+
 function Game({ width, height, score_bonuses, onStrike, onRestart }) {
   const request_animation_ref = useRef(null);
   const prev_animation_ref = useRef(null);
   const mouse_down_position_ref = useRef([]);
+  const game_field_offset = useRef({ x: 0, y: 0 });
+  const [highlighted_elements, set_highlighted_elements] = useState([]);
   const [game_state, set_game_state] = useState({
     field_data: new FieldData(width, height),
     moves_count: 0,
@@ -64,7 +73,21 @@ function Game({ width, height, score_bonuses, onStrike, onRestart }) {
     set_element_offset(element_offset);
     request_animation_ref.current = requestAnimationFrame(update_game_state);
     return () => cancelAnimationFrame(request_animation_ref.current);
-  }, [game_state.field_data, game_state.step, autoplay, game_state.selected_elements]);
+  },
+    [game_state.field_data, game_state.step, autoplay, game_state.selected_elements]
+  );
+
+  const on_game_field_layout = (event) => {
+    if (Platform.OS === "web")
+      event.nativeEvent.target.measure((x, y, width, height, pageX, pageY) => {
+        game_field_offset.current.x = pageX;
+        game_field_offset.current.y = pageY;
+      });
+    else if (Platform.OS === "android") {
+      game_field_offset.current.x = event.nativeEvent.layout.x;
+      game_field_offset.current.y = event.nativeEvent.layout.y + StatusBar.currentHeight;
+    }
+  };
 
   const check_for_game_over = () => {
     if (game_state.moves_count > 0)
@@ -109,36 +132,17 @@ function Game({ width, height, score_bonuses, onStrike, onRestart }) {
         upgrade_generator();
       else if (cheapest_ability === game_state.abilities.shuffle)
         shuffle();
-      else if (cheapest_ability === game_state.abilities.bomb) {
-        if (game_state.selected_elements.length === 0) {
-          const row_id = Math.trunc(Math.random() * game_state.field_data.height);
-          const column_id = Math.trunc(Math.random() * game_state.field_data.width);
-          set_game_state({
-            ...game_state,
-            selected_elements: [[row_id, column_id]]
-          });
-        } else
-          apply_bomb()
-      } else if (cheapest_ability === game_state.abilities.remove_element) {
-        if (game_state.selected_elements.length === 0) {
-          const row_id = Math.trunc(Math.random() * game_state.field_data.height);
-          const column_id = Math.trunc(Math.random() * game_state.field_data.width);
-          set_game_state({
-            ...game_state,
-            selected_elements: [[row_id, column_id]]
-          });
-        } else
-          remove_element()
-      } else if (cheapest_ability === game_state.abilities.remove_elements_by_value) {
-        if (game_state.selected_elements.length === 0) {
-          const row_id = Math.trunc(Math.random() * game_state.field_data.height);
-          const column_id = Math.trunc(Math.random() * game_state.field_data.width);
-          set_game_state({
-            ...game_state,
-            selected_elements: [[row_id, column_id]]
-          });
-        } else
-          remove_elements_by_value()
+      else {
+        var ability_type = AbilityType.None;
+        if (cheapest_ability === game_state.abilities.bomb)
+          ability_type = AbilityType.Bomb;
+        else if (cheapest_ability === game_state.abilities.remove_element)
+          ability_type = AbilityType.RemoveElement;
+        else if (cheapest_ability === game_state.abilities.remove_elements_by_value)
+          ability_type = AbilityType.RemoveElementsByValue;
+        const row_id = Math.trunc(Math.random() * game_state.field_data.height);
+        const column_id = Math.trunc(Math.random() * game_state.field_data.width);
+        apply_ability([row_id, column_id], ability_type);
       }
     }
   };
@@ -229,16 +233,15 @@ function Game({ width, height, score_bonuses, onStrike, onRestart }) {
   }
 
   const get_event_position = (event) => {
-    var x, y;
     const native_event = event.nativeEvent;
-    if (event.type === "mousedown" || event.type === "mouseup") {
-      x = native_event.offsetX;
-      y = native_event.offsetY;
-    } else {
-      x = native_event.locationX;
-      y = native_event.locationY;
+    switch (event.type) {
+      case "mousedown":
+      case "mouseup":
+      case "mousemove":
+        return [native_event.offsetX, native_event.offsetY]
+      default:
+        return [native_event.locationX, native_event.locationY];
     }
-    return [x, y];
   }
 
   const on_mouse_down = (event) => {
@@ -275,6 +278,64 @@ function Game({ width, height, score_bonuses, onStrike, onRestart }) {
 
   const on_mouse_move = (event) => {
     event.preventDefault();
+  };
+
+  const on_ability_move = (x, y, ability_type) => {
+    x -= game_field_offset.current.x;
+    y -= game_field_offset.current.y;
+    const field_element_coordinates = map_coordinates(x, y, grid_step);
+
+    if (field_element_coordinates[0] >= game_state.field_data.height ||
+      field_element_coordinates[0] < 0 ||
+      field_element_coordinates[1] >= game_state.field_data.width ||
+      field_element_coordinates[1] < 0) {
+      set_highlighted_elements([]);
+      return
+    }
+
+    var new_highlighted_elements = [];
+    switch (ability_type) {
+      case AbilityType.RemoveElement:
+        new_highlighted_elements.push(field_element_coordinates);
+        break;
+      case AbilityType.Bomb:
+        for (let row_offset = -1; row_offset < 2; ++row_offset)
+          for (let column_offset = -1; column_offset < 2; ++column_offset)
+            new_highlighted_elements.push([
+              field_element_coordinates[0] + row_offset,
+              field_element_coordinates[1] + column_offset
+            ]);
+        break;
+      case AbilityType.RemoveElementsByValue:
+        const value = game_state.field_data.at(field_element_coordinates[0], field_element_coordinates[1]);
+        for (let row_id = 0; row_id < game_state.field_data.height; ++row_id)
+          for (let column_id = 0; column_id < game_state.field_data.width; ++column_id)
+            if (game_state.field_data.at(row_id, column_id) === value)
+              new_highlighted_elements.push([row_id, column_id]);
+        break;
+      case AbilityType.None:
+        break;
+    }
+    set_highlighted_elements(new_highlighted_elements);
+  };
+
+  const apply_ability = (element_coordinates, ability_type) => {
+    if (element_coordinates === undefined)
+      return;
+    switch (ability_type) {
+      case AbilityType.RemoveElement:
+        remove_element(element_coordinates);
+        break;
+      case AbilityType.Bomb:
+        apply_bomb(element_coordinates);
+        break;
+      case AbilityType.RemoveElementsByValue:
+        remove_elements_by_value(element_coordinates);
+        break;
+      default:
+        break;
+    }
+    set_highlighted_elements([]);
   };
 
   const on_mouse_up = (event) => {
@@ -348,14 +409,12 @@ function Game({ width, height, score_bonuses, onStrike, onRestart }) {
     });
   };
 
-  const apply_bomb = () => {
+  const apply_bomb = (element_coordinates) => {
     if (game_state.score_state.score < game_state.abilities.bomb.price)
       return;
-    if (game_state.selected_elements.length === 0)
-      return;
     const removed_values = game_state.field_data.remove_zone(
-      game_state.selected_elements[0][0] - 1, game_state.selected_elements[0][1] - 1,
-      game_state.selected_elements[0][0] + 1, game_state.selected_elements[0][1] + 1
+      element_coordinates[0] - 1, element_coordinates[1] - 1,
+      element_coordinates[0] + 1, element_coordinates[1] + 1
     );
     var positive_score_value = 0;
     for (let [value, count] of Object.entries(removed_values))
@@ -366,7 +425,6 @@ function Game({ width, height, score_bonuses, onStrike, onRestart }) {
       ...game_state,
       field_data: game_state.field_data.clone(),
       step: 1,
-      selected_elements: [],
       abilities: game_state.abilities.clone(),
       score_state: {
         score: game_state.score_state.score + positive_score_value - negative_score_value,
@@ -376,14 +434,12 @@ function Game({ width, height, score_bonuses, onStrike, onRestart }) {
     });
   };
 
-  const remove_element = () => {
+  const remove_element = (element_coordinates) => {
     if (game_state.score_state.score < game_state.abilities.remove_element.price)
       return;
-    if (game_state.selected_elements.length === 0)
-      return;
     const removed_values = game_state.field_data.remove_zone(
-      game_state.selected_elements[0][0], game_state.selected_elements[0][1],
-      game_state.selected_elements[0][0], game_state.selected_elements[0][1]
+      element_coordinates[0], element_coordinates[1],
+      element_coordinates[0], element_coordinates[1]
     );
     const positive_score_value = 2 ** Object.keys(removed_values)[0];
     const negative_score_value = game_state.abilities.remove_element.price;
@@ -392,7 +448,6 @@ function Game({ width, height, score_bonuses, onStrike, onRestart }) {
       ...game_state,
       field_data: game_state.field_data.clone(),
       step: 1,
-      selected_elements: [],
       abilities: game_state.abilities.clone(),
       score_state: {
         score: game_state.score_state.score + positive_score_value - negative_score_value,
@@ -402,13 +457,10 @@ function Game({ width, height, score_bonuses, onStrike, onRestart }) {
     });
   };
 
-  const remove_elements_by_value = () => {
+  const remove_elements_by_value = (element_coordinates) => {
     if (game_state.score_state.score < game_state.abilities.remove_elements_by_value.price)
       return;
-    if (game_state.selected_elements.length === 0)
-      return;
-    const value_position = game_state.selected_elements[0];
-    const value = game_state.field_data.at(value_position[0], value_position[1]);
+    const value = game_state.field_data.at(element_coordinates[0], element_coordinates[1]);
     const removed_values_count = game_state.field_data.remove_value(value);
     const positive_score_value = removed_values_count * 2 ** value;
     const negative_score_value = game_state.abilities.remove_elements_by_value.price;
@@ -417,7 +469,6 @@ function Game({ width, height, score_bonuses, onStrike, onRestart }) {
       ...game_state,
       field_data: game_state.field_data.clone(),
       step: 1,
-      selected_elements: [],
       abilities: game_state.abilities.clone(),
       score_state: {
         score: game_state.score_state.score + positive_score_value - negative_score_value,
@@ -428,6 +479,7 @@ function Game({ width, height, score_bonuses, onStrike, onRestart }) {
   };
 
   const restart = () => {
+    set_highlighted_elements([]);
     set_game_state({
       field_data: new FieldData(width, height),
       step: -1,
@@ -459,27 +511,34 @@ function Game({ width, height, score_bonuses, onStrike, onRestart }) {
       />
       <View
         style={styles.canvas_container}
+        onLayout={on_game_field_layout}
         onMouseDown={on_mouse_down}
-        onTouchStart={on_mouse_down}
         onMouseUp={on_mouse_up}
-        onTouchEnd={on_mouse_up}
         onMouseMove={on_mouse_move}
+        onTouchStart={on_mouse_down}
+        onTouchEnd={on_mouse_up}
       >
-        {grid_step > 0 && <GameField
-          grid_step={grid_step}
-          element_offset={element_offset}
-          field_data={game_state.field_data}
-          selected_elements={game_state.selected_elements}
-          element_style_provider={element_style_provider}
-        />}
+        {grid_step > 0 &&
+          <GameField
+            grid_step={grid_step}
+            element_offset={element_offset}
+            field_data={game_state.field_data}
+            selected_elements={game_state.selected_elements}
+            highlighted_elements={highlighted_elements}
+            element_style_provider={element_style_provider}
+          />
+        }
       </View>
       <AbilitiesVisualizer
         abilities={game_state.abilities}
         score={game_state.score_state.score}
+        onRemoveElement={() => apply_ability(highlighted_elements[0], AbilityType.RemoveElement)}
+        onBomb={() => apply_ability(highlighted_elements[4], AbilityType.Bomb)}
+        onRemoveElementsByValue={() => apply_ability(highlighted_elements[0], AbilityType.RemoveElementsByValue)}
+        onRemoveElementMove={(x, y) => on_ability_move(x, y, AbilityType.RemoveElement)}
+        onBombMove={(x, y) => on_ability_move(x, y, AbilityType.Bomb)}
+        onRemoveElementsByValueMove={(x, y) => on_ability_move(x, y, AbilityType.RemoveElementsByValue)}
         onShuffle={shuffle}
-        onRemoveElement={remove_element}
-        onBomb={apply_bomb}
-        onRemoveElementsByValue={remove_elements_by_value}
         onUpgradeGenerator={upgrade_generator}
         onAutoplay={() => set_autoplay(!autoplay)}
       />
