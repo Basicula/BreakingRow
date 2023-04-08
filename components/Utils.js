@@ -25,3 +25,10 @@ export function init_array(width, height, value, value_generator) {
 export function manhattan_distance(x1, y1, x2, y2) {
   return Math.abs(x1 - x2) + Math.abs(y1 - y2);
 }
+
+export function map_coordinates(x, y, grid_step) {
+  return [
+    Math.floor(y / grid_step),
+    Math.floor(x / grid_step)
+  ];
+}

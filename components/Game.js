@@ -3,17 +3,10 @@ import { StatusBar, StyleSheet, View, Text, Platform, Dimensions } from 'react-n
 
 import { FieldData } from "./GameFieldData.js";
 import GameField from "./GameField.js";
-import { manhattan_distance } from "./Utils.js";
+import { map_coordinates } from "./Utils.js";
 import { ElementStyleProvider } from "./ElementStyleProvider.js";
 import GameOver from "./GameOver.js";
 import { Abilities, AbilitiesVisualizer } from "./Abilities.js";
-
-function map_coordinates(x, y, grid_step) {
-  return [
-    Math.floor(y / grid_step),
-    Math.floor(x / grid_step)
-  ];
-}
 
 const ScoreVisualizer = memo(function ({ score, moves_count }) {
   return (
@@ -36,8 +29,6 @@ const AbilityType = Object.freeze({
 function Game({ width, height, score_bonuses, onStrike, onRestart }) {
   const request_animation_ref = useRef(null);
   const prev_animation_ref = useRef(null);
-  const mouse_down_position_ref = useRef([]);
-  const game_field_offset = useRef({ x: 0, y: 0 });
   const [highlighted_elements, set_highlighted_elements] = useState([]);
   const [game_state, set_game_state] = useState({
     field_data: new FieldData(width, height),
@@ -77,6 +68,7 @@ function Game({ width, height, score_bonuses, onStrike, onRestart }) {
     [game_state.field_data, game_state.step, autoplay, game_state.selected_elements]
   );
 
+  const game_field_offset = useRef({ x: 0, y: 0 });
   const on_game_field_layout = (event) => {
     if (Platform.OS === "web")
       event.nativeEvent.target.measure((x, y, width, height, pageX, pageY) => {
@@ -232,54 +224,6 @@ function Game({ width, height, score_bonuses, onStrike, onRestart }) {
     });
   }
 
-  const get_event_position = (event) => {
-    const native_event = event.nativeEvent;
-    switch (event.type) {
-      case "mousedown":
-      case "mouseup":
-      case "mousemove":
-        return [native_event.offsetX, native_event.offsetY]
-      default:
-        return [native_event.locationX, native_event.locationY];
-    }
-  }
-
-  const on_mouse_down = (event) => {
-    const [x, y] = get_event_position(event);
-    const field_element_coordinates = map_coordinates(x, y, grid_step);
-    if (field_element_coordinates.length !== 0) {
-      var distance = -1;
-      var selected_elements = [];
-      var step = game_state.step;
-      if (game_state.selected_elements.length === 1)
-        distance = manhattan_distance(
-          game_state.selected_elements[0][0], game_state.selected_elements[0][1],
-          field_element_coordinates[0], field_element_coordinates[1]
-        );
-      if (game_state.selected_elements.length === 0 || distance > 1) {
-        selected_elements.push(field_element_coordinates);
-        mouse_down_position_ref.current = [x, y];
-      }
-      else if (distance === 0) {
-        selected_elements = [];
-        mouse_down_position_ref.current = [];
-      }
-      else if (game_state.selected_elements.length === 1) {
-        selected_elements = [...game_state.selected_elements, field_element_coordinates];
-        step = 3;
-      }
-      set_game_state({
-        ...game_state,
-        step: step,
-        selected_elements: selected_elements
-      });
-    }
-  };
-
-  const on_mouse_move = (event) => {
-    event.preventDefault();
-  };
-
   const on_ability_move = (x, y, ability_type) => {
     x -= game_field_offset.current.x;
     y -= game_field_offset.current.y;
@@ -336,36 +280,6 @@ function Game({ width, height, score_bonuses, onStrike, onRestart }) {
         break;
     }
     set_highlighted_elements([]);
-  };
-
-  const on_mouse_up = (event) => {
-    if (game_state.swapping)
-      return;
-    if (mouse_down_position_ref.current.length === 0)
-      return;
-    if (game_state.selected_elements.length === 2)
-      return;
-    if (game_state.selected_elements.length === 0)
-      return;
-    const [x, y] = get_event_position(event);
-    const dx = x - mouse_down_position_ref.current[0];
-    const dy = y - mouse_down_position_ref.current[1];
-    if (Math.abs(dx) < grid_step / 4 && Math.abs(dy) < grid_step / 4)
-      return;
-    var factors = [0, 0];
-    if (Math.abs(dx) > Math.abs(dy))
-      factors[0] = 1 * Math.sign(dx);
-    else
-      factors[1] = 1 * Math.sign(dy);
-    set_game_state({
-      ...game_state,
-      step: 3,
-      selected_elements: [...game_state.selected_elements,
-      [
-        game_state.selected_elements[0][0] + factors[1],
-        game_state.selected_elements[0][1] + factors[0]
-      ]]
-    });
   };
 
   const shuffle = () => {
@@ -478,6 +392,14 @@ function Game({ width, height, score_bonuses, onStrike, onRestart }) {
     });
   };
 
+  const on_elements_swap = (elements) => {
+    set_game_state({
+      ...game_state,
+      step: 3,
+      selected_elements: elements
+    })
+  };
+
   const restart = () => {
     set_highlighted_elements([]);
     set_game_state({
@@ -509,26 +431,17 @@ function Game({ width, height, score_bonuses, onStrike, onRestart }) {
         score={game_state.score_state.score}
         moves_count={game_state.moves_count}
       />
-      <View
-        style={styles.canvas_container}
-        onLayout={on_game_field_layout}
-        onMouseDown={on_mouse_down}
-        onMouseUp={on_mouse_up}
-        onMouseMove={on_mouse_move}
-        onTouchStart={on_mouse_down}
-        onTouchEnd={on_mouse_up}
-      >
-        {grid_step > 0 &&
-          <GameField
-            grid_step={grid_step}
-            element_offset={element_offset}
-            field_data={game_state.field_data}
-            selected_elements={game_state.selected_elements}
-            highlighted_elements={highlighted_elements}
-            element_style_provider={element_style_provider}
-          />
-        }
-      </View>
+      {grid_step > 0 &&
+        <GameField
+          grid_step={grid_step}
+          element_offset={element_offset}
+          field_data={game_state.field_data}
+          highlighted_elements={highlighted_elements}
+          element_style_provider={element_style_provider}
+          onElementsSwap={on_elements_swap}
+          onLayout={on_game_field_layout}
+        />
+      }
       <AbilitiesVisualizer
         abilities={game_state.abilities}
         score={game_state.score_state.score}
@@ -570,13 +483,7 @@ const styles = StyleSheet.create({
     textShadowColor: 'white',
     textShadowOffset: { width: 2, height: 2 },
     textShadowRadius: 5,
-  },
-
-  canvas_container: {
-    justifyContent: "center",
-    alignContent: "center",
-    flexWrap: "wrap"
-  },
+  }
 });
 
 export default memo(Game);

@@ -1,8 +1,9 @@
-import { memo, useEffect, useState } from 'react';
-import { Animated, Easing, Platform } from 'react-native';
+import { memo, useEffect, useState, useRef } from 'react';
+import { Animated, Easing, Platform, StyleSheet, View } from 'react-native';
 import { Path, Svg, Text as SvgText, Rect, G, Defs, RadialGradient, Stop } from 'react-native-svg';
 
 import { line_path } from "./SvgPath.js";
+import { manhattan_distance, map_coordinates } from './Utils.js';
 
 function grid_path(width, height, field_data, grid_step) {
   var total_grid_path = "";
@@ -164,63 +165,150 @@ const GameElement = memo(function ({ x, y, value, size, color, shape_path, selec
   );
 });
 
-function GameField({ field_data, grid_step, element_offset, selected_elements, highlighted_elements, element_style_provider }) {
+function GameField({ field_data, grid_step, element_offset, element_style_provider,
+  highlighted_elements, onElementsSwap, onLayout }) {
   const width = grid_step * field_data.width;
   const height = grid_step * field_data.height;
+
+  const mouse_down_position = useRef([]);
+  const [selected_elements, set_selected_elements] = useState([]);
+
+  const get_event_position = (event) => {
+    const native_event = event.nativeEvent;
+    switch (event.type) {
+      case "mousedown":
+      case "mouseup":
+      case "mousemove":
+        return [native_event.offsetX, native_event.offsetY]
+      default:
+        return [native_event.locationX, native_event.locationY];
+    }
+  }
+
+  const on_mouse_down = (event) => {
+    const [x, y] = get_event_position(event);
+    const field_element_coordinates = map_coordinates(x, y, grid_step);
+    if (field_element_coordinates.length !== 0) {
+      var distance = -1;
+      var new_selected_elements = [];
+      if (selected_elements.length === 1)
+        distance = manhattan_distance(
+          selected_elements[0][0], selected_elements[0][1],
+          field_element_coordinates[0], field_element_coordinates[1]
+        );
+      if (mouse_down_position.current.length === 0 || distance > 1) {
+        new_selected_elements.push(field_element_coordinates);
+        mouse_down_position.current = [x, y];
+      }
+      else if (distance === 0) {
+        new_selected_elements = [];
+        mouse_down_position.current = [];
+      }
+      else if (selected_elements.length === 1) {
+        new_selected_elements = [...selected_elements, field_element_coordinates];
+        onElementsSwap(new_selected_elements);
+        mouse_down_position.current = [];
+        new_selected_elements = [];
+      }
+      set_selected_elements(new_selected_elements);
+    }
+  };
+
+  const on_mouse_move = (event) => {
+    event.preventDefault();
+  };
+
+  const on_mouse_up = (event) => {
+    const [x, y] = get_event_position(event);
+    const dx = x - mouse_down_position.current[0];
+    const dy = y - mouse_down_position.current[1];
+    if (Math.abs(dx) < grid_step / 4 && Math.abs(dy) < grid_step / 4)
+      return;
+    var factors = [0, 0];
+    if (Math.abs(dx) > Math.abs(dy))
+      factors[0] = 1 * Math.sign(dx);
+    else
+      factors[1] = 1 * Math.sign(dy);
+    onElementsSwap([
+      ...selected_elements,
+      [selected_elements[0][0] + factors[1],selected_elements[0][1] + factors[0]]
+    ]);
+    set_selected_elements([]);
+    mouse_down_position.current = [];
+  };
+
   return (
-    <Svg
-      width={width}
-      height={height}
-      viewBox={`0 0 ${width} ${height}`}
+    <View
+      style={styles.canvas_container}
+      onLayout={onLayout}
+      onMouseDown={on_mouse_down}
+      onMouseUp={on_mouse_up}
+      onMouseMove={on_mouse_move}
+      onTouchStart={on_mouse_down}
+      onTouchEnd={on_mouse_up}
     >
-      <Rect
-        x={0}
-        y={0}
+      <Svg
         width={width}
         height={height}
-        fill="#dddddd"
-        strokeWidth={2}
-        stroke="#000000"
-      />
-      <Path
-        d={grid_path(width, height, field_data, grid_step)}
-        strokeWidth={1}
-        stroke="black"
-        fill="grey"
-      />
-      {element_style_provider && Array.from(Array(field_data.height)).map((_, row_id) => {
-        return Array.from(Array(field_data.width)).map((_, column_id) => {
-          const value = field_data.at(row_id, column_id);
-          if (value === -1)
-            return;
-          var is_selected = false;
-          for (let selected_element of selected_elements)
-            if (selected_element[0] === row_id && selected_element[1] === column_id) {
-              is_selected = true;
-              break;
-            }
-          var is_highlighted = false;
-          for (let highlighted_element of highlighted_elements)
-            if (highlighted_element[0] === row_id && highlighted_element[1] === column_id) {
-              is_highlighted = true;
-              break;
-            }
-          const [color, shape_path] = element_style_provider.get(value);
-          return <GameElement
-            key={row_id * field_data.width + column_id}
-            x={column_id * grid_step + element_offset}
-            y={row_id * grid_step + element_offset}
-            value={value}
-            size={element_style_provider.size}
-            color={color}
-            shape_path={shape_path}
-            selected={is_selected}
-            highlighted={is_highlighted}
-          />;
-        });
-      })}
-    </Svg>
+        viewBox={`0 0 ${width} ${height}`}
+      >
+        <Rect
+          x={0}
+          y={0}
+          width={width}
+          height={height}
+          fill="#dddddd"
+          strokeWidth={2}
+          stroke="#000000"
+        />
+        <Path
+          d={grid_path(width, height, field_data, grid_step)}
+          strokeWidth={1}
+          stroke="black"
+          fill="grey"
+        />
+        {element_style_provider && Array.from(Array(field_data.height)).map((_, row_id) => {
+          return Array.from(Array(field_data.width)).map((_, column_id) => {
+            const value = field_data.at(row_id, column_id);
+            if (value === -1)
+              return;
+            var is_selected = false;
+            for (let selected_element of selected_elements)
+              if (selected_element[0] === row_id && selected_element[1] === column_id) {
+                is_selected = true;
+                break;
+              }
+            var is_highlighted = false;
+            for (let highlighted_element of highlighted_elements)
+              if (highlighted_element[0] === row_id && highlighted_element[1] === column_id) {
+                is_highlighted = true;
+                break;
+              }
+            const [color, shape_path] = element_style_provider.get(value);
+            return <GameElement
+              key={row_id * field_data.width + column_id}
+              x={column_id * grid_step + element_offset}
+              y={row_id * grid_step + element_offset}
+              value={value}
+              size={element_style_provider.size}
+              color={color}
+              shape_path={shape_path}
+              selected={is_selected}
+              highlighted={is_highlighted}
+            />;
+          });
+        })}
+      </Svg>
+    </View>
   );
 };
+
+const styles = StyleSheet.create({
+  canvas_container: {
+    justifyContent: "center",
+    alignContent: "center",
+    flexWrap: "wrap"
+  },
+});
 
 export default memo(GameField);
