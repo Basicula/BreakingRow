@@ -135,33 +135,31 @@ const GameElement = memo(function ({ x, y, value, size, color, shape_path, selec
     ]).start();
   }, [selected, highlighted, shake_animation_rotation, shake_animation_scale]);
   return (
-    <Svg>
-      <G x={x + size / 2} y={y + size / 2} >
-        <AnimatedG rotation={shake_animation_rotation} scale={shake_animation_scale}>
-          {selected &&
-            <Path
-              d={shape_path}
-              strokeWidth={1}
-              fill="rgba(0,0,0,0.5)"
-              scale={1.05}
-              translate={[-size / 2, -size / 2]}
-            />
-          }
-          {is_3d_view &&
-            <Defs>
-              <RadialGradient id={`radialgradient${value}`} cx="15%" cy="15%" r="50%" fx="25%" fy="25%">
-                <Stop offset="0%" stopColor={start_color} stopOpacity="1" />
-                <Stop offset="100%" stopColor={end_color} stopOpacity="1" />
-              </RadialGradient>
-            </Defs>
-          }
-          <Path {...shape_props} />
-          <SvgText {...text_props}>
-            {value_text}
-          </SvgText>
-        </AnimatedG>
-      </G>
-    </Svg>
+    <G x={x + size / 2} y={y + size / 2} >
+      <AnimatedG rotation={shake_animation_rotation} scale={shake_animation_scale}>
+        {selected &&
+          <Path
+            d={shape_path}
+            strokeWidth={1}
+            fill="rgba(0,0,0,0.5)"
+            scale={1.05}
+            translate={[-size / 2, -size / 2]}
+          />
+        }
+        {is_3d_view &&
+          <Defs>
+            <RadialGradient id={`radialgradient${value}`} cx="15%" cy="15%" r="50%" fx="25%" fy="25%">
+              <Stop offset="0%" stopColor={start_color} stopOpacity="1" />
+              <Stop offset="100%" stopColor={end_color} stopOpacity="1" />
+            </RadialGradient>
+          </Defs>
+        }
+        <Path {...shape_props} />
+        <SvgText {...text_props}>
+          {value_text}
+        </SvgText>
+      </AnimatedG>
+    </G>
   );
 });
 
@@ -219,6 +217,8 @@ function GameField({ field_data, grid_step, element_offset, element_style_provid
   };
 
   const on_mouse_up = (event) => {
+    if (mouse_down_position.current.length === 0)
+      return;
     const [x, y] = get_event_position(event);
     const dx = x - mouse_down_position.current[0];
     const dy = y - mouse_down_position.current[1];
@@ -231,7 +231,7 @@ function GameField({ field_data, grid_step, element_offset, element_style_provid
       factors[1] = 1 * Math.sign(dy);
     onElementsSwap([
       ...selected_elements,
-      [selected_elements[0][0] + factors[1],selected_elements[0][1] + factors[0]]
+      [selected_elements[0][0] + factors[1], selected_elements[0][1] + factors[0]]
     ]);
     set_selected_elements([]);
     mouse_down_position.current = [];
