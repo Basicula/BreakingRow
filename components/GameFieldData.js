@@ -313,6 +313,14 @@ export class FieldData {
     return moves_data;
   }
 
+  check_move(first, second) {
+    this.swap_cells(first[0], first[1], second[0], second[1]);
+    const first_cross_group = this.#cross_group_at(first[0], first[1]);
+    const second_cross_group = this.#cross_group_at(second[0], second[1]);
+    this.swap_cells(first[0], first[1], second[0], second[1]);
+    return (first_cross_group.length > 0) + (second_cross_group.length > 0);
+  }
+
   shuffle() {
     do {
       for (let row_id = 0; row_id < this.#height; ++row_id)

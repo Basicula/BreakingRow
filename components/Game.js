@@ -147,7 +147,6 @@ function Game({ width, height, score_bonuses, onStrike, onRestart }) {
     var prev_step = game_state.step;
     var field_data = undefined;
     var selected_elements = undefined;
-    var swapping = game_state.swapping;
     var new_score_state = undefined;
     switch (game_state.step) {
       case -1:
@@ -171,10 +170,8 @@ function Game({ width, height, score_bonuses, onStrike, onRestart }) {
             spent_score: game_state.score_state.spent_score
           }
           field_data = game_state.field_data.clone();
-          if (game_state.prev_step === 3) {
+          if (game_state.prev_step === 3)
             selected_elements = [];
-            swapping = false;
-          }
         } else if (game_state.prev_step === 3) {
           prev_step = 0;
           next_step = 3;
@@ -200,13 +197,11 @@ function Game({ width, height, score_bonuses, onStrike, onRestart }) {
             game_state.selected_elements[1][0], game_state.selected_elements[1][1]
           );
           field_data = game_state.field_data.clone();
-          if (game_state.prev_step === 0 && game_state.swapping) {
+          if (game_state.prev_step === 0) {
             selected_elements = [];
-            swapping = false;
             next_step = -1;
             prev_step = -1;
-          } else
-            swapping = !swapping;
+          }
         }
         break;
       default:
@@ -219,7 +214,6 @@ function Game({ width, height, score_bonuses, onStrike, onRestart }) {
       step: next_step,
       prev_step: prev_step,
       selected_elements: selected_elements !== undefined ? selected_elements : game_state.selected_elements,
-      swapping: swapping,
       score_state: new_score_state !== undefined ? new_score_state : game_state.score_state
     });
   }
@@ -393,11 +387,16 @@ function Game({ width, height, score_bonuses, onStrike, onRestart }) {
   };
 
   const on_elements_swap = (elements) => {
+    game_state.field_data.swap_cells(
+      elements[0][0], elements[0][1],
+      elements[1][0], elements[1][1]
+    );
     set_game_state({
       ...game_state,
-      step: 3,
-      selected_elements: elements
-    })
+      field_data: game_state.field_data.clone(),
+      step: 0,
+      prev_step: 3,
+    });
   };
 
   const restart = () => {
@@ -407,7 +406,6 @@ function Game({ width, height, score_bonuses, onStrike, onRestart }) {
       step: -1,
       prev_step: -1,
       selected_elements: [],
-      swapping: false,
       abilities: new Abilities(),
       score_state: {
         score: 0,
