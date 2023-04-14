@@ -386,6 +386,14 @@ function Game({ width, height, score_bonuses, onStrike, onRestart }) {
     });
   };
 
+  const highlight_move = () => {
+    const moves = game_state.field_data.get_all_moves();
+    const move_index = Math.trunc(Math.random() * moves.length);
+    const move = moves[move_index]["move"];
+    set_highlighted_elements(move);
+    setTimeout(()=>set_highlighted_elements([]), 1000);
+  };
+
   const on_elements_swap = (elements) => {
     game_state.field_data.swap_cells(
       elements[0][0], elements[0][1],
@@ -451,6 +459,7 @@ function Game({ width, height, score_bonuses, onStrike, onRestart }) {
         onRemoveElementsByValueMove={(x, y) => on_ability_move(x, y, AbilityType.RemoveElementsByValue)}
         onShuffle={shuffle}
         onUpgradeGenerator={upgrade_generator}
+        onSearch={highlight_move}
         onAutoplay={() => set_autoplay(!autoplay)}
       />
     </View>

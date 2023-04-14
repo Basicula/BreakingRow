@@ -6,6 +6,7 @@ import Shuffle from "./Icons/Shuffle.js";
 import Hammer from "./Icons/Hammer.js";
 import Upgrade from "./Icons/Upgrade.js";
 import Lightning from "./Icons/Lightning.js";
+import Search from "./Icons/Search.js";
 
 class Ability {
   #name;
@@ -74,7 +75,7 @@ export class Abilities {
   }
 
   get remove_elements_by_value() {
-    return this.#all[4]
+    return this.#all[4];
   }
 
   get all_prices() {
@@ -158,7 +159,8 @@ function DraggableWrapper({ children, onDragEnd, onDrag }) {
 }
 
 export const AbilitiesVisualizer = memo(function ({ abilities, score,
-  onRemoveElement, onBomb, onRemoveElementsByValue, onShuffle, onUpgradeGenerator, onAutoplay,
+  onRemoveElement, onBomb, onRemoveElementsByValue, onShuffle, onUpgradeGenerator,
+  onSearch, onAutoplay,
   onRemoveElementMove, onBombMove, onRemoveElementsByValueMove }) {
   const disabled_opacity = 0.5;
   const ability_icon_size = 32;
@@ -232,6 +234,11 @@ export const AbilitiesVisualizer = memo(function ({ abilities, score,
           </TouchableOpacity>
         );
       })}
+      <TouchableOpacity style={styles.ability_button} onPress={onSearch}>
+        <Search size={ability_icon_size} />
+        <Text style={styles.ability_button_text}>Search</Text>
+        <Text style={styles.ability_button_price}>0</Text>
+      </TouchableOpacity>
       <TouchableOpacity style={styles.ability_button} onPress={onAutoplay}>
         <Text style={styles.ability_button_text}>Autoplay</Text>
         <Text style={styles.ability_button_price}>0</Text>
