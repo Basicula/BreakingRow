@@ -158,7 +158,7 @@ const GameElement = memo(function ({ x, y, value, size, color, shape_path, selec
         }
         {is_3d_view &&
           <Defs>
-            <RadialGradient id={`radialgradient${value}`} cx="15%" cy="15%" r="50%" fx="25%" fy="25%">
+            <RadialGradient id={`radialgradient${value}`} cx="15%" cy="15%" r="75%" fx="25%" fy="25%">
               <Stop offset="0%" stopColor={start_color} stopOpacity="1" />
               <Stop offset="100%" stopColor={end_color} stopOpacity="1" />
             </RadialGradient>
@@ -196,6 +196,11 @@ function GameField({ field_data, grid_step, element_offset, element_style_provid
         for (let column_id = 0; column_id < field_data.width; ++column_id)
           element_positions[row_id][column_id].setValue({ x: 0, y: 0 });
     }
+  };
+
+  const is_available_for_animation = (element_coordinates) => {
+    const element_offset = element_positions[element_coordinates[0]][element_coordinates[1]];
+    return element_offset.x._value === 0 && element_offset.y._value === 0;
   };
 
   const get_event_position = (event) => {
@@ -243,6 +248,8 @@ function GameField({ field_data, grid_step, element_offset, element_style_provid
   };
 
   const swap_elements = (first, second) => {
+    if (!is_available_for_animation(first) || !is_available_for_animation(second))
+      return;
     swap_animation(first, second).start(() => {
       const move_result = field_data.check_move(first, second);
       if (move_result > 0) {
