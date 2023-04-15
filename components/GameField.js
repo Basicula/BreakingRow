@@ -1,9 +1,13 @@
 import { memo, useEffect, useState, useRef } from 'react';
 import { Animated, Easing, Platform, StyleSheet, View } from 'react-native';
-import { Path, Svg, Text as SvgText, Rect, G, Defs, RadialGradient, Stop } from 'react-native-svg';
+import {
+  Path, Svg, Text as SvgText, Rect, G,
+  Defs, RadialGradient, Stop
+} from 'react-native-svg';
 
 import { line_path } from "./SvgPath.js";
 import { manhattan_distance, map_coordinates } from './Utils.js';
+import { useSettings } from './Settings.js';
 
 function grid_path(width, height, field_data, grid_step) {
   var total_grid_path = "";
@@ -72,7 +76,9 @@ const AnimatedG = Animated.createAnimatedComponent(G);
 
 const GameElement = memo(function ({ x, y, value, size, color, shape_path, selected, highlighted }) {
   const [created, set_created] = useState(false);
-  const is_3d_view = false;
+  const [is_3d_view, set_is_3d_view] = useState(false);
+  const [numbers_shown, set_numbers_shown] = useState(true);
+  const { settings, element_number_shown_key, element_style_3d } = useSettings();
   var value_text, start_color, end_color, shape_props, text_props;
   if (is_3d_view)
     [value_text, start_color, end_color, shape_props, text_props] =
@@ -85,6 +91,8 @@ const GameElement = memo(function ({ x, y, value, size, color, shape_path, selec
   const [animation_scale] = useState(new Animated.Value(default_scale_factor));
   const [animation_rotation] = useState(new Animated.Value(default_rotation_angle));
   useEffect(() => {
+    set_numbers_shown(settings[element_number_shown_key].value);
+    set_is_3d_view(settings[element_style_3d].value);
     const scale_offset = 0.05;
     const rotation_angle = 10;
     const rotate_duration = 113;
@@ -143,7 +151,7 @@ const GameElement = memo(function ({ x, y, value, size, color, shape_path, selec
           rotation_animation_config(default_rotation_angle)),
       ]))
     ]).start();
-  }, [created, selected, highlighted, animation_rotation, animation_scale]);
+  }, [created, selected, highlighted, animation_rotation, animation_scale, settings]);
   return (
     <G x={x + size / 2} y={y + size / 2} >
       <AnimatedG rotation={animation_rotation} scale={animation_scale}>
@@ -165,9 +173,11 @@ const GameElement = memo(function ({ x, y, value, size, color, shape_path, selec
           </Defs>
         }
         <Path {...shape_props} />
-        <SvgText {...text_props}>
-          {value_text}
-        </SvgText>
+        {numbers_shown &&
+          <SvgText {...text_props}>
+            {value_text}
+          </SvgText>
+        }
       </AnimatedG>
     </G>
   );

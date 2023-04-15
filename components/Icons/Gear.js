@@ -1,7 +1,7 @@
 import { memo } from "react";
 import { Svg, Path, Circle } from "react-native-svg";
 
-function Settings({ size }) {
+function Gear({ size }) {
   return (
     <Svg
       width={size}
@@ -19,4 +19,4 @@ function Settings({ size }) {
   );
 }
 
-export default memo(Settings);
+export default memo(Gear);
