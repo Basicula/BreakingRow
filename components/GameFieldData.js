@@ -241,6 +241,18 @@ export class FieldData {
     return group_details;
   }
 
+  has_groups() {
+    return this.#get_cross_groups().length > 0;
+  }
+
+  has_empty_cells() {
+    for (let row_id = 0; row_id < this.#height; ++row_id)
+      for (let column_id = 0; column_id < this.#width; ++column_id)
+        if (this.#field[row_id][column_id] === -1)
+          return true;
+    return false;
+  }
+
   move_elements() {
     for (let column_id = 0; column_id < this.#width; ++column_id) {
       var empty_row_id = -1;
@@ -248,14 +260,34 @@ export class FieldData {
         if (this.#field[row_id][column_id] === -1 && empty_row_id === -1) {
           empty_row_id = row_id;
         } else if (empty_row_id !== -1 && this.#field[row_id][column_id] !== -1) {
-          [this.#field[row_id][column_id], this.#field[empty_row_id][column_id]] =
-            [this.#field[empty_row_id][column_id], this.#field[row_id][column_id]];
+          this.swap_cells(row_id, column_id, empty_row_id, column_id)
           row_id = empty_row_id;
           empty_row_id = -1;
         }
         --row_id;
       }
     }
+  }
+
+  element_move_changes() {
+    var values = Object.assign([], this.#field);
+    var changes = [];
+    for (let column_id = 0; column_id < this.#width; ++column_id) {
+      var empty_row_id = -1;
+      for (let row_id = this.#height - 1; row_id >= 0;) {
+        if (values[row_id][column_id] === -1 && empty_row_id === -1) {
+          empty_row_id = row_id;
+        } else if (empty_row_id !== -1 && values[row_id][column_id] !== -1) {
+          [values[row_id][column_id], values[empty_row_id][column_id]] =
+            [values[empty_row_id][column_id], values[row_id][column_id]];
+          changes.push([[row_id, column_id], [empty_row_id, column_id]]);
+          row_id = empty_row_id;
+          empty_row_id = -1;
+        }
+        --row_id;
+      }
+    }
+    return changes;
   }
 
   spawn_new_values() {
@@ -268,10 +300,6 @@ export class FieldData {
   swap_cells(row1, column1, row2, column2) {
     if (row1 < 0 || row1 >= this.#height || column1 < 0 || column1 >= this.#width ||
       row2 < 0 || row2 >= this.#height || column2 < 0 || column2 >= this.#width)
-      return;
-    if (this.#field[row1][column1] === -1)
-      return;
-    if (this.#field[row2][column2] === -1)
       return;
     [this.#field[row1][column1], this.#field[row2][column2]] =
       [this.#field[row2][column2], this.#field[row1][column1]];

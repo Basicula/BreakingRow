@@ -391,10 +391,10 @@ function Game({ width, height, score_bonuses, onStrike, onRestart }) {
     const move_index = Math.trunc(Math.random() * moves.length);
     const move = moves[move_index]["move"];
     set_highlighted_elements(move);
-    setTimeout(()=>set_highlighted_elements([]), 1000);
+    setTimeout(() => set_highlighted_elements([]), 1000);
   };
 
-  const on_elements_swap = (elements) => {
+  const swap_elements = (elements) => {
     game_state.field_data.swap_cells(
       elements[0][0], elements[0][1],
       elements[1][0], elements[1][1]
@@ -402,8 +402,45 @@ function Game({ width, height, score_bonuses, onStrike, onRestart }) {
     set_game_state({
       ...game_state,
       field_data: game_state.field_data.clone(),
-      step: 0,
-      prev_step: 3,
+    });
+  };
+
+  const accumulate_elements = () => {
+    const removed_groups_details = game_state.field_data.accumulate_groups();
+    var total_score_delta = 0;
+    for (let removed_group_details of removed_groups_details) {
+      const value = 2 ** removed_group_details.value;
+      const count = removed_group_details.size;
+      onStrike(value, count);
+      const bonus = count in score_bonuses ? score_bonuses[count] : 10;
+      const score_delta = value * count * bonus;
+      total_score_delta += score_delta;
+    }
+    const new_score_state = {
+      score: game_state.score_state.score + total_score_delta,
+      total_score: game_state.score_state.total_score + total_score_delta,
+      spent_score: game_state.score_state.spent_score
+    }
+    set_game_state({
+      ...game_state,
+      field_data: game_state.field_data.clone(),
+      score_state: new_score_state,
+    });
+  };
+
+  const move_elements = () => {
+    game_state.field_data.move_elements();
+    set_game_state({
+      ...game_state,
+      field_data: game_state.field_data.clone(),
+    });
+  };
+
+  const spawn_elements = () => {
+    game_state.field_data.spawn_new_values();
+    set_game_state({
+      ...game_state,
+      field_data: game_state.field_data.clone(),
     });
   };
 
@@ -444,7 +481,10 @@ function Game({ width, height, score_bonuses, onStrike, onRestart }) {
           field_data={game_state.field_data}
           highlighted_elements={highlighted_elements}
           element_style_provider={element_style_provider}
-          onElementsSwap={on_elements_swap}
+          onSwapElements={swap_elements}
+          onMoveElements={move_elements}
+          onAccumulateElements={accumulate_elements}
+          onSpawnElements={spawn_elements}
           onLayout={on_game_field_layout}
         />
       }

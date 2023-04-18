@@ -6,7 +6,7 @@ import {
 } from 'react-native-svg';
 
 import { line_path } from "./SvgPath.js";
-import { manhattan_distance, map_coordinates } from './Utils.js';
+import { init_array, manhattan_distance, map_coordinates } from './Utils.js';
 import { useSettings } from './Settings.js';
 
 function grid_path(width, height, field_data, grid_step) {
@@ -74,25 +74,21 @@ function get_element_props(value, size, color, shape_path, with_volume_props = f
 
 const AnimatedG = Animated.createAnimatedComponent(G);
 
-const GameElement = memo(function ({ x, y, value, size, color, shape_path, selected, highlighted }) {
-  const [created, set_created] = useState(false);
-  const [is_3d_view, set_is_3d_view] = useState(false);
-  const [numbers_shown, set_numbers_shown] = useState(true);
+const GameElement = memo(function ({ x, y, value, size, color, shape_path,
+  selected, highlighted, to_create, to_destroy }) {
   const { settings, element_number_shown_key, element_style_3d } = useSettings();
   var value_text, start_color, end_color, shape_props, text_props;
-  if (is_3d_view)
+  if (settings[element_style_3d].value)
     [value_text, start_color, end_color, shape_props, text_props] =
-      get_element_props(value, size, color, shape_path, is_3d_view);
+      get_element_props(value, size, color, shape_path, settings[element_style_3d].value);
   else
     [value_text, shape_props, text_props] =
-      get_element_props(value, size, color, shape_path, is_3d_view);
+      get_element_props(value, size, color, shape_path, settings[element_style_3d].value);
   const default_scale_factor = 1;
   const default_rotation_angle = 0;
   const [animation_scale] = useState(new Animated.Value(default_scale_factor));
   const [animation_rotation] = useState(new Animated.Value(default_rotation_angle));
   useEffect(() => {
-    set_numbers_shown(settings[element_number_shown_key].value);
-    set_is_3d_view(settings[element_style_3d].value);
     const scale_offset = 0.05;
     const rotation_angle = 10;
     const rotate_duration = 113;
@@ -114,7 +110,7 @@ const GameElement = memo(function ({ x, y, value, size, color, shape_path, selec
       };
     };
 
-    if (!selected && !highlighted && created) {
+    if (!selected && !highlighted && !to_create && !to_destroy) {
       animation_scale.stopAnimation();
       animation_scale.setValue(default_scale_factor);
       animation_rotation.stopAnimation();
@@ -122,10 +118,15 @@ const GameElement = memo(function ({ x, y, value, size, color, shape_path, selec
       return;
     }
 
-    if (!created) {
+    if (to_create) {
       animation_scale.setValue(0);
-      Animated.timing(animation_scale, scale_animation_config(default_scale_factor))
-        .start(() => set_created(true));
+      Animated.timing(animation_scale, scale_animation_config(default_scale_factor)).start();
+      return;
+    }
+
+    if (to_destroy) {
+      animation_scale.setValue(1);
+      Animated.timing(animation_scale, scale_animation_config(0)).start();
       return;
     }
 
@@ -151,7 +152,7 @@ const GameElement = memo(function ({ x, y, value, size, color, shape_path, selec
           rotation_animation_config(default_rotation_angle)),
       ]))
     ]).start();
-  }, [created, selected, highlighted, animation_rotation, animation_scale, settings]);
+  }, [selected, highlighted, to_create, to_destroy]);
   return (
     <G x={x + size / 2} y={y + size / 2} >
       <AnimatedG rotation={animation_rotation} scale={animation_scale}>
@@ -164,7 +165,7 @@ const GameElement = memo(function ({ x, y, value, size, color, shape_path, selec
             translate={[-size / 2, -size / 2]}
           />
         }
-        {is_3d_view &&
+        {settings[element_style_3d].value &&
           <Defs>
             <RadialGradient id={`radialgradient${value}`} cx="15%" cy="15%" r="75%" fx="25%" fy="25%">
               <Stop offset="0%" stopColor={start_color} stopOpacity="1" />
@@ -173,7 +174,7 @@ const GameElement = memo(function ({ x, y, value, size, color, shape_path, selec
           </Defs>
         }
         <Path {...shape_props} />
-        {numbers_shown &&
+        {settings[element_number_shown_key].value &&
           <SvgText {...text_props}>
             {value_text}
           </SvgText>
@@ -184,11 +185,13 @@ const GameElement = memo(function ({ x, y, value, size, color, shape_path, selec
 });
 
 function GameField({ field_data, grid_step, element_offset, element_style_provider,
-  highlighted_elements, onElementsSwap, onLayout }) {
+  highlighted_elements, onLayout,
+  onSwapElements, onAccumulateElements, onMoveElements, onSpawnElements }) {
   const width = grid_step * field_data.width;
   const height = grid_step * field_data.height;
 
   const element_positions = useRef([]).current;
+  const previous_field_data = useRef(init_array(field_data.width, field_data.height, -1)).current;
 
   const mouse_down_position = useRef([]);
   const [selected_elements, set_selected_elements] = useState([]);
@@ -212,18 +215,6 @@ function GameField({ field_data, grid_step, element_offset, element_style_provid
     const element_offset = element_positions[element_coordinates[0]][element_coordinates[1]];
     return element_offset.x._value === 0 && element_offset.y._value === 0;
   };
-
-  const get_event_position = (event) => {
-    const native_event = event.nativeEvent;
-    switch (event.type) {
-      case "mousedown":
-      case "mouseup":
-      case "mousemove":
-        return [native_event.offsetX, native_event.offsetY]
-      default:
-        return [native_event.locationX, native_event.locationY];
-    }
-  }
 
   const swap_animation = (first, second) => {
     const first_position = element_positions[first[0]][first[1]];
@@ -263,13 +254,72 @@ function GameField({ field_data, grid_step, element_offset, element_style_provid
     swap_animation(first, second).start(() => {
       const move_result = field_data.check_move(first, second);
       if (move_result > 0) {
-        onElementsSwap([first, second]);
+        onSwapElements([first, second]);
         reset_positions();
       }
       else
         swap_animation(first, second).start();
     });
   };
+
+  const move_elements = (element_move_changes) => {
+    var move_animations = [];
+    const duration_over_cell = 200;
+    for (let element_move_change of element_move_changes) {
+      const element_old_coordinates = element_move_change[0];
+      const element_new_coordinates = element_move_change[1];
+      const x1 = element_old_coordinates[1] * grid_step + element_offset;
+      const y1 = element_old_coordinates[0] * grid_step + element_offset;
+      const x2 = element_new_coordinates[1] * grid_step + element_offset;
+      const y2 = element_new_coordinates[0] * grid_step + element_offset;
+      const offset_x = x2 - x1;
+      const offset_y = y2 - y1;
+      const element_position = element_positions[element_old_coordinates[0]][element_old_coordinates[1]];
+      const duration = duration_over_cell * (element_new_coordinates[0] - element_old_coordinates[0])
+      move_animations.push(
+        Animated.timing(element_position,
+          {
+            toValue: { x: offset_x, y: offset_y },
+            duration: duration,
+            useNativeDriver: false,
+          })
+      );
+    }
+    Animated.parallel(move_animations).start(() => {
+      onMoveElements();
+      reset_positions();
+    });
+  };
+
+  const spawn_elements = () => {
+    onSpawnElements();
+  };
+
+  useEffect(() => {
+    if (field_data.has_groups()) {
+      onAccumulateElements();
+      return;
+    }
+    const element_move_changes = field_data.element_move_changes();
+    if (element_move_changes.length === 0 && field_data.has_empty_cells()) {
+      spawn_elements();
+      return;
+    } else if (element_move_changes.length === 0)
+      return;
+    move_elements(element_move_changes);
+  }, [field_data]);
+
+  const get_event_position = (event) => {
+    const native_event = event.nativeEvent;
+    switch (event.type) {
+      case "mousedown":
+      case "mouseup":
+      case "mousemove":
+        return [native_event.offsetX, native_event.offsetY]
+      default:
+        return [native_event.locationX, native_event.locationY];
+    }
+  }
 
   const on_mouse_down = (event) => {
     const [x, y] = get_event_position(event);
@@ -364,9 +414,7 @@ function GameField({ field_data, grid_step, element_offset, element_style_provid
           return Array.from(Array(field_data.width)).map((_, column_id) => {
             if (element_positions.length === 0)
               reset_positions();
-            const value = field_data.at(row_id, column_id);
-            if (value === -1)
-              return;
+            var value = field_data.at(row_id, column_id);
             var is_selected = false;
             for (let selected_element of selected_elements)
               if (selected_element[0] === row_id && selected_element[1] === column_id) {
@@ -379,6 +427,14 @@ function GameField({ field_data, grid_step, element_offset, element_style_provid
                 is_highlighted = true;
                 break;
               }
+            const to_create = previous_field_data[row_id][column_id] === -1 && value !== -1;
+            const to_destroy = previous_field_data[row_id][column_id] !== -1 && value === -1;
+            if (to_destroy)
+              [previous_field_data[row_id][column_id], value] = [value, previous_field_data[row_id][column_id]];
+            else
+              previous_field_data[row_id][column_id] = value;
+            if (value < 0)
+              return;
             const [color, shape_path] = element_style_provider.get(value);
             return (
               <AnimatedG
@@ -394,6 +450,8 @@ function GameField({ field_data, grid_step, element_offset, element_style_provid
                   shape_path={shape_path}
                   selected={is_selected}
                   highlighted={is_highlighted}
+                  to_create={to_create}
+                  to_destroy={to_destroy}
                 />
               </AnimatedG>
             );
