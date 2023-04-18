@@ -74,7 +74,7 @@ function get_element_props(value, size, color, shape_path, with_volume_props = f
 
 const AnimatedG = Animated.createAnimatedComponent(G);
 
-const GameElement = memo(function ({ x, y, value, size, color, shape_path,
+const GameElement = memo(function ({ value, size, color, shape_path,
   selected, highlighted, to_create, to_destroy }) {
   const { settings, element_number_shown_key, element_style_3d } = useSettings();
   var value_text, start_color, end_color, shape_props, text_props;
@@ -154,7 +154,7 @@ const GameElement = memo(function ({ x, y, value, size, color, shape_path,
     ]).start();
   }, [selected, highlighted, to_create, to_destroy]);
   return (
-    <G x={x + size / 2} y={y + size / 2} >
+    <G x={size / 2} y={size / 2} >
       <AnimatedG rotation={animation_rotation} scale={animation_scale}>
         {selected &&
           <Path
@@ -196,42 +196,45 @@ function GameField({ field_data, grid_step, element_offset, element_style_provid
   const mouse_down_position = useRef([]);
   const [selected_elements, set_selected_elements] = useState([]);
 
+  const get_element_position = (row, column) => {
+    const x = column * grid_step + element_offset;
+    const y = row * grid_step + element_offset;
+    return { x: x, y: y };
+  };
+
   const reset_positions = () => {
     if (element_positions.length === 0) {
       for (let row_id = 0; row_id < field_data.height; ++row_id) {
         var row = [];
         for (let column_id = 0; column_id < field_data.width; ++column_id)
-          row.push(new Animated.ValueXY({ x: 0, y: 0 }));
+          row.push(new Animated.ValueXY(get_element_position(row_id, column_id)));
         element_positions.push(row);
       }
     } else {
       for (let row_id = 0; row_id < field_data.height; ++row_id)
         for (let column_id = 0; column_id < field_data.width; ++column_id)
-          element_positions[row_id][column_id].setValue({ x: 0, y: 0 });
+          element_positions[row_id][column_id].setValue(get_element_position(row_id, column_id));
     }
   };
 
   const is_available_for_animation = (element_coordinates) => {
-    const element_offset = element_positions[element_coordinates[0]][element_coordinates[1]];
-    return element_offset.x._value === 0 && element_offset.y._value === 0;
+    const row = element_coordinates[0];
+    const column = element_coordinates[1];
+    const native_position = get_element_position(row, column);
+    return element_positions[row][column].x._value === native_position.x &&
+      element_positions[row][column].y._value === native_position.y;
   };
 
   const swap_animation = (first, second) => {
     const first_position = element_positions[first[0]][first[1]];
     const second_position = element_positions[second[0]][second[1]];
-    const x1 = first[1] * grid_step + element_offset;
-    const y1 = first[0] * grid_step + element_offset;
-    const x2 = second[1] * grid_step + element_offset;
-    const y2 = second[0] * grid_step + element_offset;
-    const offset_x = x1 - x2;
-    const offset_y = y1 - y2;
     const duration = 250;
     return Animated.parallel([
       Animated.timing(first_position,
         {
           toValue: {
-            x: second_position.x._value - offset_x,
-            y: second_position.y._value - offset_y
+            x: second_position.x._value,
+            y: second_position.y._value
           },
           duration: duration,
           useNativeDriver: false
@@ -239,8 +242,8 @@ function GameField({ field_data, grid_step, element_offset, element_style_provid
       Animated.timing(second_position,
         {
           toValue: {
-            x: first_position.x._value + offset_x,
-            y: first_position.y._value + offset_y
+            x: first_position.x._value,
+            y: first_position.y._value
           },
           duration: duration,
           useNativeDriver: false
@@ -268,18 +271,13 @@ function GameField({ field_data, grid_step, element_offset, element_style_provid
     for (let element_move_change of element_move_changes) {
       const element_old_coordinates = element_move_change[0];
       const element_new_coordinates = element_move_change[1];
-      const x1 = element_old_coordinates[1] * grid_step + element_offset;
-      const y1 = element_old_coordinates[0] * grid_step + element_offset;
-      const x2 = element_new_coordinates[1] * grid_step + element_offset;
-      const y2 = element_new_coordinates[0] * grid_step + element_offset;
-      const offset_x = x2 - x1;
-      const offset_y = y2 - y1;
+      const new_element_position = get_element_position(...element_new_coordinates);
       const element_position = element_positions[element_old_coordinates[0]][element_old_coordinates[1]];
       const duration = duration_over_cell * (element_new_coordinates[0] - element_old_coordinates[0])
       move_animations.push(
         Animated.timing(element_position,
           {
-            toValue: { x: offset_x, y: offset_y },
+            toValue: new_element_position,
             duration: duration,
             useNativeDriver: false,
           })
@@ -442,8 +440,6 @@ function GameField({ field_data, grid_step, element_offset, element_style_provid
                 style={{ transform: element_positions[row_id][column_id].getTranslateTransform() }}
               >
                 <GameElement
-                  x={column_id * grid_step + element_offset}
-                  y={row_id * grid_step + element_offset}
                   value={value}
                   size={element_style_provider.size}
                   color={color}
