@@ -285,7 +285,6 @@ function Game({ width, height, score_bonuses, onStrike, onRestart }) {
     set_game_state({
       ...game_state,
       field_data: game_state.field_data.clone(),
-      step: 0,
       abilities: game_state.abilities.clone(),
       score_state: {
         score: game_state.score_state.score - negative_score_value,
@@ -307,7 +306,6 @@ function Game({ width, height, score_bonuses, onStrike, onRestart }) {
     set_game_state({
       ...game_state,
       field_data: game_state.field_data.clone(),
-      step: 1,
       abilities: game_state.abilities.clone(),
       score_state: {
         score: game_state.score_state.score + positive_score_value - negative_score_value,
@@ -332,7 +330,6 @@ function Game({ width, height, score_bonuses, onStrike, onRestart }) {
     set_game_state({
       ...game_state,
       field_data: game_state.field_data.clone(),
-      step: 1,
       abilities: game_state.abilities.clone(),
       score_state: {
         score: game_state.score_state.score + positive_score_value - negative_score_value,
@@ -355,7 +352,6 @@ function Game({ width, height, score_bonuses, onStrike, onRestart }) {
     set_game_state({
       ...game_state,
       field_data: game_state.field_data.clone(),
-      step: 1,
       abilities: game_state.abilities.clone(),
       score_state: {
         score: game_state.score_state.score + positive_score_value - negative_score_value,
@@ -376,7 +372,6 @@ function Game({ width, height, score_bonuses, onStrike, onRestart }) {
     set_game_state({
       ...game_state,
       field_data: game_state.field_data.clone(),
-      step: 1,
       abilities: game_state.abilities.clone(),
       score_state: {
         score: game_state.score_state.score + positive_score_value - negative_score_value,
