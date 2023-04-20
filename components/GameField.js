@@ -179,7 +179,7 @@ function GameField({ field_data, grid_step, element_offset, element_style_provid
   const element_positions = useRef([]).current;
   const element_scales = useRef(init_array(field_data.width, field_data.height, undefined, () => new Animated.Value(0))).current;
   const animation_running = useRef(false);
-  const animation_duration = 500;
+  const animation_duration = 250;
   const use_native_driver = false;
 
   const mouse_down_position = useRef([]);
