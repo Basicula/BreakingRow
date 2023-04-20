@@ -215,7 +215,7 @@ export class FieldData {
       const group = groups[group_id];
       const value = this.#field[group[0][0]][group[0][1]];
       group_details.push({
-        size: group.length,
+        group: group,
         value: value
       });
       var accumulated_value = 2 ** value * group.length;

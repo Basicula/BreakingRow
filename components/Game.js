@@ -389,23 +389,11 @@ function Game({ width, height, score_bonuses, onStrike, onRestart }) {
     setTimeout(() => set_highlighted_elements([]), 1000);
   };
 
-  const swap_elements = (elements) => {
-    game_state.field_data.swap_cells(
-      elements[0][0], elements[0][1],
-      elements[1][0], elements[1][1]
-    );
-    set_game_state({
-      ...game_state,
-      field_data: game_state.field_data.clone(),
-    });
-  };
-
-  const accumulate_elements = () => {
-    const removed_groups_details = game_state.field_data.accumulate_groups();
+  const accumulate_elements = (new_field_data, removed_groups_details) => {
     var total_score_delta = 0;
     for (let removed_group_details of removed_groups_details) {
       const value = 2 ** removed_group_details.value;
-      const count = removed_group_details.size;
+      const count = removed_group_details.group.length;
       onStrike(value, count);
       const bonus = count in score_bonuses ? score_bonuses[count] : 10;
       const score_delta = value * count * bonus;
@@ -418,24 +406,9 @@ function Game({ width, height, score_bonuses, onStrike, onRestart }) {
     }
     set_game_state({
       ...game_state,
-      field_data: game_state.field_data.clone(),
+      field_data: new_field_data,
+      moves_count: new_field_data.get_all_moves().length,
       score_state: new_score_state,
-    });
-  };
-
-  const move_elements = () => {
-    game_state.field_data.move_elements();
-    set_game_state({
-      ...game_state,
-      field_data: game_state.field_data.clone(),
-    });
-  };
-
-  const spawn_elements = () => {
-    game_state.field_data.spawn_new_values();
-    set_game_state({
-      ...game_state,
-      field_data: game_state.field_data.clone(),
     });
   };
 
@@ -473,13 +446,15 @@ function Game({ width, height, score_bonuses, onStrike, onRestart }) {
         <GameField
           grid_step={grid_step}
           element_offset={element_offset}
-          field_data={game_state.field_data}
+          field_data={game_state.field_data.clone()}
           highlighted_elements={highlighted_elements}
           element_style_provider={element_style_provider}
-          onSwapElements={swap_elements}
-          onMoveElements={move_elements}
+          onFieldDataChange={(new_field_data) => set_game_state({
+            ...game_state,
+            field_data: new_field_data,
+            moves_count: new_field_data.get_all_moves().length
+          })}
           onAccumulateElements={accumulate_elements}
-          onSpawnElements={spawn_elements}
           onLayout={on_game_field_layout}
         />
       }

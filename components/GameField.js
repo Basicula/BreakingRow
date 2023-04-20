@@ -118,18 +118,6 @@ const GameElement = memo(function ({ value, size, color, shape_path,
       return;
     }
 
-    if (to_create) {
-      animation_scale.setValue(0);
-      Animated.timing(animation_scale, scale_animation_config(default_scale_factor)).start();
-      return;
-    }
-
-    if (to_destroy) {
-      animation_scale.setValue(1);
-      Animated.timing(animation_scale, scale_animation_config(0)).start();
-      return;
-    }
-
     Animated.parallel([
       Animated.loop(Animated.sequence([
         Animated.timing(animation_scale,
@@ -154,51 +142,51 @@ const GameElement = memo(function ({ value, size, color, shape_path,
     ]).start();
   }, [selected, highlighted, to_create, to_destroy]);
   return (
-    <G x={size / 2} y={size / 2} >
-      <AnimatedG rotation={animation_rotation} scale={animation_scale}>
-        {selected &&
-          <Path
-            d={shape_path}
-            strokeWidth={1}
-            fill="rgba(0,0,0,0.5)"
-            scale={1.05}
-            translate={[-size / 2, -size / 2]}
-          />
-        }
-        {settings[element_style_3d].value &&
-          <Defs>
-            <RadialGradient id={`radialgradient${value}`} cx="15%" cy="15%" r="75%" fx="25%" fy="25%">
-              <Stop offset="0%" stopColor={start_color} stopOpacity="1" />
-              <Stop offset="100%" stopColor={end_color} stopOpacity="1" />
-            </RadialGradient>
-          </Defs>
-        }
-        <Path {...shape_props} />
-        {settings[element_number_shown_key].value &&
-          <SvgText {...text_props}>
-            {value_text}
-          </SvgText>
-        }
-      </AnimatedG>
-    </G>
+    <AnimatedG rotation={animation_rotation} scale={animation_scale}>
+      {selected &&
+        <Path
+          d={shape_path}
+          strokeWidth={1}
+          fill="rgba(0,0,0,0.5)"
+          scale={1.05}
+          translate={[-size / 2, -size / 2]}
+        />
+      }
+      {settings[element_style_3d].value &&
+        <Defs>
+          <RadialGradient id={`radialgradient${value}`} cx="15%" cy="15%" r="75%" fx="25%" fy="25%">
+            <Stop offset="0%" stopColor={start_color} stopOpacity="1" />
+            <Stop offset="100%" stopColor={end_color} stopOpacity="1" />
+          </RadialGradient>
+        </Defs>
+      }
+      <Path {...shape_props} />
+      {settings[element_number_shown_key].value &&
+        <SvgText {...text_props}>
+          {value_text}
+        </SvgText>
+      }
+    </AnimatedG>
   );
 });
 
 function GameField({ field_data, grid_step, element_offset, element_style_provider,
   highlighted_elements, onLayout,
-  onSwapElements, onAccumulateElements, onMoveElements, onSpawnElements }) {
+  onFieldDataChange, onAccumulateElements }) {
   const width = grid_step * field_data.width;
   const height = grid_step * field_data.height;
 
   const element_positions = useRef([]).current;
-  const previous_field_data = useRef(init_array(field_data.width, field_data.height, -1)).current;
+  const element_scales = useRef(init_array(field_data.width, field_data.height, undefined, () => new Animated.Value(0))).current;
+  const animation_running = useRef(false);
+  const animation_duration = 500;
 
   const mouse_down_position = useRef([]);
   const [selected_elements, set_selected_elements] = useState([]);
 
   const get_element_position = (row, column) => {
-    const x = column * grid_step + element_offset;
-    const y = row * grid_step + element_offset;
+    const x = column * grid_step + element_offset + element_style_provider.size / 2;
+    const y = row * grid_step + element_offset + element_style_provider.size / 2;
     return { x: x, y: y };
   };
 
@@ -217,6 +205,9 @@ function GameField({ field_data, grid_step, element_offset, element_style_provid
     }
   };
 
+  if (element_positions.length === 0)
+    reset_positions();
+
   const is_available_for_animation = (element_coordinates) => {
     const row = element_coordinates[0];
     const column = element_coordinates[1];
@@ -228,7 +219,6 @@ function GameField({ field_data, grid_step, element_offset, element_style_provid
   const swap_animation = (first, second) => {
     const first_position = element_positions[first[0]][first[1]];
     const second_position = element_positions[second[0]][second[1]];
-    const duration = 250;
     return Animated.parallel([
       Animated.timing(first_position,
         {
@@ -236,7 +226,7 @@ function GameField({ field_data, grid_step, element_offset, element_style_provid
             x: second_position.x._value,
             y: second_position.y._value
           },
-          duration: duration,
+          duration: animation_duration,
           useNativeDriver: false
         }),
       Animated.timing(second_position,
@@ -245,35 +235,75 @@ function GameField({ field_data, grid_step, element_offset, element_style_provid
             x: first_position.x._value,
             y: first_position.y._value
           },
-          duration: duration,
+          duration: animation_duration,
           useNativeDriver: false
         })
     ]);
   };
 
+  const destroy_animation = (row_id, column_id) => {
+    element_scales[row_id][column_id].setValue(1);
+    return Animated.timing(element_scales[row_id][column_id], {
+      toValue: 0,
+      duration: animation_duration,
+      useNativeDriver: false
+    });
+  };
+
+  const create_animation = (row_id, column_id) => {
+    element_scales[row_id][column_id].setValue(0);
+    return Animated.timing(element_scales[row_id][column_id], {
+      toValue: 1,
+      duration: animation_duration,
+      useNativeDriver: false
+    });
+  };
+
   const swap_elements = (first, second) => {
     if (!is_available_for_animation(first) || !is_available_for_animation(second))
       return;
-    swap_animation(first, second).start(() => {
+    swap_animation(first, second).start(({ finished }) => {
+      if (!finished)
+        return;
       const move_result = field_data.check_move(first, second);
       if (move_result > 0) {
-        onSwapElements([first, second]);
+        field_data.swap_cells(...first, ...second);
         reset_positions();
+        onFieldDataChange(field_data);
       }
       else
-        swap_animation(first, second).start();
+        swap_animation(first, second).start(({ finished }) => {
+          if (!finished)
+            return;
+        });
+    });
+  };
+
+  const accumulate_elements = () => {
+    const removed_groups_details = field_data.accumulate_groups();
+    var to_destroy_animations = []
+    for (let removed_group_details of removed_groups_details) {
+      for (let cell_coordinate of removed_group_details.group)
+        to_destroy_animations.push(destroy_animation(...cell_coordinate));
+    }
+    Animated.parallel(to_destroy_animations).start(({ finished }) => {
+      if (!finished)
+        return;
+      onAccumulateElements(field_data, removed_groups_details);
     });
   };
 
   const move_elements = (element_move_changes) => {
     var move_animations = [];
-    const duration_over_cell = 200;
+    const duration_over_cell = animation_duration;
     for (let element_move_change of element_move_changes) {
-      const element_old_coordinates = element_move_change[0];
-      const element_new_coordinates = element_move_change[1];
-      const new_element_position = get_element_position(...element_new_coordinates);
-      const element_position = element_positions[element_old_coordinates[0]][element_old_coordinates[1]];
-      const duration = duration_over_cell * (element_new_coordinates[0] - element_old_coordinates[0])
+      const old_coordinates = element_move_change[0];
+      const new_coordinates = element_move_change[1];
+      [element_scales[old_coordinates[0]][old_coordinates[1]], element_scales[new_coordinates[0]][new_coordinates[1]]] =
+        [element_scales[new_coordinates[0]][new_coordinates[1]], element_scales[old_coordinates[0]][old_coordinates[1]]];
+      const new_element_position = get_element_position(...new_coordinates);
+      const element_position = element_positions[old_coordinates[0]][old_coordinates[1]];
+      const duration = duration_over_cell * (new_coordinates[0] - old_coordinates[0])
       move_animations.push(
         Animated.timing(element_position,
           {
@@ -283,28 +313,54 @@ function GameField({ field_data, grid_step, element_offset, element_style_provid
           })
       );
     }
-    Animated.parallel(move_animations).start(() => {
-      onMoveElements();
+    Animated.parallel(move_animations).start(({ finished }) => {
+      if (!finished)
+        return;
       reset_positions();
+      field_data.move_elements()
+      onFieldDataChange(field_data);
     });
   };
 
   const spawn_elements = () => {
-    onSpawnElements();
+    field_data.spawn_new_values();
+    onFieldDataChange(field_data);
   };
 
   useEffect(() => {
-    if (field_data.has_groups()) {
-      onAccumulateElements();
-      return;
+    animation_running.current = true;
+    const update_field_data = () => {
+      const element_move_changes = field_data.element_move_changes();
+      if (element_move_changes.length > 0) {
+        move_elements(element_move_changes);
+        return;
+      }
+      if (field_data.has_empty_cells()) {
+        spawn_elements();
+        return;
+      }
+      if (field_data.has_groups()) {
+        accumulate_elements();
+        return;
+      }
+      animation_running.current = false;
+    };
+    var to_create_animations = [];
+    for (let row_id = 0; row_id < field_data.height; ++row_id)
+      for (let column_id = 0; column_id < field_data.width; ++column_id) {
+        if (element_scales[row_id][column_id]._value === 0 &&
+          field_data.at(row_id, column_id) >= 0)
+          to_create_animations.push(create_animation(row_id, column_id));
+      }
+    if (to_create_animations.length > 0) {
+      Animated.parallel(to_create_animations).start(({ finished }) => {
+        if (!finished)
+          return;
+        update_field_data();
+      });
     }
-    const element_move_changes = field_data.element_move_changes();
-    if (element_move_changes.length === 0 && field_data.has_empty_cells()) {
-      spawn_elements();
-      return;
-    } else if (element_move_changes.length === 0)
-      return;
-    move_elements(element_move_changes);
+    else
+      update_field_data()
   }, [field_data]);
 
   const get_event_position = (event) => {
@@ -320,6 +376,8 @@ function GameField({ field_data, grid_step, element_offset, element_style_provid
   }
 
   const on_mouse_down = (event) => {
+    if (animation_running.current)
+      return;
     const [x, y] = get_event_position(event);
     const field_element_coordinates = map_coordinates(x, y, grid_step);
     if (field_element_coordinates.length !== 0) {
@@ -352,6 +410,8 @@ function GameField({ field_data, grid_step, element_offset, element_style_provid
   };
 
   const on_mouse_up = (event) => {
+    if (animation_running.current)
+      return;
     if (mouse_down_position.current.length === 0)
       return;
     const [x, y] = get_event_position(event);
@@ -410,9 +470,9 @@ function GameField({ field_data, grid_step, element_offset, element_style_provid
         />
         {element_style_provider && Array.from(Array(field_data.height)).map((_, row_id) => {
           return Array.from(Array(field_data.width)).map((_, column_id) => {
-            if (element_positions.length === 0)
-              reset_positions();
             var value = field_data.at(row_id, column_id);
+            if (value < 0)
+              return;
             var is_selected = false;
             for (let selected_element of selected_elements)
               if (selected_element[0] === row_id && selected_element[1] === column_id) {
@@ -425,30 +485,24 @@ function GameField({ field_data, grid_step, element_offset, element_style_provid
                 is_highlighted = true;
                 break;
               }
-            const to_create = previous_field_data[row_id][column_id] === -1 && value !== -1;
-            const to_destroy = previous_field_data[row_id][column_id] !== -1 && value === -1;
-            if (to_destroy)
-              [previous_field_data[row_id][column_id], value] = [value, previous_field_data[row_id][column_id]];
-            else
-              previous_field_data[row_id][column_id] = value;
-            if (value < 0)
-              return;
             const [color, shape_path] = element_style_provider.get(value);
             return (
               <AnimatedG
                 key={row_id * field_data.width + column_id}
-                style={{ transform: element_positions[row_id][column_id].getTranslateTransform() }}
+                style={{
+                  transform: element_positions[row_id][column_id].getTranslateTransform(),
+                }}
               >
-                <GameElement
-                  value={value}
-                  size={element_style_provider.size}
-                  color={color}
-                  shape_path={shape_path}
-                  selected={is_selected}
-                  highlighted={is_highlighted}
-                  to_create={to_create}
-                  to_destroy={to_destroy}
-                />
+                <AnimatedG scale={element_scales[row_id][column_id]}>
+                  <GameElement
+                    value={value}
+                    size={element_style_provider.size}
+                    color={color}
+                    shape_path={shape_path}
+                    selected={is_selected}
+                    highlighted={is_highlighted}
+                  />
+                </AnimatedG>
               </AnimatedG>
             );
           });
