@@ -65,7 +65,7 @@ function Game({ width, height, score_bonuses, onStrike, onRestart }) {
     request_animation_ref.current = requestAnimationFrame(update_game_state);
     return () => cancelAnimationFrame(request_animation_ref.current);
   },
-    [game_state.field_data, game_state.step, autoplay, game_state.selected_elements]
+    [game_state.step, autoplay, game_state.selected_elements]
   );
 
   const game_field_offset = useRef({ x: 0, y: 0 });

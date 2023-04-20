@@ -180,6 +180,7 @@ function GameField({ field_data, grid_step, element_offset, element_style_provid
   const element_scales = useRef(init_array(field_data.width, field_data.height, undefined, () => new Animated.Value(0))).current;
   const animation_running = useRef(false);
   const animation_duration = 500;
+  const use_native_driver = false;
 
   const mouse_down_position = useRef([]);
   const [selected_elements, set_selected_elements] = useState([]);
@@ -219,7 +220,7 @@ function GameField({ field_data, grid_step, element_offset, element_style_provid
             y: second_position.y._value
           },
           duration: animation_duration,
-          useNativeDriver: false
+          useNativeDriver: use_native_driver
         }),
       Animated.timing(second_position,
         {
@@ -228,7 +229,7 @@ function GameField({ field_data, grid_step, element_offset, element_style_provid
             y: first_position.y._value
           },
           duration: animation_duration,
-          useNativeDriver: false
+          useNativeDriver: use_native_driver
         })
     ]);
   };
@@ -238,7 +239,7 @@ function GameField({ field_data, grid_step, element_offset, element_style_provid
     return Animated.timing(element_scales[row_id][column_id], {
       toValue: 0,
       duration: animation_duration,
-      useNativeDriver: false
+      useNativeDriver: use_native_driver
     });
   };
 
@@ -247,7 +248,7 @@ function GameField({ field_data, grid_step, element_offset, element_style_provid
     return Animated.timing(element_scales[row_id][column_id], {
       toValue: 1,
       duration: animation_duration,
-      useNativeDriver: false
+      useNativeDriver: use_native_driver
     });
   };
 
@@ -299,16 +300,16 @@ function GameField({ field_data, grid_step, element_offset, element_style_provid
           {
             toValue: new_element_position,
             duration: duration,
-            useNativeDriver: false,
+            useNativeDriver: use_native_driver,
           })
       );
     }
     Animated.parallel(move_animations).start(({ finished }) => {
       if (!finished)
         return;
-      reset_positions();
       field_data.move_elements()
       onFieldDataChange(field_data);
+      reset_positions();
     });
   };
 
@@ -427,7 +428,6 @@ function GameField({ field_data, grid_step, element_offset, element_style_provid
     set_selected_elements([]);
     mouse_down_position.current = [];
   };
-
   return (
     <View
       style={styles.canvas_container}
