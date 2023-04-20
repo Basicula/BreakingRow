@@ -208,14 +208,6 @@ function GameField({ field_data, grid_step, element_offset, element_style_provid
   if (element_positions.length === 0)
     reset_positions();
 
-  const is_available_for_animation = (element_coordinates) => {
-    const row = element_coordinates[0];
-    const column = element_coordinates[1];
-    const native_position = get_element_position(row, column);
-    return element_positions[row][column].x._value === native_position.x &&
-      element_positions[row][column].y._value === native_position.y;
-  };
-
   const swap_animation = (first, second) => {
     const first_position = element_positions[first[0]][first[1]];
     const second_position = element_positions[second[0]][second[1]];
@@ -260,8 +252,6 @@ function GameField({ field_data, grid_step, element_offset, element_style_provid
   };
 
   const swap_elements = (first, second) => {
-    if (!is_available_for_animation(first) || !is_available_for_animation(second))
-      return;
     swap_animation(first, second).start(({ finished }) => {
       if (!finished)
         return;
@@ -490,19 +480,21 @@ function GameField({ field_data, grid_step, element_offset, element_style_provid
               <AnimatedG
                 key={row_id * field_data.width + column_id}
                 style={{
-                  transform: element_positions[row_id][column_id].getTranslateTransform(),
+                  transform: [
+                    { translateX: element_positions[row_id][column_id].x },
+                    { translateY: element_positions[row_id][column_id].y },
+                    { scale: element_scales[row_id][column_id] }
+                  ]
                 }}
               >
-                <AnimatedG scale={element_scales[row_id][column_id]}>
-                  <GameElement
-                    value={value}
-                    size={element_style_provider.size}
-                    color={color}
-                    shape_path={shape_path}
-                    selected={is_selected}
-                    highlighted={is_highlighted}
-                  />
-                </AnimatedG>
+                <GameElement
+                  value={value}
+                  size={element_style_provider.size}
+                  color={color}
+                  shape_path={shape_path}
+                  selected={is_selected}
+                  highlighted={is_highlighted}
+                />
               </AnimatedG>
             );
           });
