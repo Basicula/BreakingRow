@@ -22,6 +22,17 @@ export function init_array(width, height, value, value_generator) {
   return array;
 }
 
+export function copy_array(array) {
+  var array_copy = [];
+  for (let element of array) {
+    if (Array.isArray(element))
+      array_copy.push(Object.assign([], copy_array(element)));
+    else
+      array_copy.push(element);
+  }
+  return array_copy;
+}
+
 export function manhattan_distance(x1, y1, x2, y2) {
   return Math.abs(x1 - x2) + Math.abs(y1 - y2);
 }

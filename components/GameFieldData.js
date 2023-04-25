@@ -1,4 +1,4 @@
-import { init_array } from "./Utils.js";
+import { init_array, copy_array } from "./Utils.js";
 
 export class FieldData {
   #field;
@@ -125,11 +125,11 @@ export class FieldData {
 
   clone() {
     var new_field_data = new FieldData(0, 0);
-    new_field_data.#field = this.#field;
+    new_field_data.#field = copy_array(this.#field);
     new_field_data.#width = this.#width;
     new_field_data.#height = this.#height;
-    new_field_data.#values_interval = this.#values_interval;
-    new_field_data.#values_probability_mask = this.#values_probability_mask;
+    new_field_data.#values_interval = copy_array(this.#values_interval);
+    new_field_data.#values_probability_mask = copy_array(this.#values_probability_mask);
     return new_field_data;
   }
 
@@ -270,7 +270,7 @@ export class FieldData {
   }
 
   element_move_changes() {
-    var values = Object.assign([], this.#field);
+    var values = copy_array(this.#field);
     var changes = [];
     for (let column_id = 0; column_id < this.#width; ++column_id) {
       var empty_row_id = -1;

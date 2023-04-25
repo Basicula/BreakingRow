@@ -1,4 +1,4 @@
-import { memo, useEffect, useState, useRef } from 'react';
+import { memo, useEffect, useState, useRef, useLayoutEffect } from 'react';
 import { Animated, Easing, Platform, StyleSheet, View } from 'react-native';
 import {
   Path, Svg, Text as SvgText, Rect, G,
@@ -206,9 +206,6 @@ function GameField({ field_data, grid_step, element_offset, element_style_provid
     }
   };
 
-  if (element_positions.length === 0)
-    reset_positions();
-
   const swap_animation = (first, second) => {
     const first_position = element_positions[first[0]][first[1]];
     const second_position = element_positions[second[0]][second[1]];
@@ -259,7 +256,6 @@ function GameField({ field_data, grid_step, element_offset, element_style_provid
       const move_result = field_data.check_move(first, second);
       if (move_result > 0) {
         field_data.swap_cells(...first, ...second);
-        reset_positions();
         onFieldDataChange(field_data);
       }
       else
@@ -309,7 +305,6 @@ function GameField({ field_data, grid_step, element_offset, element_style_provid
         return;
       field_data.move_elements()
       onFieldDataChange(field_data);
-      reset_positions();
     });
   };
 
@@ -318,7 +313,10 @@ function GameField({ field_data, grid_step, element_offset, element_style_provid
     onFieldDataChange(field_data);
   };
 
-  useEffect(() => {
+  if (element_positions.length === 0)
+    reset_positions();
+  useLayoutEffect(() => {
+    reset_positions();
     animation_running.current = true;
     const update_field_data = () => {
       const element_move_changes = field_data.element_move_changes();

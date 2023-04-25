@@ -27,15 +27,10 @@ const AbilityType = Object.freeze({
 });
 
 function Game({ width, height, score_bonuses, onStrike, onRestart }) {
-  const request_animation_ref = useRef(null);
-  const prev_animation_ref = useRef(null);
   const [highlighted_elements, set_highlighted_elements] = useState([]);
   const [game_state, set_game_state] = useState({
     field_data: new FieldData(width, height),
     moves_count: 0,
-    selected_elements: [],
-    step: -1,
-    prev_step: -1,
     abilities: new Abilities(),
     score_state: {
       score: 0,
@@ -62,10 +57,16 @@ function Game({ width, height, score_bonuses, onStrike, onRestart }) {
       set_element_style_provider(new ElementStyleProvider(element_size));
     set_grid_step(grid_step);
     set_element_offset(element_offset);
-    request_animation_ref.current = requestAnimationFrame(update_game_state);
-    return () => cancelAnimationFrame(request_animation_ref.current);
+    set_game_state({ ...game_state, moves_count: game_state.field_data.get_all_moves().length });
   },
-    [game_state.step, autoplay, game_state.selected_elements]
+    [autoplay]
+  );
+
+  useEffect(() => {
+    auto_move();
+    check_for_game_over();
+  },
+    [game_state.field_data, autoplay]
   );
 
   const game_field_offset = useRef({ x: 0, y: 0 });
@@ -82,7 +83,7 @@ function Game({ width, height, score_bonuses, onStrike, onRestart }) {
   };
 
   const check_for_game_over = () => {
-    if (game_state.moves_count > 0)
+    if (game_state.field_data.get_all_moves().length > 0)
       return;
     const abilities_prices = game_state.abilities.all_prices;
     for (let price of abilities_prices)
@@ -98,7 +99,9 @@ function Game({ width, height, score_bonuses, onStrike, onRestart }) {
       set_autoplay(false);
       return;
     }
-    if (game_state.step !== -1)
+    if (game_state.field_data.has_empty_cells())
+      return;
+    if (game_state.field_data.has_groups())
       return;
     var moves = game_state.field_data.get_all_moves();
     if (moves.length > 0) {
@@ -112,10 +115,10 @@ function Game({ width, height, score_bonuses, onStrike, onRestart }) {
       }
       const move_index = Math.trunc(Math.random() * max_strike_value_count);
       const move = moves[move_index]["move"];
+      game_state.field_data.swap_cells(...move[0], ...move[1]);
       set_game_state({
         ...game_state,
-        selected_elements: move,
-        step: 3
+        field_data: game_state.field_data.clone(),
       });
     } else {
       const cheapest_ability = game_state.abilities.cheapest;
@@ -138,85 +141,6 @@ function Game({ width, height, score_bonuses, onStrike, onRestart }) {
       }
     }
   };
-
-  const update_game_state = (time) => {
-    auto_move();
-    prev_animation_ref.current = time;
-    const steps = 4;
-    let next_step = (game_state.step + 1) % steps;
-    var prev_step = game_state.step;
-    var field_data = undefined;
-    var selected_elements = undefined;
-    var new_score_state = undefined;
-    switch (game_state.step) {
-      case -1:
-        return;
-      case 0:
-        const removed_groups_details = game_state.field_data.accumulate_groups();
-        const changed = removed_groups_details.length > 0;
-        if (changed) {
-          var total_score_delta = 0;
-          for (let removed_group_details of removed_groups_details) {
-            const value = 2 ** removed_group_details.value;
-            const count = removed_group_details.size;
-            onStrike(value, count);
-            const bonus = count in score_bonuses ? score_bonuses[count] : 10;
-            const score_delta = value * count * bonus;
-            total_score_delta += score_delta;
-          }
-          new_score_state = {
-            score: game_state.score_state.score + total_score_delta,
-            total_score: game_state.score_state.total_score + total_score_delta,
-            spent_score: game_state.score_state.spent_score
-          }
-          field_data = game_state.field_data.clone();
-          if (game_state.prev_step === 3)
-            selected_elements = [];
-        } else if (game_state.prev_step === 3) {
-          prev_step = 0;
-          next_step = 3;
-        } else if (game_state.prev_step != game_state.step) {
-          next_step = -1;
-          prev_step = -1;
-          check_for_game_over();
-        }
-        break;
-      case 1:
-        game_state.field_data.move_elements();
-        field_data = game_state.field_data.clone();
-        break;
-      case 2:
-        game_state.field_data.spawn_new_values();
-        field_data = game_state.field_data.clone();
-        next_step = 0;
-        break;
-      case 3:
-        if (game_state.selected_elements.length === 2) {
-          game_state.field_data.swap_cells(
-            game_state.selected_elements[0][0], game_state.selected_elements[0][1],
-            game_state.selected_elements[1][0], game_state.selected_elements[1][1]
-          );
-          field_data = game_state.field_data.clone();
-          if (game_state.prev_step === 0) {
-            selected_elements = [];
-            next_step = -1;
-            prev_step = -1;
-          }
-        }
-        break;
-      default:
-        break;
-    }
-    set_game_state({
-      ...game_state,
-      field_data: field_data !== undefined ? field_data : game_state.field_data,
-      moves_count: field_data !== undefined ? field_data.get_all_moves().length : game_state.moves_count,
-      step: next_step,
-      prev_step: prev_step,
-      selected_elements: selected_elements !== undefined ? selected_elements : game_state.selected_elements,
-      score_state: new_score_state !== undefined ? new_score_state : game_state.score_state
-    });
-  }
 
   const on_ability_move = (x, y, ability_type) => {
     x -= game_field_offset.current.x;
@@ -416,9 +340,6 @@ function Game({ width, height, score_bonuses, onStrike, onRestart }) {
     set_highlighted_elements([]);
     set_game_state({
       field_data: new FieldData(width, height),
-      step: -1,
-      prev_step: -1,
-      selected_elements: [],
       abilities: new Abilities(),
       score_state: {
         score: 0,
