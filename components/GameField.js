@@ -173,11 +173,18 @@ const GameElement = memo(function ({ value, size, color, shape_path,
 function GameField({ field_data, grid_step, element_offset, element_style_provider,
   highlighted_elements, onLayout,
   onFieldDataChange, onAccumulateElements }) {
+  const get_element_position = (row, column) => {
+    const x = column * grid_step + element_offset + element_style_provider.size / 2;
+    const y = row * grid_step + element_offset + element_style_provider.size / 2;
+    return { x: x, y: y };
+  };
   const width = grid_step * field_data.width;
   const height = grid_step * field_data.height;
 
-  const element_positions = useRef([]).current;
-  const element_scales = useRef(init_array(field_data.width, field_data.height, undefined, () => new Animated.Value(0))).current;
+  const element_positions = useRef(init_array(field_data.width, field_data.height, undefined,
+    (i, j) => new Animated.ValueXY(get_element_position(i, j)))).current;
+  const element_scales = useRef(init_array(field_data.width, field_data.height, undefined,
+    (i, j) => new Animated.Value(0))).current;
   const animation_running = useRef(false);
   const animation_duration = 250;
   const use_native_driver = false;
@@ -185,25 +192,11 @@ function GameField({ field_data, grid_step, element_offset, element_style_provid
   const mouse_down_position = useRef([]);
   const [selected_elements, set_selected_elements] = useState([]);
 
-  const get_element_position = (row, column) => {
-    const x = column * grid_step + element_offset + element_style_provider.size / 2;
-    const y = row * grid_step + element_offset + element_style_provider.size / 2;
-    return { x: x, y: y };
-  };
 
   const reset_positions = () => {
-    if (element_positions.length === 0) {
-      for (let row_id = 0; row_id < field_data.height; ++row_id) {
-        var row = [];
-        for (let column_id = 0; column_id < field_data.width; ++column_id)
-          row.push(new Animated.ValueXY(get_element_position(row_id, column_id)));
-        element_positions.push(row);
-      }
-    } else {
-      for (let row_id = 0; row_id < field_data.height; ++row_id)
-        for (let column_id = 0; column_id < field_data.width; ++column_id)
-          element_positions[row_id][column_id].setValue(get_element_position(row_id, column_id));
-    }
+    for (let row_id = 0; row_id < field_data.height; ++row_id)
+      for (let column_id = 0; column_id < field_data.width; ++column_id)
+        element_positions[row_id][column_id].setValue(get_element_position(row_id, column_id));
   };
 
   const swap_animation = (first, second) => {
@@ -313,8 +306,6 @@ function GameField({ field_data, grid_step, element_offset, element_style_provid
     onFieldDataChange(field_data);
   };
 
-  if (element_positions.length === 0)
-    reset_positions();
   useLayoutEffect(() => {
     reset_positions();
     animation_running.current = true;

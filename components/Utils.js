@@ -14,7 +14,7 @@ export function init_array(width, height, value, value_generator) {
     var row = [];
     for (let j = 0; j < width; ++j)
       if (value === undefined)
-        row.push(value_generator());
+        row.push(value_generator(i, j));
       else
         row.push(value);
     array.push(row);
