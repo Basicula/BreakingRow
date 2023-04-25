@@ -1,6 +1,6 @@
 import { StyleSheet, View, TouchableOpacity, Text, Modal } from 'react-native';
 
-export default function GameOver({ total_score, spent_score, visible, onRestart }) {
+export default function GameOver({ earned_score, spent_score, visible, onRestart }) {
   return (
     <Modal
       animationType="slide"
@@ -11,7 +11,7 @@ export default function GameOver({ total_score, spent_score, visible, onRestart 
         <View style={styles.game_over_view_container}>
           <Text style={styles.game_over_text_title}>Game Over</Text>
           <View style={styles.game_over_score_container}>
-            <Text style={styles.game_over_score_text}>Total Earned Score: {total_score}</Text>
+            <Text style={styles.game_over_score_text}>Total Earned Score: {earned_score}</Text>
             <Text style={styles.game_over_score_text}>Spent Score: {spent_score}</Text>
           </View>
           <View style={styles.game_over_buttons_container}>

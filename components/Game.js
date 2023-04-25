@@ -26,18 +26,34 @@ const AbilityType = Object.freeze({
   None: "None"
 });
 
+function useScore(init_score) {
+  const [score, set_score] = useState(init_score);
+  const [earned_score, set_earned_score] = useState(init_score);
+  const [spent_score, set_spent_score] = useState(0);
+
+  const update_score = (earned_score_value, spent_score_value) => {
+    set_score(score + earned_score_value - spent_score_value);
+    set_earned_score(earned_score_value + earned_score_value);
+    set_spent_score(spent_score + spent_score_value);
+  };
+
+  const reset_score = (score_value = 0, spent_score_value = 0) => {
+    set_score(score_value);
+    set_earned_score(score_value);
+    set_spent_score(spent_score_value);
+  };
+
+  return [score, earned_score, spent_score, update_score, reset_score];
+}
+
 function Game({ width, height, score_bonuses, onStrike, onRestart }) {
   const [highlighted_elements, set_highlighted_elements] = useState([]);
   const [game_state, set_game_state] = useState({
     field_data: new FieldData(width, height),
     moves_count: 0,
-    abilities: new Abilities(),
-    score_state: {
-      score: 0,
-      total_score: 0,
-      spent_score: 0
-    }
+    abilities: new Abilities()
   });
+  const [score, earned_score, spent_score, update_score, reset_score] = useScore(0);
   const [element_style_provider, set_element_style_provider] = useState(undefined);
   const [grid_step, set_grid_step] = useState(0);
   const [element_offset, set_element_offset] = useState(0);
@@ -58,16 +74,12 @@ function Game({ width, height, score_bonuses, onStrike, onRestart }) {
     set_grid_step(grid_step);
     set_element_offset(element_offset);
     set_game_state({ ...game_state, moves_count: game_state.field_data.get_all_moves().length });
-  },
-    [autoplay]
-  );
+  }, []);
 
   useEffect(() => {
     auto_move();
     check_for_game_over();
-  },
-    [game_state.field_data, autoplay]
-  );
+  }, [game_state.field_data, autoplay]);
 
   const game_field_offset = useRef({ x: 0, y: 0 });
   const on_game_field_layout = (event) => {
@@ -87,7 +99,7 @@ function Game({ width, height, score_bonuses, onStrike, onRestart }) {
       return;
     const abilities_prices = game_state.abilities.all_prices;
     for (let price of abilities_prices)
-      if (price <= game_state.score_state.score)
+      if (price <= score)
         return;
     set_is_game_over(true);
   };
@@ -123,7 +135,7 @@ function Game({ width, height, score_bonuses, onStrike, onRestart }) {
     } else {
       const cheapest_ability = game_state.abilities.cheapest;
       if (cheapest_ability === game_state.abilities.upgrade_generator ||
-        game_state.abilities.upgrade_generator.price < game_state.score_state.score)
+        game_state.abilities.upgrade_generator.price < score)
         upgrade_generator();
       else if (cheapest_ability === game_state.abilities.shuffle)
         shuffle();
@@ -201,107 +213,86 @@ function Game({ width, height, score_bonuses, onStrike, onRestart }) {
   };
 
   const shuffle = () => {
-    if (game_state.score_state.score < game_state.abilities.shuffle.price)
+    if (score < game_state.abilities.shuffle.price)
       return;
     game_state.field_data.shuffle();
-    const negative_score_value = game_state.abilities.shuffle.price;
     game_state.abilities.shuffle.next_price();
+    update_score(0, game_state.abilities.shuffle.price);
     set_game_state({
       ...game_state,
       field_data: game_state.field_data.clone(),
-      abilities: game_state.abilities.clone(),
-      score_state: {
-        score: game_state.score_state.score - negative_score_value,
-        total_score: game_state.score_state.total_score,
-        spent_score: game_state.score_state.spent_score + negative_score_value
-      }
+      abilities: game_state.abilities.clone()
     });
   };
 
   const upgrade_generator = () => {
-    if (game_state.score_state.score < game_state.abilities.upgrade_generator.price)
+    if (score < game_state.abilities.upgrade_generator.price)
       return;
     game_state.field_data.increase_values_interval();
     const small_value = game_state.field_data.values_interval[0] - 1;
     const values_count = game_state.field_data.remove_value(small_value);
-    const positive_score_value = values_count * 2 ** small_value;
-    const negative_score_value = game_state.abilities.upgrade_generator.price;
+    const earned_score_value = values_count * 2 ** small_value;
+    const spent_score_value = game_state.abilities.upgrade_generator.price;
     game_state.abilities.upgrade_generator.next_price();
+    update_score(earned_score_value, spent_score_value);
     set_game_state({
       ...game_state,
       field_data: game_state.field_data.clone(),
-      abilities: game_state.abilities.clone(),
-      score_state: {
-        score: game_state.score_state.score + positive_score_value - negative_score_value,
-        total_score: game_state.score_state.total_score + positive_score_value,
-        spent_score: game_state.score_state.spent_score + negative_score_value
-      }
+      abilities: game_state.abilities.clone()
     });
   };
 
   const apply_bomb = (element_coordinates) => {
-    if (game_state.score_state.score < game_state.abilities.bomb.price)
+    if (score < game_state.abilities.bomb.price)
       return;
     const removed_values = game_state.field_data.remove_zone(
       element_coordinates[0] - 1, element_coordinates[1] - 1,
       element_coordinates[0] + 1, element_coordinates[1] + 1
     );
-    var positive_score_value = 0;
+    var earned_score_value = 0;
     for (let [value, count] of Object.entries(removed_values))
-      positive_score_value += 2 ** value * count;
-    const negative_score_value = game_state.abilities.bomb.price;
+      earned_score_value += 2 ** value * count;
+    const spent_score_value = game_state.abilities.bomb.price;
     game_state.abilities.bomb.next_price();
+    update_score(earned_score_value, spent_score_value);
     set_game_state({
       ...game_state,
       field_data: game_state.field_data.clone(),
-      abilities: game_state.abilities.clone(),
-      score_state: {
-        score: game_state.score_state.score + positive_score_value - negative_score_value,
-        total_score: game_state.score_state.total_score + positive_score_value,
-        spent_score: game_state.score_state.spent_score + negative_score_value
-      }
+      abilities: game_state.abilities.clone()
     });
   };
 
   const remove_element = (element_coordinates) => {
-    if (game_state.score_state.score < game_state.abilities.remove_element.price)
+    if (score < game_state.abilities.remove_element.price)
       return;
     const removed_values = game_state.field_data.remove_zone(
       element_coordinates[0], element_coordinates[1],
       element_coordinates[0], element_coordinates[1]
     );
-    const positive_score_value = 2 ** Object.keys(removed_values)[0];
-    const negative_score_value = game_state.abilities.remove_element.price;
+    const earned_score_value = 2 ** Object.keys(removed_values)[0];
+    const spent_score_value = game_state.abilities.remove_element.price;
     game_state.abilities.remove_element.next_price();
+    update_score(earned_score_value, spent_score_value);
     set_game_state({
       ...game_state,
       field_data: game_state.field_data.clone(),
-      abilities: game_state.abilities.clone(),
-      score_state: {
-        score: game_state.score_state.score + positive_score_value - negative_score_value,
-        total_score: game_state.score_state.total_score + positive_score_value,
-        spent_score: game_state.score_state.spent_score + negative_score_value
-      }
+      abilities: game_state.abilities.clone()
     });
   };
 
   const remove_elements_by_value = (element_coordinates) => {
-    if (game_state.score_state.score < game_state.abilities.remove_elements_by_value.price)
+    if (score < game_state.abilities.remove_elements_by_value.price)
       return;
     const value = game_state.field_data.at(element_coordinates[0], element_coordinates[1]);
     const removed_values_count = game_state.field_data.remove_value(value);
-    const positive_score_value = removed_values_count * 2 ** value;
-    const negative_score_value = game_state.abilities.remove_elements_by_value.price;
+    const earned_score_value = removed_values_count * 2 ** value;
+    const spent_score_value = game_state.abilities.remove_elements_by_value.price;
     game_state.abilities.remove_elements_by_value.next_price();
+    update_score(earned_score_value, spent_score_value);
     set_game_state({
       ...game_state,
       field_data: game_state.field_data.clone(),
-      abilities: game_state.abilities.clone(),
-      score_state: {
-        score: game_state.score_state.score + positive_score_value - negative_score_value,
-        total_score: game_state.score_state.total_score + positive_score_value,
-        spent_score: game_state.score_state.spent_score + negative_score_value
-      }
+      abilities: game_state.abilities.clone()
     });
   };
 
@@ -314,25 +305,20 @@ function Game({ width, height, score_bonuses, onStrike, onRestart }) {
   };
 
   const accumulate_elements = (new_field_data, removed_groups_details) => {
-    var total_score_delta = 0;
+    var earned_score_value = 0;
     for (let removed_group_details of removed_groups_details) {
       const value = 2 ** removed_group_details.value;
       const count = removed_group_details.group.length;
       onStrike(value, count);
       const bonus = count in score_bonuses ? score_bonuses[count] : 10;
       const score_delta = value * count * bonus;
-      total_score_delta += score_delta;
+      earned_score_value += score_delta;
     }
-    const new_score_state = {
-      score: game_state.score_state.score + total_score_delta,
-      total_score: game_state.score_state.total_score + total_score_delta,
-      spent_score: game_state.score_state.spent_score
-    }
+    update_score(earned_score_value, 0);
     set_game_state({
       ...game_state,
       field_data: new_field_data,
-      moves_count: new_field_data.get_all_moves().length,
-      score_state: new_score_state,
+      moves_count: new_field_data.get_all_moves().length
     });
   };
 
@@ -340,13 +326,9 @@ function Game({ width, height, score_bonuses, onStrike, onRestart }) {
     set_highlighted_elements([]);
     set_game_state({
       field_data: new FieldData(width, height),
-      abilities: new Abilities(),
-      score_state: {
-        score: 0,
-        total_score: 0,
-        spent_score: 0
-      }
+      abilities: new Abilities()
     });
+    reset_score();
     set_is_game_over(false);
     onRestart();
   }
@@ -354,13 +336,13 @@ function Game({ width, height, score_bonuses, onStrike, onRestart }) {
   return (
     <View style={styles.elements_container}>
       <GameOver
-        total_score={game_state.score_state.total_score}
-        spent_score={game_state.score_state.spent_score}
+        earned_score={earned_score}
+        spent_score={spent_score}
         visible={is_game_over}
         onRestart={restart}
       />
       <ScoreVisualizer
-        score={game_state.score_state.score}
+        score={score}
         moves_count={game_state.moves_count}
       />
       {grid_step > 0 &&
@@ -381,7 +363,7 @@ function Game({ width, height, score_bonuses, onStrike, onRestart }) {
       }
       <AbilitiesVisualizer
         abilities={game_state.abilities}
-        score={game_state.score_state.score}
+        score={score}
         onRemoveElement={() => apply_ability(highlighted_elements[0], AbilityType.RemoveElement)}
         onBomb={() => apply_ability(highlighted_elements[4], AbilityType.Bomb)}
         onRemoveElementsByValue={() => apply_ability(highlighted_elements[0], AbilityType.RemoveElementsByValue)}
