@@ -4,7 +4,7 @@ export function line_path(x1, y1, x2, y2) {
   return svg_path;
 }
 
-function rounded_path(points, rounding_radius) {
+export function rounded_corners_path(points, rounding_radius) {
   var points_with_offset = [];
   var arc_directions = [];
   for (let point_id = 0; point_id < points.length; ++point_id) {
@@ -41,13 +41,21 @@ function rounded_path(points, rounding_radius) {
     if (next_point_id === points_with_offset.length)
       next_point_id = 0;
     const arc_id = Math.trunc(point_id / 2);
-    svg_path += `A ${rounding_radius} ${rounding_radius} 0 0 ${arc_directions[arc_id] ? 0:1} ${points_with_offset[point_id][0]},${points_with_offset[point_id][1]}\n`;
+    svg_path += `A ${rounding_radius} ${rounding_radius} 0 0 ${arc_directions[arc_id] ? 0 : 1} ${points_with_offset[point_id][0]},${points_with_offset[point_id][1]}\n`;
     svg_path += `L ${points_with_offset[next_point_id][0]},${points_with_offset[next_point_id][1]}\n`;
   }
   return svg_path;
 }
 
-function polyline_path(points) {
+export function rounded_edges_path(points, rounding_radius) {
+  var svg_path = `M ${points[0][0]},${points[0][1]}\n`;
+  for (let point_id = 1; point_id < points.length; ++point_id)
+    svg_path += `A ${rounding_radius} ${rounding_radius} 0 0 1 ${points[point_id][0]},${points[point_id][1]}\n`;
+  svg_path += `A ${rounding_radius} ${rounding_radius} 0 0 1 ${points[0][0]},${points[0][1]}\n`;
+  return svg_path;
+}
+
+export function polyline_path(points) {
   var svg_path = `M ${points[0][0]},${points[0][1]}\n`;
   for (let point_id = 1; point_id < points.length; ++point_id)
     svg_path += `L ${points[point_id][0]},${points[point_id][1]}\n`;
@@ -60,6 +68,23 @@ export function circle_path(center, radius) {
   svg_path += `A ${radius} ${radius} 0 0 1 ${center[0] - radius},${center[1]}\n`;
   svg_path += `A ${radius} ${radius} 0 0 1 ${center[0] + radius},${center[1]}\n`;
   return svg_path;
+}
+
+export function regular_polygon_points(
+  center,
+  size,
+  angle_count,
+  start_angle = 0) {
+  const angle_step = (Math.PI * 2) / angle_count;
+  var points = [];
+  for (let point_id = 0; point_id < angle_count; ++point_id) {
+    const angle = start_angle + point_id * angle_step;
+    points.push([
+      center[0] + size * Math.cos(angle),
+      center[1] + size * Math.sin(angle),
+    ]);
+  }
+  return points;
 }
 
 export function regular_polygon_path(
@@ -81,7 +106,7 @@ export function regular_polygon_path(
   if (rounding_radius === 0)
     return polyline_path(points);
 
-  return rounded_path(points, rounding_radius);
+  return rounded_corners_path(points, rounding_radius);
 }
 
 export function star_path(
@@ -105,5 +130,5 @@ export function star_path(
   if (rounding_radius === 0)
     polyline_path(points);
 
-  return rounded_path(points, rounding_radius);
+  return rounded_corners_path(points, rounding_radius);
 }
