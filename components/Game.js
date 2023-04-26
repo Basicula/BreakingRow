@@ -33,7 +33,7 @@ function useScore(init_score) {
 
   const update_score = (earned_score_value, spent_score_value) => {
     set_score(score + earned_score_value - spent_score_value);
-    set_earned_score(earned_score_value + earned_score_value);
+    set_earned_score(earned_score + earned_score_value);
     set_spent_score(spent_score + spent_score_value);
   };
 
