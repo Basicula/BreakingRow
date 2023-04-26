@@ -100,10 +100,34 @@ function useFieldData(width, height) {
   return [field_data, moves_count, update_field_data];
 }
 
+function useAbilities() {
+  const abilities_key = "Abilities";
+  const [abilities, set_abilities] = useState(new Abilities());
+
+  useEffect(() => {
+    AsyncStorage.getItem(abilities_key).then(json_data => {
+      if (json_data === null) {
+        const new_abilities = new Abilities();
+        AsyncStorage.setItem(abilities_key, new_abilities.stringify());
+        set_abilities(new_abilities);
+      }
+      else
+        set_abilities(Abilities.parse(json_data));
+    });
+  }, []);
+
+  const update_abilities = (new_abilities) => {
+    AsyncStorage.setItem(abilities_key, new_abilities.stringify());
+    set_abilities(new_abilities);
+  };
+
+  return [abilities, update_abilities];
+}
+
 function Game({ width, height, score_bonuses, onStrike, onRestart }) {
   const [highlighted_elements, set_highlighted_elements] = useState([]);
   const [field_data, moves_count, set_field_data] = useFieldData(width, height);
-  const [abilities, set_abilities] = useState(new Abilities());
+  const [abilities, set_abilities] = useAbilities();
   const [score, earned_score, spent_score, update_score, reset_score] = useScore(0);
   const [element_style_provider, set_element_style_provider] = useState(undefined);
   const [grid_step, set_grid_step] = useState(0);

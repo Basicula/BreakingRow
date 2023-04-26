@@ -44,6 +44,27 @@ class Ability {
   get name() {
     return this.#name;
   }
+
+  stringify() {
+    return JSON.stringify({
+      starting_price: this.#starting_price,
+      price_step: this.#price_step,
+      price_factor: this.#price_factor,
+      name: this.#name,
+      current_price: this.#current_price,
+    });
+  }
+
+  static parse(json_data_string) {
+    var new_ability = new Ability();
+    const json_data = JSON.parse(json_data_string);
+    new_ability.#starting_price = json_data.starting_price;
+    new_ability.#price_step = json_data.price_step;
+    new_ability.#price_factor = json_data.price_factor;
+    new_ability.#name = json_data.name;
+    new_ability.#current_price = json_data.current_price;
+    return new_ability;
+  }
 }
 
 export class Abilities {
@@ -98,6 +119,21 @@ export class Abilities {
   clone() {
     var new_abilities = new Abilities();
     new_abilities.#all = this.#all;
+    return new_abilities;
+  }
+
+  stringify() {
+    var json_data = [];
+    for (let ability of this.#all)
+      json_data.push(ability.stringify());
+    return JSON.stringify(json_data);
+  }
+
+  static parse(json_data_string) {
+    const json_data = JSON.parse(json_data_string);
+    var new_abilities = new Abilities();
+    for (let i = 0; i < json_data.length; ++i)
+      new_abilities.#all[i] = Ability.parse(json_data[i]);
     return new_abilities;
   }
 }
