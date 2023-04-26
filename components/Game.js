@@ -28,30 +28,53 @@ const AbilityType = Object.freeze({
 });
 
 function useScore(init_score) {
-  const [score, set_score] = useState(init_score);
-  const [earned_score, set_earned_score] = useState(init_score);
-  const [spent_score, set_spent_score] = useState(0);
+  const score_key = "Score";
+  const [score_state, set_score_state] = useState({});
+
+  useEffect(() => {
+    AsyncStorage.getItem(score_key).then(json_data => {
+      if (json_data === null) {
+        const init_score_state = {
+          score: init_score,
+          earned_score: init_score,
+          spent_score: 0
+        };
+        AsyncStorage.setItem(score_key, JSON.stringify(init_score_state));
+        set_score_state(init_score_state);
+      }
+      else
+        set_score_state(JSON.parse(json_data));
+    });
+  }, []);
 
   const update_score = (earned_score_value, spent_score_value) => {
-    set_score(score + earned_score_value - spent_score_value);
-    set_earned_score(earned_score + earned_score_value);
-    set_spent_score(spent_score + spent_score_value);
+    const new_score_state = {
+      score: score_state.score + earned_score_value - spent_score_value,
+      earned_score: score_state.earned_score + earned_score_value,
+      spent_score: score_state.spent_score + spent_score_value
+    };
+    AsyncStorage.setItem(score_key, JSON.stringify(new_score_state));
+    set_score_state(new_score_state);
   };
 
   const reset_score = (score_value = 0, spent_score_value = 0) => {
-    set_score(score_value);
-    set_earned_score(score_value);
-    set_spent_score(spent_score_value);
+    const new_score_state = {
+      score: score_value,
+      earned_score: score_value,
+      spent_score: spent_score_value
+    };
+    AsyncStorage.setItem(score_key, JSON.stringify(new_score_state));
+    set_score_state(new_score_state);
   };
 
-  return [score, earned_score, spent_score, update_score, reset_score];
+  return [score_state.score, score_state.earned_score, score_state.spent_score, update_score, reset_score];
 }
 
 function useFieldData(width, height) {
   const field_data_key = "FieldData";
   const [field_data, set_field_data] = useState(new FieldData(width, height));
 
-  useEffect(()=>{
+  useEffect(() => {
     AsyncStorage.getItem(field_data_key).then(json_data => {
       if (json_data === null) {
         const new_field_data = new FieldData(width, height);
@@ -61,7 +84,7 @@ function useFieldData(width, height) {
       else
         set_field_data(FieldData.parse(json_data));
     });
-  },[]);
+  }, []);
 
   const update_field_data = (new_field_data) => {
     AsyncStorage.setItem(field_data_key, new_field_data.stringify());
