@@ -1,5 +1,5 @@
 import { useRef, useEffect, useState, memo } from "react";
-import { StatusBar, StyleSheet, View, Text, Platform, Dimensions } from 'react-native';
+import { StatusBar, StyleSheet, View, Text, Platform, Dimensions, TouchableOpacity } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 import { FieldData } from "./GameFieldData.js";
@@ -8,14 +8,20 @@ import { map_coordinates } from "./Utils.js";
 import { ElementStyleProvider } from "./ElementStyleProvider.js";
 import GameOver from "./GameOver.js";
 import { Abilities, AbilitiesVisualizer } from "./Abilities.js";
+import Restart from "./Icons/Restart.js"
 
-const ScoreVisualizer = memo(function ({ score, moves_count }) {
+const GameHeader = memo(function ({ score, moves_count, onRestart }) {
   return (
-    <View style={styles.score_container}>
-      <Text style={styles.game_state_text_info_container}>Score</Text>
-      <Text style={styles.game_state_text_info_container}>{score}</Text>
-      <Text style={styles.game_state_text_info_container}>Moves count</Text>
-      <Text style={styles.game_state_text_info_container}>{moves_count}</Text>
+    <View style={styles.game_header_container}>
+      <View style={styles.game_header_info_container}>
+        <Text style={styles.game_header_info}>Score</Text>
+        <Text style={styles.game_header_info}>{score}</Text>
+      </View>
+      <TouchableOpacity onPress={onRestart}><Restart size={25}></Restart></TouchableOpacity>
+      <View style={styles.game_header_info_container}>
+        <Text style={styles.game_header_info}>Moves count</Text>
+        <Text style={styles.game_header_info}>{moves_count}</Text>
+      </View>
     </View>
   );
 });
@@ -392,9 +398,10 @@ function Game({ width, height, score_bonuses, onStrike, onRestart }) {
         visible={is_game_over}
         onRestart={restart}
       />
-      <ScoreVisualizer
+      <GameHeader
         score={score}
         moves_count={moves_count}
+        onRestart={restart}
       />
       {grid_step > 0 &&
         <GameField
@@ -434,23 +441,31 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
 
-  score_container: {
+  game_header_container: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
+    alignItems: "center",
     padding: 5,
 
     backgroundColor: '#aaa',
-    fontSize: 48,
     borderTopLeftRadius: 10,
     borderTopRightRadius: 10,
   },
 
-  game_state_text_info_container: {
+  game_header_info_container: {
+    flex: 1,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    paddingLeft: 10,
+    paddingRight: 10,
+  },
+
+  game_header_info: {
+    fontSize: 16,
     fontWeight: 'bold',
     textShadowColor: 'white',
     textShadowOffset: { width: 2, height: 2 },
     textShadowRadius: 5,
-  }
+  },
 });
 
 export default memo(Game);
