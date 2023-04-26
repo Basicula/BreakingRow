@@ -359,4 +359,23 @@ export class FieldData {
         }
     } while (this.get_all_moves().length === 0);
   }
+
+  stringify() {
+    var json_data = {};
+    json_data["field"] = this.#field;
+    json_data["width"] = this.#width;
+    json_data["height"] = this.#height;
+    json_data["values_interval"] = this.#values_interval;
+    json_data["values_probability_mask"] = this.#values_probability_mask;
+    return JSON.stringify(json_data);
+  }
+
+  static parse(json_data_string) {
+    const json_data = JSON.parse(json_data_string);
+    var new_field_data = new FieldData(json_data["width"], json_data["height"]);
+    new_field_data.#field = json_data["field"];
+    new_field_data.#values_interval = json_data["values_interval"];
+    new_field_data.#values_probability_mask = json_data["values_probability_mask"];
+    return new_field_data;
+  }
 }

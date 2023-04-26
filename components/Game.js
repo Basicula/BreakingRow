@@ -1,5 +1,6 @@
 import { useRef, useEffect, useState, memo } from "react";
 import { StatusBar, StyleSheet, View, Text, Platform, Dimensions } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 import { FieldData } from "./GameFieldData.js";
 import GameField from "./GameField.js";
@@ -46,9 +47,33 @@ function useScore(init_score) {
   return [score, earned_score, spent_score, update_score, reset_score];
 }
 
+function useFieldData(width, height) {
+  const field_data_key = "FieldData";
+  const [field_data, set_field_data] = useState(new FieldData(width, height));
+
+  useEffect(()=>{
+    AsyncStorage.getItem(field_data_key).then(json_data => {
+      if (json_data === null) {
+        const new_field_data = new FieldData(width, height);
+        AsyncStorage.setItem(field_data_key, new_field_data.stringify());
+        set_field_data(new_field_data);
+      }
+      else
+        set_field_data(FieldData.parse(json_data));
+    });
+  },[]);
+
+  const update_field_data = (new_field_data) => {
+    AsyncStorage.setItem(field_data_key, new_field_data.stringify());
+    set_field_data(new_field_data);
+  };
+
+  return [field_data, update_field_data];
+}
+
 function Game({ width, height, score_bonuses, onStrike, onRestart }) {
   const [highlighted_elements, set_highlighted_elements] = useState([]);
-  const [field_data, set_field_data] = useState(new FieldData(width, height));
+  const [field_data, set_field_data] = useFieldData(width, height);
   const [moves_count, set_moves_count] = useState(field_data.get_all_moves().length);
   const [abilities, set_abilities] = useState(new Abilities());
   const [score, earned_score, spent_score, update_score, reset_score] = useScore(0);
