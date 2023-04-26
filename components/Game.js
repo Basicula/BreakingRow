@@ -73,6 +73,7 @@ function useScore(init_score) {
 function useFieldData(width, height) {
   const field_data_key = "FieldData";
   const [field_data, set_field_data] = useState(new FieldData(width, height));
+  const [moves_count, set_moves_count] = useState(field_data.get_all_moves().length);
 
   useEffect(() => {
     AsyncStorage.getItem(field_data_key).then(json_data => {
@@ -80,24 +81,28 @@ function useFieldData(width, height) {
         const new_field_data = new FieldData(width, height);
         AsyncStorage.setItem(field_data_key, new_field_data.stringify());
         set_field_data(new_field_data);
+        set_moves_count(new_field_data.get_all_moves().length);
       }
-      else
-        set_field_data(FieldData.parse(json_data));
+      else {
+        var new_field_data = FieldData.parse(json_data);
+        set_field_data(new_field_data);
+        set_moves_count(new_field_data.get_all_moves().length);
+      }
     });
   }, []);
 
   const update_field_data = (new_field_data) => {
     AsyncStorage.setItem(field_data_key, new_field_data.stringify());
     set_field_data(new_field_data);
+    set_moves_count(new_field_data.get_all_moves().length);
   };
 
-  return [field_data, update_field_data];
+  return [field_data, moves_count, update_field_data];
 }
 
 function Game({ width, height, score_bonuses, onStrike, onRestart }) {
   const [highlighted_elements, set_highlighted_elements] = useState([]);
-  const [field_data, set_field_data] = useFieldData(width, height);
-  const [moves_count, set_moves_count] = useState(field_data.get_all_moves().length);
+  const [field_data, moves_count, set_field_data] = useFieldData(width, height);
   const [abilities, set_abilities] = useState(new Abilities());
   const [score, earned_score, spent_score, update_score, reset_score] = useScore(0);
   const [element_style_provider, set_element_style_provider] = useState(undefined);
@@ -343,14 +348,12 @@ function Game({ width, height, score_bonuses, onStrike, onRestart }) {
     }
     update_score(earned_score_value, 0);
     set_field_data(new_field_data);
-    set_moves_count(new_field_data.get_all_moves().length);
   };
 
   const restart = () => {
     set_highlighted_elements([]);
     var new_field_data = new FieldData(width, height);
     set_field_data(new_field_data);
-    set_moves_count(new_field_data.get_all_moves().length);
     set_abilities(new Abilities());
     reset_score();
     set_is_game_over(false);
@@ -376,10 +379,7 @@ function Game({ width, height, score_bonuses, onStrike, onRestart }) {
           field_data={field_data.clone()}
           highlighted_elements={highlighted_elements}
           element_style_provider={element_style_provider}
-          onFieldDataChange={(new_field_data) => {
-            set_field_data(new_field_data);
-            set_moves_count(new_field_data.get_all_moves().length);
-          }}
+          onFieldDataChange={(new_field_data) => set_field_data(new_field_data)}
           onAccumulateElements={accumulate_elements}
           onLayout={on_game_field_layout}
         />
