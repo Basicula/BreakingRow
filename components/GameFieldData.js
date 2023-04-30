@@ -20,60 +20,40 @@ export class FieldData {
   }
 
   #cross_group_at(row_id, column_id) {
-    const check_row = (row_id, column_id) => {
-      var r = column_id + 1;
-      var l = column_id - 1;
+    const target_value = this.#field[row_id][column_id];
+    const get_coordinates = (row_id, column_id, range_index, check_row) => {
+      if (check_row)
+        return [row_id, range_index];
+      return [range_index, column_id];
+    };
+    const check_line = (row_id, column_id, check_row) => {
+      var r = check_row ? column_id + 1 : row_id + 1;
+      var l = check_row ? column_id - 1 : row_id - 1;
       while (true) {
-        if (r < this.#width &&
-          this.#field[row_id][r] === this.#field[row_id][column_id])
+        if (r < this.#height && this.at(...get_coordinates(row_id, column_id, r, check_row)) === target_value)
           ++r;
-        else if (l >= 0 &&
-          this.#field[row_id][l] === this.#field[row_id][column_id])
+        else if (l >= 0 && this.at(...get_coordinates(row_id, column_id, l, check_row)) === target_value)
           --l;
         else
           break;
       }
       return [r, l];
     };
-    const check_column = (row_id, column_id) => {
-      var r = row_id + 1;
-      var l = row_id - 1;
-      while (true) {
-        if (r < this.#height &&
-          this.#field[r][column_id] === this.#field[row_id][column_id])
-          ++r;
-        else if (l >= 0 &&
-          this.#field[l][column_id] === this.#field[row_id][column_id])
-          --l;
-        else
-          break;
-      }
-      return [r, l];
-    };
+    var taken = init_array(this.#width, this.#height, false);
+    var to_check = [[row_id, column_id, true], [row_id, column_id, false]];
     var group = [];
-    var [row_r, row_l] = check_row(row_id, column_id);
-    var [column_r, column_l] = check_column(row_id, column_id);
-    if (row_r - row_l >= 4) {
-      for (let i = row_l + 1; i < row_r; ++i) {
-        group.push([row_id, i]);
-        var [sub_column_r, sub_column_l] = check_column(row_id, i);
-        if (sub_column_r - sub_column_l >= 4)
-          for (let j = sub_column_l + 1; j < sub_column_r; ++j) {
-            if (j === row_id)
-              continue;
-            group.push([j, i]);
-          }
-      }
-    } else if (column_r - column_l >= 4) {
-      for (let i = column_l + 1; i < column_r; ++i) {
-        group.push([i, column_id]);
-        var [sub_row_r, sub_row_l] = check_row(i, column_id);
-        if (sub_row_r - sub_row_l >= 4)
-          for (let j = sub_row_l + 1; j < sub_row_r; ++j) {
-            if (j === column_id)
-              continue;
-            group.push([i, j]);
-          }
+    while (to_check.length > 0) {
+      const current_element = to_check.pop();
+      var [line_r, line_l] = check_line(...current_element);
+      if (line_r - line_l > 3) {
+        for (let i = line_l + 1; i < line_r; ++i) {
+          const coordinates = get_coordinates(current_element[0], current_element[1], i, current_element[2]);
+          if (taken[coordinates[0]][coordinates[1]])
+            continue;
+          group.push(coordinates);
+          taken[coordinates[0]][coordinates[1]] = true;
+          to_check.push([...coordinates, !current_element[2]]);
+        }
       }
     }
     return group;
