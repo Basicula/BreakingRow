@@ -1,4 +1,4 @@
-import { memo, useEffect, useState, useRef, useLayoutEffect } from 'react';
+import { memo, useEffect, useState, useRef } from 'react';
 import { Animated, Easing, Platform, StyleSheet, View } from 'react-native';
 import {
   Path, Svg, Text as SvgText, Rect, G,
@@ -9,7 +9,7 @@ import { line_path } from "./SvgPath.js";
 import { init_array, manhattan_distance, map_coordinates } from './Utils.js';
 import { useSettings } from './Settings.js';
 
-function grid_path(width, height, field_data, grid_step) {
+function game_field_grid_path(width, height, field_data, grid_step) {
   var total_grid_path = "";
   for (let line_id = 0; line_id <= field_data.width || line_id <= field_data.height; ++line_id) {
     if (line_id <= field_data.width) {
@@ -180,24 +180,19 @@ function GameField({ field_data, grid_step, element_offset, element_style_provid
   };
   const width = grid_step * field_data.width;
   const height = grid_step * field_data.height;
+  const minimum_element_scale = Platform.OS === "android" ? 0.01 : 0;
 
+  const [grid_path] = useState(game_field_grid_path(width, height, field_data, grid_step));
   const element_positions = useRef(init_array(field_data.width, field_data.height, undefined,
     (i, j) => new Animated.ValueXY(get_element_position(i, j)))).current;
   const element_scales = useRef(init_array(field_data.width, field_data.height, undefined,
-    (i, j) => new Animated.Value(0))).current;
+    (i, j) => new Animated.Value(minimum_element_scale))).current;
   const animation_running = useRef(false);
   const animation_duration = 250;
   const use_native_driver = false;
 
   const mouse_down_position = useRef([]);
   const [selected_elements, set_selected_elements] = useState([]);
-
-
-  const reset_positions = () => {
-    for (let row_id = 0; row_id < field_data.height; ++row_id)
-      for (let column_id = 0; column_id < field_data.width; ++column_id)
-        element_positions[row_id][column_id].setValue(get_element_position(row_id, column_id));
-  };
 
   const swap_animation = (first, second) => {
     const first_position = element_positions[first[0]][first[1]];
@@ -227,14 +222,14 @@ function GameField({ field_data, grid_step, element_offset, element_style_provid
   const destroy_animation = (row_id, column_id) => {
     element_scales[row_id][column_id].setValue(1);
     return Animated.timing(element_scales[row_id][column_id], {
-      toValue: 0,
+      toValue: minimum_element_scale,
       duration: animation_duration,
       useNativeDriver: use_native_driver
     });
   };
 
   const create_animation = (row_id, column_id) => {
-    element_scales[row_id][column_id].setValue(0);
+    element_scales[row_id][column_id].setValue(minimum_element_scale);
     return Animated.timing(element_scales[row_id][column_id], {
       toValue: 1,
       duration: animation_duration,
@@ -249,6 +244,8 @@ function GameField({ field_data, grid_step, element_offset, element_style_provid
       const move_result = field_data.check_move(first, second);
       if (move_result > 0) {
         field_data.swap_cells(...first, ...second);
+        element_positions[first[0]][first[1]].setValue(get_element_position(...first));
+        element_positions[second[0]][second[1]].setValue(get_element_position(...second));
         onFieldDataChange(field_data);
       }
       else
@@ -279,8 +276,6 @@ function GameField({ field_data, grid_step, element_offset, element_style_provid
     for (let element_move_change of element_move_changes) {
       const old_coordinates = element_move_change[0];
       const new_coordinates = element_move_change[1];
-      [element_scales[old_coordinates[0]][old_coordinates[1]], element_scales[new_coordinates[0]][new_coordinates[1]]] =
-        [element_scales[new_coordinates[0]][new_coordinates[1]], element_scales[old_coordinates[0]][old_coordinates[1]]];
       const new_element_position = get_element_position(...new_coordinates);
       const element_position = element_positions[old_coordinates[0]][old_coordinates[1]];
       const duration = duration_over_cell * (new_coordinates[0] - old_coordinates[0])
@@ -296,7 +291,14 @@ function GameField({ field_data, grid_step, element_offset, element_style_provid
     Animated.parallel(move_animations).start(({ finished }) => {
       if (!finished)
         return;
-      field_data.move_elements()
+      field_data.move_elements();
+      for (let element_move_change of element_move_changes) {
+        const old_coordinates = element_move_change[0];
+        const new_coordinates = element_move_change[1];
+        element_positions[old_coordinates[0]][old_coordinates[1]].setValue(get_element_position(...old_coordinates));
+        element_scales[old_coordinates[0]][old_coordinates[1]].setValue(minimum_element_scale);
+        element_scales[new_coordinates[0]][new_coordinates[1]].setValue(1);
+      }
       onFieldDataChange(field_data);
     });
   };
@@ -306,41 +308,29 @@ function GameField({ field_data, grid_step, element_offset, element_style_provid
     onFieldDataChange(field_data);
   };
 
-  useLayoutEffect(() => {
-    reset_positions();
+  useEffect(() => {
     animation_running.current = true;
     const update_field_data = () => {
       const element_move_changes = field_data.element_move_changes();
-      if (element_move_changes.length > 0) {
+      if (element_move_changes.length > 0)
         move_elements(element_move_changes);
-        return;
-      }
-      if (field_data.has_empty_cells()) {
+      else if (field_data.has_empty_cells())
         spawn_elements();
-        return;
-      }
-      if (field_data.has_groups()) {
+      else if (field_data.has_groups())
         accumulate_elements();
-        return;
-      }
       animation_running.current = false;
     };
     var to_create_animations = [];
     for (let row_id = 0; row_id < field_data.height; ++row_id)
       for (let column_id = 0; column_id < field_data.width; ++column_id) {
-        if (element_scales[row_id][column_id]._value === 0 &&
-          field_data.at(row_id, column_id) >= 0)
+        if (element_scales[row_id][column_id]._value < 1 && field_data.at(row_id, column_id) >= 0)
           to_create_animations.push(create_animation(row_id, column_id));
       }
-    if (to_create_animations.length > 0) {
-      Animated.parallel(to_create_animations).start(({ finished }) => {
-        if (!finished)
-          return;
-        update_field_data();
-      });
-    }
-    else
-      update_field_data()
+    Animated.parallel(to_create_animations).start(({ finished }) => {
+      if (!finished)
+        return;
+      update_field_data();
+    });
   }, [field_data]);
 
   const get_event_position = (event) => {
@@ -417,6 +407,7 @@ function GameField({ field_data, grid_step, element_offset, element_style_provid
     set_selected_elements([]);
     mouse_down_position.current = [];
   };
+
   return (
     <View
       style={styles.canvas_container}
@@ -442,16 +433,14 @@ function GameField({ field_data, grid_step, element_offset, element_style_provid
           stroke="#000000"
         />
         <Path
-          d={grid_path(width, height, field_data, grid_step)}
+          d={grid_path}
           strokeWidth={1}
           stroke="black"
           fill="grey"
         />
         {element_style_provider && Array.from(Array(field_data.height)).map((_, row_id) => {
           return Array.from(Array(field_data.width)).map((_, column_id) => {
-            var value = field_data.at(row_id, column_id);
-            if (value < 0)
-              return;
+            const value = field_data.at(row_id, column_id);
             var is_selected = false;
             for (let selected_element of selected_elements)
               if (selected_element[0] === row_id && selected_element[1] === column_id) {
