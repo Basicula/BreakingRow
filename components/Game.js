@@ -157,8 +157,13 @@ function Game({ width, height, score_bonuses, onStrike, onRestart }) {
   }, []);
 
   useEffect(() => {
-    check_for_game_over();
-    auto_move();
+    const game_over = check_for_game_over();
+    if (game_over) {
+      set_is_game_over(true);
+      set_autoplay(false);
+    }
+    else
+      auto_move();
   }, [field_data, autoplay]);
 
   const game_field_offset = useRef({ x: 0, y: 0 });
@@ -184,9 +189,8 @@ function Game({ width, height, score_bonuses, onStrike, onRestart }) {
     const abilities_prices = abilities.all_prices;
     for (let price of abilities_prices)
       if (price <= score)
-        return;
-    set_is_game_over(true);
-    set_autoplay(false);
+        return false;
+    return true;
   };
 
   const auto_move = () => {
