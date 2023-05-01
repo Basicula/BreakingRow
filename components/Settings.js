@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
-import { StyleSheet, View, Text, Switch } from 'react-native';
+import { StyleSheet, View, Text, Switch, TouchableOpacity } from 'react-native';
+import Slider from '@react-native-community/slider';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const listeners = new Set();
@@ -7,6 +8,7 @@ export function useSettings() {
   const settings_key = "Settings";
   const element_number_shown_key = "element_number";
   const element_style_3d = "elements_view";
+  const animation_speed = "animation_speed";
 
   const default_settings = {
     elements_view: {
@@ -17,7 +19,7 @@ export function useSettings() {
     element_number: {
       name: "Element numbers",
       type: "bool",
-      values: true
+      value: true
     },
     sound: {
       name: "Sound",
@@ -28,6 +30,13 @@ export function useSettings() {
       name: "Music",
       type: "bool",
       value: false
+    },
+    animation_speed: {
+      name: "Animation speed",
+      type: "interval",
+      interval: [25, 1000],
+      step: 25,
+      value: 250
     }
   };
 
@@ -39,12 +48,28 @@ export function useSettings() {
       return;
     AsyncStorage.getItem(settings_key).then(json_data => {
       if (json_data === null) {
-        AsyncStorage.setItem(settings_key, JSON.stringify(default_settings));
-        set_settings(default_settings);
+        AsyncStorage.setItem(settings_key, JSON.stringify(default_settings))
+          .then(() => {
+            set_settings(default_settings);
+            set_initialized(true);
+          });
       }
-      else
-        set_settings(JSON.parse(json_data));
-      set_initialized(true);
+      else {
+        const saved_settings = JSON.parse(json_data);
+        const old_settings_keys = Object.keys(saved_settings);
+        const new_settings_keys = Object.keys(default_settings);
+        for (let new_setting_key of new_settings_keys)
+          if (!old_settings_keys.includes(new_setting_key))
+            saved_settings[new_setting_key] = default_settings[new_setting_key];
+        for (let old_setting_key of old_settings_keys)
+          if (!new_settings_keys.includes(old_setting_key))
+            delete saved_settings[old_setting_key];
+        AsyncStorage.setItem(settings_key, JSON.stringify(saved_settings))
+          .then(() => {
+            set_settings(saved_settings);
+            set_initialized(true);
+          });
+      }
     });
     const listener = () => {
       AsyncStorage.getItem(settings_key).then(json_data => {
@@ -68,7 +93,7 @@ export function useSettings() {
     on_change();
   };
 
-  return { settings, update_setting, element_number_shown_key, element_style_3d };
+  return { settings, update_setting, element_number_shown_key, element_style_3d, animation_speed };
 }
 
 export default function Settings() {
@@ -89,9 +114,23 @@ export default function Settings() {
                   value={settings[setting_key].value}
                 />
               }
+              {settings[setting_key].type === "interval" &&
+                <View style={styles.slider_container}>
+                  <Text style={styles.slider_value}>{settings[setting_key].value}</Text>
+                  <Slider
+                    style={styles.slider}
+                    minimumValue={settings[setting_key].interval[0]}
+                    maximumValue={settings[setting_key].interval[1]}
+                    onValueChange={(value) => { update_setting(setting_key, value) }}
+                    step={settings[setting_key].step}
+                    value={settings[setting_key].value}
+                  />
+                </View>
+              }
             </View>
           );
         })}
+      {false && <TouchableOpacity onPress={()=>AsyncStorage.clear()}><Text>Clear all saves</Text></TouchableOpacity>}
     </View>
   );
 }
@@ -100,7 +139,8 @@ const styles = StyleSheet.create({
   settings_container: {
     flexDirection: "column",
     justifyContent: "center",
-    backgroundColor: "#dddddd"
+    backgroundColor: "#dddddd",
+    minWidth: 256,
   },
 
   setting_container: {
@@ -114,4 +154,17 @@ const styles = StyleSheet.create({
     fontWeight: "bold",
     fontSize: 16
   },
+
+  slider_container: {
+    flex: 1,
+    flexDirection: "column",
+    justifyContent: "center",
+    marginLeft: 8
+  },
+
+  slider_value: {
+    textAlign: "center",
+    fontWeight: "bold",
+    fontSize: 16,
+  }
 });

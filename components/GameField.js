@@ -188,7 +188,8 @@ function GameField({ field_data, grid_step, element_offset, element_style_provid
   const element_scales = useRef(init_array(field_data.width, field_data.height, undefined,
     (i, j) => new Animated.Value(minimum_element_scale))).current;
   const animation_running = useRef(false);
-  const animation_duration = 250;
+  const { settings, animation_speed } = useSettings();
+  const animation_duration = settings[animation_speed].value;
   const use_native_driver = false;
 
   const mouse_down_position = useRef([]);
