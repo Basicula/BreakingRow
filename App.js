@@ -1,5 +1,6 @@
-import { useState } from "react";
-import { StyleSheet, View, Text, TouchableOpacity, StatusBar } from 'react-native';
+import { useEffect, useState } from "react";
+import { StyleSheet, View, TouchableOpacity, StatusBar } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 import PopupContainer from "./components/PopupContainer.js";
 import Settings from "./components/Settings.js";
@@ -22,21 +23,24 @@ function MenuBar({ onInfo, onSettings }) {
   );
 }
 
-export default function App() {
-  const [statistics, set_statistics] = useState({
-    elements_count: {},
-    strikes: {}
-  });
-  const [info_visible, set_info_visible] = useState(false);
-  const [settings_visible, set_settings_visible] = useState(false);
+function useStatistics() {
+  const statistics_key = "Statistics";
+  const [statistics, set_statistics] = useState({});
 
-  const score_bonuses = {
-    3: 1,
-    4: 2,
-    5: 5,
-    6: 5,
-    7: 10
-  };
+  useEffect(() => {
+    AsyncStorage.getItem(statistics_key).then(json_data => {
+      if (json_data === null) {
+        const new_statistics = {
+          elements_count: {},
+          strikes: {}
+        };
+        AsyncStorage.setItem(statistics_key, JSON.stringify(new_statistics));
+        set_statistics(new_statistics);
+      }
+      else
+        set_statistics(JSON.parse(json_data));
+    });
+  }, []);
 
   const update_statistics = (value, count) => {
     var new_elements_count = Object.assign({}, statistics.elements_count);
@@ -49,11 +53,36 @@ export default function App() {
       ++new_strike_statistics[count]
     else
       new_strike_statistics[count] = 1
-    set_statistics({
+    const new_statistics = {
       elements_count: new_elements_count,
       strikes: new_strike_statistics
+    };
+    AsyncStorage.setItem(statistics_key, JSON.stringify(new_statistics));
+    set_statistics(new_statistics);
+  };
+
+  const reset_statistics = () => {
+    set_statistics({
+      elements_count: {},
+      strikes: {}
     });
-  }
+  };
+
+  return [statistics, update_statistics, reset_statistics];
+}
+
+export default function App() {
+  const [statistics, update_statistics, reset_statistics] = useStatistics();
+  const [info_visible, set_info_visible] = useState(false);
+  const [settings_visible, set_settings_visible] = useState(false);
+
+  const score_bonuses = {
+    3: 1,
+    4: 2,
+    5: 5,
+    6: 5,
+    7: 10
+  };
 
   return (
     <View style={styles.app_container}>
@@ -73,7 +102,7 @@ export default function App() {
         height={8}
         score_bonuses={score_bonuses}
         onStrike={update_statistics}
-        onRestart={() => set_statistics({ elements_count: {}, strikes: {} })}
+        onRestart={reset_statistics}
       />
       <PopupContainer
         visible={info_visible}
