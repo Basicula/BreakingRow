@@ -141,7 +141,7 @@ const GameElement = memo(function ({ value, size, color, shape_path,
       ]))
     ]).start();
   }, [selected, highlighted, to_create, to_destroy]);
-  return (
+  return (value >= 0 &&
     <AnimatedG rotation={animation_rotation} scale={animation_scale}>
       {selected &&
         <Path
