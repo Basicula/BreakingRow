@@ -188,7 +188,7 @@ function GameField({ field_data, grid_step, element_offset, element_style_provid
   const element_scales = useRef(init_array(field_data.width, field_data.height, undefined,
     (i, j) => new Animated.Value(minimum_element_scale))).current;
   const animation_running = useRef(false);
-  const animation_duration = 250;
+  const animation_duration = 500;
   const use_native_driver = false;
 
   const mouse_down_position = useRef([]);
@@ -224,6 +224,7 @@ function GameField({ field_data, grid_step, element_offset, element_style_provid
     return Animated.timing(element_scales[row_id][column_id], {
       toValue: minimum_element_scale,
       duration: animation_duration,
+      easing: Easing.quad,
       useNativeDriver: use_native_driver
     });
   };
@@ -233,12 +234,15 @@ function GameField({ field_data, grid_step, element_offset, element_style_provid
     return Animated.timing(element_scales[row_id][column_id], {
       toValue: 1,
       duration: animation_duration,
+      easing: Easing.quad,
       useNativeDriver: use_native_driver
     });
   };
 
   const swap_elements = (first, second) => {
+    animation_running.current = true;
     swap_animation(first, second).start(({ finished }) => {
+      animation_running.current = false;
       if (!finished)
         return;
       const move_result = field_data.check_move(first, second);
@@ -248,11 +252,14 @@ function GameField({ field_data, grid_step, element_offset, element_style_provid
         element_positions[second[0]][second[1]].setValue(get_element_position(...second));
         onFieldDataChange(field_data);
       }
-      else
+      else {
+        animation_running.current = true;
         swap_animation(first, second).start(({ finished }) => {
+          animation_running.current = false;
           if (!finished)
             return;
         });
+      }
     });
   };
 
@@ -263,7 +270,9 @@ function GameField({ field_data, grid_step, element_offset, element_style_provid
       for (let cell_coordinate of removed_group_details.group)
         to_destroy_animations.push(destroy_animation(...cell_coordinate));
     }
+    animation_running.current = true;
     Animated.parallel(to_destroy_animations).start(({ finished }) => {
+      animation_running.current = false;
       if (!finished)
         return;
       onAccumulateElements(field_data, removed_groups_details);
@@ -288,7 +297,9 @@ function GameField({ field_data, grid_step, element_offset, element_style_provid
           })
       );
     }
+    animation_running.current = true;
     Animated.parallel(move_animations).start(({ finished }) => {
+      animation_running.current = false;
       if (!finished)
         return;
       field_data.move_elements();
@@ -309,7 +320,6 @@ function GameField({ field_data, grid_step, element_offset, element_style_provid
   };
 
   useEffect(() => {
-    animation_running.current = true;
     const update_field_data = () => {
       const element_move_changes = field_data.element_move_changes();
       if (element_move_changes.length > 0)
@@ -318,7 +328,6 @@ function GameField({ field_data, grid_step, element_offset, element_style_provid
         spawn_elements();
       else if (field_data.has_groups())
         accumulate_elements();
-      animation_running.current = false;
     };
     var to_create_animations = [];
     for (let row_id = 0; row_id < field_data.height; ++row_id)
@@ -326,7 +335,9 @@ function GameField({ field_data, grid_step, element_offset, element_style_provid
         if (element_scales[row_id][column_id]._value < 1 && field_data.at(row_id, column_id) >= 0)
           to_create_animations.push(create_animation(row_id, column_id));
       }
+    animation_running.current = true;
     Animated.parallel(to_create_animations).start(({ finished }) => {
+      animation_running.current = false;
       if (!finished)
         return;
       update_field_data();
@@ -462,7 +473,8 @@ function GameField({ field_data, grid_step, element_offset, element_style_provid
                     { translateX: element_positions[row_id][column_id].x },
                     { translateY: element_positions[row_id][column_id].y },
                     { scale: element_scales[row_id][column_id] }
-                  ]
+                  ],
+                  opacity: element_scales[row_id][column_id]
                 }}
               >
                 <GameElement

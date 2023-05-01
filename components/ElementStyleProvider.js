@@ -116,6 +116,8 @@ export class ElementStyleProvider {
   }
 
   get(value) {
+    if (value < 0)
+      return ["#000000", this.paths[1]];
     return [
       this.colors[value % this.colors.length],
       this.paths[value % this.paths.length]
