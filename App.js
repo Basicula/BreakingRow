@@ -57,6 +57,13 @@ export default function App() {
 
   return (
     <View style={styles.app_container}>
+      <StatusBar
+        animated={true}
+        backgroundColor="#aaddff"
+        barStyle="dark-content"
+        showHideTransition={true}
+        hidden={false}
+      />
       <MenuBar
         onInfo={() => set_info_visible(true)}
         onSettings={() => set_settings_visible(true)}
@@ -92,7 +99,6 @@ export default function App() {
 
 const styles = StyleSheet.create({
   app_container: {
-    paddingTop: StatusBar.currentHeight,
     flex: 1,
 
     flexDirection: 'column',
