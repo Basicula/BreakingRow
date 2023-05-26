@@ -12,6 +12,7 @@ public class GameField : MonoBehaviour
   private GameFieldData field_data;
   private ElementStyleProvider element_style_provider;
   private float grid_step;
+  private float half_grid_step;
   private float element_offset;
   private float element_size;
   private Vector2 field_center;
@@ -32,13 +33,15 @@ public class GameField : MonoBehaviour
     Camera.main.pixelRect = new Rect(0, 0, Screen.width, Screen.height);
     float screen_width = Screen.width;
     float screen_height = Screen.height;
+    var min_dimmension = Mathf.Min(screen_width, screen_height);
     this.grid_step = Mathf.Min(screen_width / width, screen_height / height);
+    this.half_grid_step = this.grid_step / 2;
     this.element_offset = this.grid_step * 0.1f;
     this.element_size = this.grid_step - 2 * this.element_offset;
     this.element_style_provider = new ElementStyleProvider(this.element_size);
     this.field = new GameElement[height, width];
     this.field_data = new GameFieldData(width, height);
-    field_center = new Vector2((screen_width - this.grid_step) / 2, (screen_height - this.grid_step) / 2);
+    this.field_center = new Vector2(min_dimmension / 2, min_dimmension / 2);
     for (int row_id = 0; row_id < height; ++row_id)
       for (int column_id = 0; column_id < width; ++column_id)
       {
@@ -106,9 +109,15 @@ public class GameField : MonoBehaviour
     this.auto_play();
   }
 
+  private Vector2 get_mouse_event_position()
+  {
+    var world_mouse_event_position = Camera.main.ScreenToWorldPoint(Input.mousePosition);
+    return new Vector2(world_mouse_event_position.x, world_mouse_event_position.y);
+  }
+
   private void OnMouseDown()
   {
-    this.mouse_down_position = new Vector2(Input.mousePosition.x, Input.mousePosition.y);
+    this.mouse_down_position = this.get_mouse_event_position();
     var position = this.element_position(this.mouse_down_position);
     if (position.Item1 < 0 || position.Item2 < 0 || position.Item1 >= this.height || position.Item2 >= this.width)
       return;
@@ -120,9 +129,8 @@ public class GameField : MonoBehaviour
   {
     if (this.selected_elements.Count == 2)
       return;
-    var mouse_up_position = new Vector2(Input.mousePosition.x, Input.mousePosition.y);
+    var mouse_up_position = this.get_mouse_event_position();
     var delta = mouse_up_position - mouse_down_position;
-    Debug.Log(delta);
     if (delta.magnitude / this.grid_step < 0.5)
       return;
     delta.Normalize();
@@ -162,7 +170,7 @@ public class GameField : MonoBehaviour
   private void fit_collider()
   {
     var collider = GetComponent<BoxCollider2D>();
-    collider.size = new Vector2(Screen.width, Screen.height);
+    collider.size = new Vector2(this.grid_step * this.width, this.grid_step * this.height);
   }
 
   private void auto_play()
@@ -200,13 +208,16 @@ public class GameField : MonoBehaviour
 
   private Vector2 element_position(int row_id, int column_id)
   {
-    return new Vector2(this.grid_step * column_id - this.field_center.x, this.field_center.y - this.grid_step * row_id);
+    return new Vector2(
+      this.grid_step * column_id - this.field_center.x + this.half_grid_step,
+      this.field_center.y - this.half_grid_step - this.grid_step * row_id
+    );
   }
 
   private (int, int) element_position(Vector2 position)
   {
-    var row_id = Mathf.FloorToInt((Screen.height - position.y) / this.grid_step);
-    var column_id = Mathf.FloorToInt(position.x / this.grid_step);
+    var row_id = Mathf.FloorToInt((this.field_center.y - position.y) / this.grid_step);
+    var column_id = Mathf.FloorToInt((this.field_center.x + position.x) / this.grid_step);
     return (row_id, column_id);
   }
 
