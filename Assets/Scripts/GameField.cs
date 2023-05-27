@@ -7,6 +7,7 @@ public class GameField : MonoBehaviour
   public int height;
   public GameObject game_element_prefab;
   public bool is_auto_play;
+  public GameInfo game_info;
 
   private GameElement[,] field;
   private GameFieldData field_data;
@@ -41,6 +42,7 @@ public class GameField : MonoBehaviour
     this.element_style_provider = new ElementStyleProvider(this.element_size);
     this.field = new GameElement[height, width];
     this.field_data = new GameFieldData(width, height);
+    game_info.moves_count = this.field_data.get_all_moves().Count;
     this.field_center = new Vector2(min_dimmension / 2, min_dimmension / 2);
     for (int row_id = 0; row_id < height; ++row_id)
       for (int column_id = 0; column_id < width; ++column_id)
@@ -64,6 +66,7 @@ public class GameField : MonoBehaviour
       this.make_move(reverse_move.Value.Item1, reverse_move.Value.Item2);
       reverse_move = null;
     }
+    game_info.moves_count = this.field_data.get_all_moves().Count;
     if (this.to_create.Count != 0)
     {
       foreach (var (row_id, column_id) in this.to_create)
@@ -98,12 +101,15 @@ public class GameField : MonoBehaviour
     {
       var groups_details = this.field_data.accumulate_groups();
       foreach (var group_details in groups_details)
+      {
         foreach (var element in group_details.group)
         {
           this.field[element.Item1, element.Item2].destroy();
           if (this.field_data.at(element.Item1, element.Item2) != -1)
             to_create.Add(element);
         }
+        game_info.UpdateScore(group_details.value, group_details.group.Count);
+      }
       return;
     }
     this.auto_play();
@@ -141,10 +147,6 @@ public class GameField : MonoBehaviour
 
   private void process_selected_elements()
   {
-    string debug = "Before ";
-    foreach (var selected in this.selected_elements)
-      debug += $"({selected.Item1}, {selected.Item2}) ";
-    Debug.Log(debug);
     if (this.selected_elements.Count != 2)
       return;
 
@@ -160,11 +162,6 @@ public class GameField : MonoBehaviour
     }
     else
       this.selected_elements.RemoveAt(0);
-
-    debug = "After ";
-    foreach (var selected in this.selected_elements)
-      debug += $"({selected.Item1}, {selected.Item2}) ";
-    Debug.Log(debug);
   }
 
   private void fit_collider()
