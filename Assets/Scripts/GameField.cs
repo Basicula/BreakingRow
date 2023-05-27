@@ -221,6 +221,6 @@ public class GameField : MonoBehaviour
   private void _InitElement(int row_id, int column_id)
   {
     int value = m_field_data.At(row_id, column_id);
-    m_field[row_id, column_id].Create(m_element_style_provider.Get(value));
+    m_field[row_id, column_id].Create(m_element_style_provider.Get(value), value);
   }
 }

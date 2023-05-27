@@ -133,9 +133,9 @@ public class GameFieldData
     m_field = new int[m_height, m_width];
     _InitArray(m_field, this._GetRandomValue);
 
-    //for (let row_id = 0; row_id < #height; ++row_id)
-    //  for (let column_id = 0; column_id < #width; ++column_id)
-    //    #field[row_id][column_id] = row_id * width + column_id;
+    //for (int row_id = 0; row_id < m_height; ++row_id)
+    //  for (int column_id = 0; column_id < m_width; ++column_id)
+    //    m_field[row_id, column_id] = row_id * width + column_id;
 
     while (true)
     {

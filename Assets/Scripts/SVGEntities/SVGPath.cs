@@ -32,6 +32,6 @@ public class SVGPath : SVGEntity
   public override string GetXML()
   {
     string path = string.Join(" ", m_commands);
-    return $"<path d=\"{path}\" fill=\"{fill_color}\" stroke-width=\"{stroke_width}\" stroke=\"{stroke_color}\"/>";
+    return $"<path d=\"{path} z\" fill=\"{fill_color}\" stroke-width=\"{stroke_width}\" stroke=\"{stroke_color}\"/>";
   }
 }
