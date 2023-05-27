@@ -13,116 +13,116 @@ public class ElementStyleProvider
     RoundedStar
   };
 
-  private string[] colors;
-  private List<SVGPath> paths;
-  private float size;
+  private string[] m_colors;
+  private List<SVGPath> m_paths;
+  private float m_size;
 
   public ElementStyleProvider(float size)
   {
-    this.size = size;
-    this.colors = new string[10]
+    m_size = size;
+    m_colors = new string[10]
     {
       "#3DFF53", "#FF4828", "#0008FF", "#14FFF3", "#FF05FA",
       "#FFFB28", "#FF6D0A", "#CB0032", "#00990A", "#990054"
     };
 
-    SVGPath triangle_path = polyline_path(
-      regular_polygon_points(new Vector2(size / 2, 5 * size / 8), 10 * size / 16, 3, Mathf.PI / 2)
+    SVGPath triangle_path = this._PolylinePath(
+      this._RegularPolygonPoints(new Vector2(size / 2, 5 * size / 8), 10 * size / 16, 3, Mathf.PI / 2)
     );
-    SVGPath rounded_corners_triangle_path = rounded_corners_path(
-      regular_polygon_points(new Vector2(size / 2, 5 * size / 8), 11 * size / 16, 3, Mathf.PI / 2),
+    SVGPath rounded_corners_triangle_path = this._RoundedCornersPath(
+      this._RegularPolygonPoints(new Vector2(size / 2, 5 * size / 8), 11 * size / 16, 3, Mathf.PI / 2),
       Mathf.Floor(0.1f * size)
     );
-    SVGPath rounded_edges_triangle_path = rounded_edges_path(
-      regular_polygon_points(new Vector2(size / 2, 5 * size / 8), 10 * size / 16, 3, Mathf.PI / 2),
+    SVGPath rounded_edges_triangle_path = this._RoundedEdgesPath(
+      this._RegularPolygonPoints(new Vector2(size / 2, 5 * size / 8), 10 * size / 16, 3, Mathf.PI / 2),
       Mathf.Floor(2 * size)
     );
 
-    SVGPath rotated_triangle_path = polyline_path(
-      regular_polygon_points(new Vector2(size / 2, 3 * size / 8), 10 * size / 16, 3, -Mathf.PI / 2)
+    SVGPath rotated_triangle_path = this._PolylinePath(
+      this._RegularPolygonPoints(new Vector2(size / 2, 3 * size / 8), 10 * size / 16, 3, -Mathf.PI / 2)
     );
-    SVGPath rounded_corners_rotated_triangle_path = rounded_corners_path(
-      regular_polygon_points(new Vector2(size / 2, 3 * size / 8), 11 * size / 16, 3, -Mathf.PI / 2),
+    SVGPath rounded_corners_rotated_triangle_path = this._RoundedCornersPath(
+      this._RegularPolygonPoints(new Vector2(size / 2, 3 * size / 8), 11 * size / 16, 3, -Mathf.PI / 2),
       Mathf.Floor(0.1f * size)
     );
-    SVGPath rounded_edges_rotated_triangle_path = rounded_edges_path(
-      regular_polygon_points(new Vector2(size / 2, 3 * size / 8), 10 * size / 16, 3, -Mathf.PI / 2),
+    SVGPath rounded_edges_rotated_triangle_path = this._RoundedEdgesPath(
+      this._RegularPolygonPoints(new Vector2(size / 2, 3 * size / 8), 10 * size / 16, 3, -Mathf.PI / 2),
       Mathf.Floor(2 * size)
     );
 
-    SVGPath square_path = polyline_path(
-      regular_polygon_points(new Vector2(size / 2, size / 2), 10 * size / 14, 4, Mathf.PI / 4)
+    SVGPath square_path = this._PolylinePath(
+      this._RegularPolygonPoints(new Vector2(size / 2, size / 2), 10 * size / 14, 4, Mathf.PI / 4)
     );
-    SVGPath rounded_corners_square_path = rounded_corners_path(
-      regular_polygon_points(new Vector2(size / 2, size / 2), 10 * size / 14, 4, Mathf.PI / 4),
+    SVGPath rounded_corners_square_path = this._RoundedCornersPath(
+      this._RegularPolygonPoints(new Vector2(size / 2, size / 2), 10 * size / 14, 4, Mathf.PI / 4),
       Mathf.Floor(0.1f * size)
     );
-    SVGPath rounded_edges_square_path = rounded_edges_path(
-      regular_polygon_points(new Vector2(size / 2, size / 2), 10 * size / 14, 4, Mathf.PI / 4),
+    SVGPath rounded_edges_square_path = this._RoundedEdgesPath(
+      this._RegularPolygonPoints(new Vector2(size / 2, size / 2), 10 * size / 14, 4, Mathf.PI / 4),
       Mathf.Floor(2 * size)
     );
 
-    SVGPath rotated_square_path = polyline_path(
-      regular_polygon_points(new Vector2(size / 2, size / 2), 18 * size / 32, 4, 0)
+    SVGPath rotated_square_path = this._PolylinePath(
+      this._RegularPolygonPoints(new Vector2(size / 2, size / 2), 18 * size / 32, 4, 0)
     );
-    SVGPath rounded_corners_rotated_square_path = rounded_corners_path(
-      regular_polygon_points(new Vector2(size / 2, size / 2), 8 * size / 14, 4, 0),
+    SVGPath rounded_corners_rotated_square_path = this._RoundedCornersPath(
+      this._RegularPolygonPoints(new Vector2(size / 2, size / 2), 8 * size / 14, 4, 0),
       Mathf.Floor(0.1f * size)
     );
-    SVGPath rounded_edges_rotated_square_path = rounded_edges_path(
-      regular_polygon_points(new Vector2(size / 2, size / 2), 18 * size / 32, 4, 0),
+    SVGPath rounded_edges_rotated_square_path = this._RoundedEdgesPath(
+      this._RegularPolygonPoints(new Vector2(size / 2, size / 2), 18 * size / 32, 4, 0),
       Mathf.Floor(1.5f * size)
     );
 
-    SVGPath pentagon_path = polyline_path(
-      regular_polygon_points(new Vector2(size / 2, 9 * size / 16), 9 * size / 16, 5, Mathf.PI / 2)
+    SVGPath pentagon_path = this._PolylinePath(
+      this._RegularPolygonPoints(new Vector2(size / 2, 9 * size / 16), 9 * size / 16, 5, Mathf.PI / 2)
     );
-    SVGPath rounded_corners_pentagon_path = rounded_corners_path(
-      regular_polygon_points(new Vector2(size / 2, size / 2), 9 * size / 16, 5, Mathf.PI / 2),
+    SVGPath rounded_corners_pentagon_path = this._RoundedCornersPath(
+      this._RegularPolygonPoints(new Vector2(size / 2, size / 2), 9 * size / 16, 5, Mathf.PI / 2),
       Mathf.Floor(0.1f * size)
     );
-    SVGPath rounded_edges_pentagon_path = rounded_edges_path(
-      regular_polygon_points(new Vector2(size / 2, size / 2), 9 * size / 16, 5, Mathf.PI / 2),
+    SVGPath rounded_edges_pentagon_path = this._RoundedEdgesPath(
+      this._RegularPolygonPoints(new Vector2(size / 2, size / 2), 9 * size / 16, 5, Mathf.PI / 2),
       Mathf.Floor(2 * size)
     );
 
-    SVGPath hexagon_path = polyline_path(
-      regular_polygon_points(new Vector2(size / 2, size / 2), 9 * size / 16, 6, 0)
+    SVGPath hexagon_path = this._PolylinePath(
+      this._RegularPolygonPoints(new Vector2(size / 2, size / 2), 9 * size / 16, 6, 0)
     );
-    SVGPath rounded_corners_hexagon_path = rounded_corners_path(
-      regular_polygon_points(new Vector2(size / 2, size / 2), 9 * size / 16, 6, 0),
+    SVGPath rounded_corners_hexagon_path = this._RoundedCornersPath(
+      this._RegularPolygonPoints(new Vector2(size / 2, size / 2), 9 * size / 16, 6, 0),
       Mathf.Floor(0.1f * size)
     );
-    SVGPath rounded_edges_hexagon_path = rounded_edges_path(
-      regular_polygon_points(new Vector2(size / 2, size / 2), 9 * size / 16, 6, 0),
+    SVGPath rounded_edges_hexagon_path = this._RoundedEdgesPath(
+      this._RegularPolygonPoints(new Vector2(size / 2, size / 2), 9 * size / 16, 6, 0),
       Mathf.Floor(2 * size)
     );
 
-    SVGPath octagon_path = polyline_path(
-      regular_polygon_points(new Vector2(size / 2, size / 2), 8 * size / 14, 8, -Mathf.PI / 8)
+    SVGPath octagon_path = this._PolylinePath(
+      this._RegularPolygonPoints(new Vector2(size / 2, size / 2), 8 * size / 14, 8, -Mathf.PI / 8)
     );
-    SVGPath rounded_corners_octagon_path = rounded_corners_path(
-      regular_polygon_points(new Vector2(size / 2, size / 2), 8 * size / 14, 8, -Mathf.PI / 8),
+    SVGPath rounded_corners_octagon_path = this._RoundedCornersPath(
+      this._RegularPolygonPoints(new Vector2(size / 2, size / 2), 8 * size / 14, 8, -Mathf.PI / 8),
       Mathf.Floor(0.1f * size)
     );
-    SVGPath rounded_edges_octagon_path = rounded_edges_path(
-      regular_polygon_points(new Vector2(size / 2, size / 2), 8 * size / 14, 8, -Mathf.PI / 8),
+    SVGPath rounded_edges_octagon_path = this._RoundedEdgesPath(
+      this._RegularPolygonPoints(new Vector2(size / 2, size / 2), 8 * size / 14, 8, -Mathf.PI / 8),
       Mathf.Floor(2 * size)
     );
 
-    SVGPath star_5_path = polyline_path(star_points(new Vector2(size / 2, size / 2), 8 * size / 14, 5, -Mathf.PI / 12));
-    SVGPath rounded_corners_star_5_path = rounded_corners_path(
-      star_points(new Vector2(size / 2, size / 2), 9 * size / 14, 5, -Mathf.PI / 12),
+    SVGPath star_5_path = this._PolylinePath(this._StarPoints(new Vector2(size / 2, size / 2), 8 * size / 14, 5, -Mathf.PI / 12));
+    SVGPath rounded_corners_star_5_path = this._RoundedCornersPath(
+      this._StarPoints(new Vector2(size / 2, size / 2), 9 * size / 14, 5, -Mathf.PI / 12),
       Mathf.Floor(0.05f * size)
     );
 
-    SVGPath star_7_path = polyline_path(star_points(new Vector2(size / 2, size / 2), 9 * size / 16, 7, Mathf.PI / 14));
-    SVGPath rounded_corners_star_7_path = rounded_corners_path(
-      star_points(new Vector2(size / 2, size / 2), 9 * size / 14, 7, Mathf.PI / 14),
+    SVGPath star_7_path = this._PolylinePath(this._StarPoints(new Vector2(size / 2, size / 2), 9 * size / 16, 7, Mathf.PI / 14));
+    SVGPath rounded_corners_star_7_path = this._RoundedCornersPath(
+      this._StarPoints(new Vector2(size / 2, size / 2), 9 * size / 14, 7, Mathf.PI / 14),
       Mathf.Floor(0.05f * size)
     );
 
-    this.paths = new List<SVGPath>() {
+    m_paths = new List<SVGPath>() {
       triangle_path, square_path, pentagon_path, star_5_path,
       rotated_triangle_path, hexagon_path, rotated_square_path,
       octagon_path, star_7_path,
@@ -133,16 +133,16 @@ public class ElementStyleProvider
     };
   }
 
-  public Sprite get(int value)
+  public Sprite Get(int value)
   {
     SVG svg = new SVG();
-    svg.width = this.size;
-    svg.height = this.size;
-    svg.view_box = "0 0 " + this.size + " " + this.size;
-    SVGPath path = this.paths[value % this.paths.Count];
-    path.fill_color = this.colors[value % this.colors.Length];
+    svg.width = m_size;
+    svg.height = m_size;
+    svg.view_box = "0 0 " + m_size + " " + m_size;
+    SVGPath path = m_paths[value % m_paths.Count];
+    path.fill_color = m_colors[value % m_colors.Length];
     path.stroke_color = "#000000";
-    path.stroke_width = this.size / 20;
+    path.stroke_width = m_size / 20;
     svg.Add(path);
     const string svg_header = "<?xml version=\"1.0\" encoding=\"utf - 8\"?>";
     string svg_string = svg_header + svg.GetXML();
@@ -150,32 +150,32 @@ public class ElementStyleProvider
     var sceneInfo = SVGParser.ImportSVG(textReader);
     var geometries = VectorUtils.TessellateScene(sceneInfo.Scene, new VectorUtils.TessellationOptions
     {
-      StepDistance = this.size / 1000,
-      SamplingStepSize = this.size / 1000,
+      StepDistance = m_size / 1000,
+      SamplingStepSize = m_size / 1000,
       MaxCordDeviation = 0.0f,
       MaxTanAngleDeviation = 0.0f
     });
     return VectorUtils.BuildSprite(geometries, 1, VectorUtils.Alignment.Center, Vector2.zero, 128, false);
   }
 
-  private Vector2 unit_vector(float angle, float size = 1.0f)
+  private Vector2 _UnitVector(float angle, float size = 1.0f)
   {
     return new Vector2(size * Mathf.Cos(angle), size * Mathf.Sin(angle));
   }
 
-  private List<Vector2> regular_polygon_points(Vector2 center, float size, int angle_count, float start_angle = 0)
+  private List<Vector2> _RegularPolygonPoints(Vector2 center, float size, int angle_count, float start_angle = 0)
   {
     float angle_step = (Mathf.PI * 2) / angle_count;
     List<Vector2> points = new List<Vector2>();
     for (int point_id = 0; point_id < angle_count; ++point_id)
     {
       float angle = start_angle + point_id * angle_step;
-      points.Add(center + unit_vector(angle, size));
+      points.Add(center + this._UnitVector(angle, size));
     }
     return points;
   }
 
-  private List<Vector2> star_points(Vector2 center, float size, float corner_count, float start_angle = 0)
+  private List<Vector2> _StarPoints(Vector2 center, float size, float corner_count, float start_angle = 0)
   {
     float angle_count = corner_count * 2;
     float angle_step = (Mathf.PI * 2) / angle_count;
@@ -184,12 +184,12 @@ public class ElementStyleProvider
     {
       float angle = start_angle + point_id * angle_step;
       float radius = point_id % 2 == 1 ? size : size / 2;
-      points.Add(center + unit_vector(angle, radius));
+      points.Add(center + this._UnitVector(angle, radius));
     }
     return points;
   }
 
-  private SVGPath rounded_corners_path(List<Vector2> points, float rounding_radius)
+  private SVGPath _RoundedCornersPath(List<Vector2> points, float rounding_radius)
   {
     List<Vector2> points_with_offset = new List<Vector2>();
     List<bool> arc_directions = new List<bool>();
@@ -232,7 +232,7 @@ public class ElementStyleProvider
     return svg_path;
   }
 
-  private SVGPath rounded_edges_path(List<Vector2> points, float rounding_radius)
+  private SVGPath _RoundedEdgesPath(List<Vector2> points, float rounding_radius)
   {
     SVGPath svg_path = new SVGPath();
     svg_path.MoveTo(points[0]);
@@ -242,7 +242,7 @@ public class ElementStyleProvider
     return svg_path;
   }
 
-  private SVGPath polyline_path(List<Vector2> points)
+  private SVGPath _PolylinePath(List<Vector2> points)
   {
     SVGPath svg_path = new SVGPath();
     svg_path.MoveTo(points[0]);

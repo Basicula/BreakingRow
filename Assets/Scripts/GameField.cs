@@ -9,23 +9,23 @@ public class GameField : MonoBehaviour
   public bool is_auto_play;
   public GameInfo game_info;
 
-  private GameElement[,] field;
-  private GameFieldData field_data;
-  private ElementStyleProvider element_style_provider;
-  private float grid_step;
-  private float half_grid_step;
-  private float element_offset;
-  private float element_size;
-  private Vector2 field_center;
-  private List<(int, int)> to_create;
-  private List<(int, int)> selected_elements;
-  private Vector2 mouse_down_position;
-  private ((int, int), (int, int))? reverse_move;
+  private GameElement[,] m_field;
+  private GameFieldData m_field_data;
+  private ElementStyleProvider m_element_style_provider;
+  private float m_grid_step;
+  private float m_half_grid_step;
+  private float m_element_offset;
+  private float m_element_size;
+  private Vector2 m_field_center;
+  private List<(int, int)> m_to_create;
+  private List<(int, int)> m_selected_elements;
+  private Vector2 m_mouse_down_position;
+  private ((int, int), (int, int))? m_reverse_move;
 
   public GameField()
   {
-    this.to_create = new List<(int, int)>();
-    this.selected_elements = new List<(int, int)>();
+    m_to_create = new List<(int, int)>();
+    m_selected_elements = new List<(int, int)>();
   }
 
   void Start()
@@ -35,87 +35,87 @@ public class GameField : MonoBehaviour
     float screen_width = Screen.width;
     float screen_height = Screen.height;
     var min_dimmension = Mathf.Min(screen_width, screen_height);
-    this.grid_step = Mathf.Min(screen_width / width, screen_height / height);
-    this.half_grid_step = this.grid_step / 2;
-    this.element_offset = this.grid_step * 0.1f;
-    this.element_size = this.grid_step - 2 * this.element_offset;
-    this.element_style_provider = new ElementStyleProvider(this.element_size);
-    this.field = new GameElement[height, width];
-    this.field_data = new GameFieldData(width, height);
-    game_info.moves_count = this.field_data.get_all_moves().Count;
-    this.field_center = new Vector2(min_dimmension / 2, min_dimmension / 2);
+    m_grid_step = Mathf.Min(screen_width / width, screen_height / height);
+    m_half_grid_step = m_grid_step / 2;
+    m_element_offset = m_grid_step * 0.1f;
+    m_element_size = m_grid_step - 2 * m_element_offset;
+    m_element_style_provider = new ElementStyleProvider(m_element_size);
+    m_field = new GameElement[height, width];
+    m_field_data = new GameFieldData(width, height);
+    game_info.moves_count = m_field_data.GetAllMoves().Count;
+    m_field_center = new Vector2(min_dimmension / 2, min_dimmension / 2);
     for (int row_id = 0; row_id < height; ++row_id)
       for (int column_id = 0; column_id < width; ++column_id)
       {
-        Vector2 position = this.element_position(row_id, column_id);
-        this.field[row_id, column_id] = Instantiate(game_element_prefab, position, Quaternion.identity).GetComponent<GameElement>();
-        this.field[row_id, column_id].transform.parent = this.transform;
-        this.init_element(row_id, column_id);
+        Vector2 position = this._GetElementPosition(row_id, column_id);
+        m_field[row_id, column_id] = Instantiate(game_element_prefab, position, Quaternion.identity).GetComponent<GameElement>();
+        m_field[row_id, column_id].transform.parent = transform;
+        this._InitElement(row_id, column_id);
       }
-    this.fit_collider();
+    this._FitCollider();
   }
 
   void Update()
   {
     for (int i = 0; i < height; ++i)
       for (int j = 0; j < width; ++j)
-        if (this.field[i, j].state != GameElement.State.Waiting)
+        if (m_field[i, j].state != GameElement.State.Waiting)
           return;
-    if (reverse_move.HasValue)
+    if (m_reverse_move.HasValue)
     {
-      this.make_move(reverse_move.Value.Item1, reverse_move.Value.Item2);
-      reverse_move = null;
+      this._MakeMove(m_reverse_move.Value.Item1, m_reverse_move.Value.Item2);
+      m_reverse_move = null;
     }
-    game_info.moves_count = this.field_data.get_all_moves().Count;
-    if (this.to_create.Count != 0)
+    game_info.moves_count = m_field_data.GetAllMoves().Count;
+    if (m_to_create.Count != 0)
     {
-      foreach (var (row_id, column_id) in this.to_create)
-        this.init_element(row_id, column_id);
-      this.to_create.Clear();
+      foreach (var (row_id, column_id) in m_to_create)
+        this._InitElement(row_id, column_id);
+      m_to_create.Clear();
       return;
     }
-    var element_move_changes = this.field_data.element_move_changes();
+    var element_move_changes = m_field_data.ElementsMoveChanges();
     if (element_move_changes.Count > 0)
     {
-      this.field_data.move_elements();
+      m_field_data.MoveElements();
       foreach (var element_move in element_move_changes)
       {
         var first = element_move.Item1;
         var second = element_move.Item2;
-        (this.field[first.Item1, first.Item2], this.field[second.Item1, second.Item2]) =
-          (this.field[second.Item1, second.Item2], this.field[first.Item1, first.Item2]);
-        var target_position = this.field[first.Item1, first.Item2].transform.position;
-        this.field[first.Item1, first.Item2].transform.position = this.field[second.Item1, second.Item2].transform.position;
-        this.field[second.Item1, second.Item2].move_to(target_position);
+        (m_field[first.Item1, first.Item2], m_field[second.Item1, second.Item2]) =
+          (m_field[second.Item1, second.Item2], m_field[first.Item1, first.Item2]);
+        var target_position = m_field[first.Item1, first.Item2].transform.position;
+        m_field[first.Item1, first.Item2].transform.position = m_field[second.Item1, second.Item2].transform.position;
+        m_field[second.Item1, second.Item2].MoveTo(target_position);
       }
       return;
     }
-    if (this.field_data.has_empty_cells())
+    if (m_field_data.HasEmptyCells())
     {
-      var created_elements = this.field_data.spawn_new_values();
+      var created_elements = m_field_data.SpawnNewValues();
       foreach (var element_position in created_elements)
-        this.init_element(element_position.Item1, element_position.Item2);
+        this._InitElement(element_position.Item1, element_position.Item2);
       return;
     }
-    if (this.field_data.has_groups())
+    if (m_field_data.HasGroups())
     {
-      var groups_details = this.field_data.accumulate_groups();
+      var groups_details = m_field_data.AccumulateGroups();
       foreach (var group_details in groups_details)
       {
         foreach (var element in group_details.group)
         {
-          this.field[element.Item1, element.Item2].destroy();
-          if (this.field_data.at(element.Item1, element.Item2) != -1)
-            to_create.Add(element);
+          m_field[element.Item1, element.Item2].Destroy();
+          if (m_field_data.At(element.Item1, element.Item2) != -1)
+            m_to_create.Add(element);
         }
         game_info.UpdateScore(group_details.value, group_details.group.Count);
       }
       return;
     }
-    this.auto_play();
+    this._AutoMove();
   }
 
-  private Vector2 get_mouse_event_position()
+  private Vector2 _GetMouseEventPosition()
   {
     var world_mouse_event_position = Camera.main.ScreenToWorldPoint(Input.mousePosition);
     return new Vector2(world_mouse_event_position.x, world_mouse_event_position.y);
@@ -123,58 +123,58 @@ public class GameField : MonoBehaviour
 
   private void OnMouseDown()
   {
-    this.mouse_down_position = this.get_mouse_event_position();
-    var position = this.element_position(this.mouse_down_position);
-    if (position.Item1 < 0 || position.Item2 < 0 || position.Item1 >= this.height || position.Item2 >= this.width)
+    m_mouse_down_position = this._GetMouseEventPosition();
+    var position = this._GetElementPosition(m_mouse_down_position);
+    if (position.Item1 < 0 || position.Item2 < 0 || position.Item1 >= height || position.Item2 >= width)
       return;
-    this.selected_elements.Add(position);
-    this.process_selected_elements();
+    m_selected_elements.Add(position);
+    this._ProcessSelectedElements();
   }
 
   private void OnMouseUp()
   {
-    if (this.selected_elements.Count == 2)
+    if (m_selected_elements.Count == 2)
       return;
-    var mouse_up_position = this.get_mouse_event_position();
-    var delta = mouse_up_position - mouse_down_position;
-    if (delta.magnitude / this.grid_step < 0.5)
+    var mouse_up_position = this._GetMouseEventPosition();
+    var delta = mouse_up_position - m_mouse_down_position;
+    if (delta.magnitude / m_grid_step < 0.5)
       return;
     delta.Normalize();
-    var position = this.element_position(delta * this.grid_step + mouse_down_position);
-    this.selected_elements.Add(position);
-    this.process_selected_elements();
+    var position = this._GetElementPosition(delta * m_grid_step + m_mouse_down_position);
+    m_selected_elements.Add(position);
+    this._ProcessSelectedElements();
   }
 
-  private void process_selected_elements()
+  private void _ProcessSelectedElements()
   {
-    if (this.selected_elements.Count != 2)
+    if (m_selected_elements.Count != 2)
       return;
 
-    var first = this.selected_elements[0];
-    var second = this.selected_elements[1];
+    var first = m_selected_elements[0];
+    var second = m_selected_elements[1];
     var distance = Mathf.Abs(first.Item1 - second.Item1) + Mathf.Abs(first.Item2 - second.Item2);
     if (distance == 0)
-      this.selected_elements.Clear();
+      m_selected_elements.Clear();
     else if (distance == 1)
     {
-      this.make_move(first, second);
-      this.selected_elements.Clear();
+      this._MakeMove(first, second);
+      m_selected_elements.Clear();
     }
     else
-      this.selected_elements.RemoveAt(0);
+      m_selected_elements.RemoveAt(0);
   }
 
-  private void fit_collider()
+  private void _FitCollider()
   {
     var collider = GetComponent<BoxCollider2D>();
-    collider.size = new Vector2(this.grid_step * this.width, this.grid_step * this.height);
+    collider.size = new Vector2(m_grid_step * width, m_grid_step * height);
   }
 
-  private void auto_play()
+  private void _AutoMove()
   {
-    if (!this.is_auto_play)
+    if (!is_auto_play)
       return;
-    var moves = this.field_data.get_all_moves();
+    var moves = m_field_data.GetAllMoves();
     if (moves.Count > 0)
     {
       moves.Sort((GameFieldData.MoveDetails first, GameFieldData.MoveDetails second) => second.strike - first.strike);
@@ -188,39 +188,39 @@ public class GameField : MonoBehaviour
       }
       var move_index = Random.Range(0, max_strike_value_count);
       var move = moves[move_index];
-      this.make_move(move.first, move.second);
+      this._MakeMove(move.first, move.second);
     }
   }
 
-  private void make_move((int, int) first, (int, int) second)
+  private void _MakeMove((int, int) first, (int, int) second)
   {
-    this.field_data.swap_cells(first.Item1, first.Item2, second.Item1, second.Item2);
-    (this.field[first.Item1, first.Item2], this.field[second.Item1, second.Item2]) =
-      (this.field[second.Item1, second.Item2], this.field[first.Item1, first.Item2]);
-    this.field[first.Item1, first.Item2].move_to(this.field[second.Item1, second.Item2].transform.position);
-    this.field[second.Item1, second.Item2].move_to(this.field[first.Item1, first.Item2].transform.position);
-    if (!this.field_data.has_groups() && !reverse_move.HasValue)
-      reverse_move = (first, second);
+    m_field_data.SwapCells(first.Item1, first.Item2, second.Item1, second.Item2);
+    (m_field[first.Item1, first.Item2], m_field[second.Item1, second.Item2]) =
+      (m_field[second.Item1, second.Item2], m_field[first.Item1, first.Item2]);
+    m_field[first.Item1, first.Item2].MoveTo(m_field[second.Item1, second.Item2].transform.position);
+    m_field[second.Item1, second.Item2].MoveTo(m_field[first.Item1, first.Item2].transform.position);
+    if (!m_field_data.HasGroups() && !m_reverse_move.HasValue)
+      m_reverse_move = (first, second);
   }
 
-  private Vector2 element_position(int row_id, int column_id)
+  private Vector2 _GetElementPosition(int row_id, int column_id)
   {
     return new Vector2(
-      this.grid_step * column_id - this.field_center.x + this.half_grid_step,
-      this.field_center.y - this.half_grid_step - this.grid_step * row_id
+      m_grid_step * column_id - m_field_center.x + m_half_grid_step,
+      m_field_center.y - m_half_grid_step - m_grid_step * row_id
     );
   }
 
-  private (int, int) element_position(Vector2 position)
+  private (int, int) _GetElementPosition(Vector2 position)
   {
-    var row_id = Mathf.FloorToInt((this.field_center.y - position.y) / this.grid_step);
-    var column_id = Mathf.FloorToInt((this.field_center.x + position.x) / this.grid_step);
+    var row_id = Mathf.FloorToInt((m_field_center.y - position.y) / m_grid_step);
+    var column_id = Mathf.FloorToInt((m_field_center.x + position.x) / m_grid_step);
     return (row_id, column_id);
   }
 
-  private void init_element(int row_id, int column_id)
+  private void _InitElement(int row_id, int column_id)
   {
-    int value = this.field_data.at(row_id, column_id);
-    this.field[row_id, column_id].create(element_style_provider.get(value));
+    int value = m_field_data.At(row_id, column_id);
+    m_field[row_id, column_id].Create(m_element_style_provider.Get(value));
   }
 }
