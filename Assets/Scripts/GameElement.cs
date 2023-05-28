@@ -1,4 +1,5 @@
-﻿using UnityEngine;
+﻿using System.Collections.Generic;
+using UnityEngine;
 
 public class GameElement : MonoBehaviour
 {
@@ -8,6 +9,7 @@ public class GameElement : MonoBehaviour
     Creating,
     Destroying,
     Moving,
+    Selected,
     Undefined
   }
 
@@ -16,11 +18,28 @@ public class GameElement : MonoBehaviour
   private float m_creation_start_time;
   private float m_destroy_start_time;
   private float m_moving_start_time;
+  private float m_select_start_time;
   private Vector3 m_move_target_position;
   private Vector3 m_move_start_position;
+  private List<Vector3> m_shake_animation_control_rotations;
+  private List<Vector3> m_shake_animation_control_scales;
   public GameElement()
   {
     m_state = State.Undefined;
+    m_shake_animation_control_rotations = new List<Vector3>()
+    {
+      new Vector3(0, 0, 0),
+      new Vector3(0, 0, -15),
+      new Vector3(0, 0, 0),
+      new Vector3(0, 0, 15)
+    };
+    m_shake_animation_control_scales = new List<Vector3>()
+    {
+      new Vector3(1, 1, 1),
+      new Vector3(1.1f, 1.1f, 1.1f),
+      new Vector3(1, 1, 1),
+      new Vector3(0.9f, 0.9f, 0.9f)
+    };
   }
 
   void Start()
@@ -59,6 +78,18 @@ public class GameElement : MonoBehaviour
         else
           transform.position = Vector3.Lerp(m_move_start_position, m_move_target_position, (Time.time - m_moving_start_time) / m_animation_duration);
         break;
+      case State.Selected:
+        transform.eulerAngles = VectorUtilities.Lerp(
+          m_shake_animation_control_rotations,
+          m_animation_duration,
+          Time.time - m_select_start_time
+        );
+        transform.localScale = VectorUtilities.Lerp(
+          m_shake_animation_control_scales,
+          m_animation_duration,
+          Time.time - m_select_start_time
+        );
+        break;
       case State.Waiting:
       default:
         return;
@@ -81,7 +112,7 @@ public class GameElement : MonoBehaviour
     {
       char[] exponents = new char[10] { '⁰', '¹', '²', '³', '⁴', '⁵', '⁶', '⁷', '⁸', '⁹' };
       string exponent = "";
-      while(value > 0)
+      while (value > 0)
       {
         exponent = exponents[value % 10] + exponent;
         value /= 10;
@@ -106,8 +137,23 @@ public class GameElement : MonoBehaviour
     m_moving_start_time = Time.time;
   }
 
-  public State state
+  public bool IsAvailable()
   {
-    get => m_state;
+    return m_state == State.Waiting;
+  }
+
+  public void UpdateSelection(bool is_selected)
+  {
+    if (is_selected)
+    {
+      m_state = State.Selected;
+      m_select_start_time = Time.time;
+    }
+    else
+    {
+      m_state = State.Waiting;
+      transform.eulerAngles = new Vector3(0, 0, 0);
+      transform.localScale = new Vector3(1, 1, 1);
+    }
   }
 }

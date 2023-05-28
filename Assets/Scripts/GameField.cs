@@ -59,7 +59,7 @@ public class GameField : MonoBehaviour
   {
     for (int i = 0; i < height; ++i)
       for (int j = 0; j < width; ++j)
-        if (m_field[i, j].state != GameElement.State.Waiting)
+        if (!m_field[i, j].IsAvailable())
           return;
     if (m_reverse_move.HasValue)
     {
@@ -124,10 +124,7 @@ public class GameField : MonoBehaviour
   private void OnMouseDown()
   {
     m_mouse_down_position = this._GetMouseEventPosition();
-    var position = this._GetElementPosition(m_mouse_down_position);
-    if (position.Item1 < 0 || position.Item2 < 0 || position.Item1 >= height || position.Item2 >= width)
-      return;
-    m_selected_elements.Add(position);
+    this._SelectElement(this._GetElementPosition(m_mouse_down_position));
     this._ProcessSelectedElements();
   }
 
@@ -140,9 +137,14 @@ public class GameField : MonoBehaviour
     if (delta.magnitude / m_grid_step < 0.5)
       return;
     delta.Normalize();
-    var position = this._GetElementPosition(delta * m_grid_step + m_mouse_down_position);
-    m_selected_elements.Add(position);
+    this._SelectElement(this._GetElementPosition(delta * m_grid_step + m_mouse_down_position));
     this._ProcessSelectedElements();
+  }
+
+  private void _SelectElement((int, int) i_position)
+  {
+    m_selected_elements.Add(i_position);
+    m_field[i_position.Item1, i_position.Item2].UpdateSelection(true);
   }
 
   private void _ProcessSelectedElements()
@@ -153,15 +155,20 @@ public class GameField : MonoBehaviour
     var first = m_selected_elements[0];
     var second = m_selected_elements[1];
     var distance = Mathf.Abs(first.Item1 - second.Item1) + Mathf.Abs(first.Item2 - second.Item2);
-    if (distance == 0)
-      m_selected_elements.Clear();
-    else if (distance == 1)
+    if (distance > 1)
     {
-      this._MakeMove(first, second);
-      m_selected_elements.Clear();
+      var position = m_selected_elements[0];
+      m_field[position.Item1, position.Item2].UpdateSelection(false);
+      m_selected_elements.RemoveAt(0);
     }
     else
-      m_selected_elements.RemoveAt(0);
+    {
+      foreach (var position in m_selected_elements)
+        m_field[position.Item1, position.Item2].UpdateSelection(false);
+      m_selected_elements.Clear();
+      if (distance == 1)
+        this._MakeMove(first, second);
+    }
   }
 
   private void _FitCollider()
