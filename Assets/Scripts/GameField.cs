@@ -230,4 +230,9 @@ public class GameField : MonoBehaviour
     int value = m_field_data.At(row_id, column_id);
     m_field[row_id, column_id].Create(m_element_style_provider.Get(value), value);
   }
+
+  private void OnDestroy()
+  {
+    m_field_data.Save();
+  }
 }

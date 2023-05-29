@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using UnityEngine;
 
 public class GameFieldData
@@ -131,7 +132,8 @@ public class GameFieldData
     m_values_probability_mask = new float[4] { 0.4f, 0.3f, 0.2f, 0.2f };
 
     m_field = new int[m_height, m_width];
-    _InitArray(m_field, this._GetRandomValue);
+    if (!this._Load())
+      _InitArray(m_field, this._GetRandomValue);
 
     //for (int row_id = 0; row_id < m_height; ++row_id)
     //  for (int column_id = 0; column_id < m_width; ++column_id)
@@ -443,5 +445,43 @@ public class GameFieldData
           SwapCells(row_id, column_id, other_row_id, other_column_id);
         }
     } while (GetAllMoves().Count == 0);
+  }
+
+  private class SerializableData
+  {
+    public int width;
+    public int height;
+    public int[] field;
+    public int[] values_interval;
+    public float[] values_probability_mask;
+  }
+
+  private bool _Load()
+  {
+    var path = Application.persistentDataPath + "/GameFieldData.json";
+    if (!System.IO.File.Exists(path))
+      return false;
+    var json_data = System.IO.File.ReadAllText(path);
+    var data = JsonUtility.FromJson<SerializableData>(json_data);
+    m_width = data.width;
+    m_height = data.height;
+    for (int row_id = 0; row_id < m_height; ++row_id)
+      for (int column_id = 0; column_id < m_width; ++column_id)
+        m_field[row_id, column_id] = data.field[row_id * m_width + column_id];
+    m_values_interval = data.values_interval;
+    m_values_probability_mask = data.values_probability_mask;
+    return true;
+  }
+
+  public void Save()
+  {
+    var data = new SerializableData();
+    data.width = this.m_width;
+    data.height = this.m_height;
+    data.field = this.m_field.Cast<int>().ToArray();
+    data.values_interval = this.m_values_interval;
+    data.values_probability_mask = this.m_values_probability_mask;
+    var json = JsonUtility.ToJson(data);
+    System.IO.File.WriteAllText(Application.persistentDataPath + "/GameFieldData.json", json);
   }
 }
