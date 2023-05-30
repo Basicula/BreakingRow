@@ -115,6 +115,15 @@ public class GameField : MonoBehaviour
     this._AutoMove();
   }
 
+  public void Restart()
+  {
+    m_field_data.Reset();
+    game_info.Reset();
+    for (int row_id = 0; row_id < height; ++row_id)
+      for (int column_id = 0; column_id < width; ++column_id)
+        this._InitElement(row_id, column_id);
+  }
+
   private Vector2 _GetMouseEventPosition()
   {
     var world_mouse_event_position = Camera.main.ScreenToWorldPoint(Input.mousePosition);

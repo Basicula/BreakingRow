@@ -127,25 +127,14 @@ public class GameFieldData
   {
     m_width = width;
     m_height = height;
-
-    m_values_interval = new int[4] { 0, 1, 2, 3 };
-    m_values_probability_mask = new float[4] { 0.4f, 0.3f, 0.2f, 0.2f };
-
     m_field = new int[m_height, m_width];
+
     if (!this._Load())
-      _InitArray(m_field, this._GetRandomValue);
+      this._InitDefault();
 
     //for (int row_id = 0; row_id < m_height; ++row_id)
     //  for (int column_id = 0; column_id < m_width; ++column_id)
     //    m_field[row_id, column_id] = row_id * width + column_id;
-
-    while (true)
-    {
-      var removed_groups_sizes = RemoveGroups();
-      if (removed_groups_sizes.Count == 0)
-        break;
-      SpawnNewValues();
-    }
   }
 
   public int width
@@ -445,6 +434,27 @@ public class GameFieldData
           SwapCells(row_id, column_id, other_row_id, other_column_id);
         }
     } while (GetAllMoves().Count == 0);
+  }
+
+  public void Reset()
+  {
+    var path = Application.persistentDataPath + "/GameFieldData.json";
+    System.IO.File.Delete(path);
+    this._InitDefault();
+  }
+
+  private void _InitDefault()
+  {
+    m_values_interval = new int[4] { 0, 1, 2, 3 };
+    m_values_probability_mask = new float[4] { 0.4f, 0.3f, 0.2f, 0.2f };
+    _InitArray(m_field, this._GetRandomValue);
+    while (true)
+    {
+      var removed_groups_sizes = RemoveGroups();
+      if (removed_groups_sizes.Count == 0)
+        break;
+      SpawnNewValues();
+    }
   }
 
   private class SerializableData

@@ -124,7 +124,6 @@ public class GameElement : MonoBehaviour
       element_number_text = Mathf.FloorToInt(Mathf.Pow(2, value)).ToString();
     }
     text_handler_gameobject.GetComponent<TextMesh>().text = element_number_text;
-    text_handler_gameobject.GetComponent<TextMesh>().fontSize = 128;
     m_state = State.Creating;
     m_creation_start_time = Time.time;
   }

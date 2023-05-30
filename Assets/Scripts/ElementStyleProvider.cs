@@ -15,6 +15,7 @@ public class ElementStyleProvider
 
   private string[] m_colors;
   private List<SVGPath> m_paths;
+  private Dictionary<int, Sprite> m_sprite_cache;
   private float m_size;
 
   public ElementStyleProvider(float size)
@@ -25,6 +26,7 @@ public class ElementStyleProvider
       "#3DFF53", "#FF4828", "#0008FF", "#14FFF3", "#FF05FA",
       "#FFFB28", "#FF6D0A", "#CB0032", "#00990A", "#990054"
     };
+    m_sprite_cache = new Dictionary<int, Sprite>();
 
     SVGPath triangle_path = this._PolylinePath(
       this._RegularPolygonPoints(new Vector2(size / 2, 5 * size / 8), 10 * size / 16, 3, Mathf.PI / 2)
@@ -135,6 +137,8 @@ public class ElementStyleProvider
 
   public Sprite Get(int value)
   {
+    if (m_sprite_cache.ContainsKey(value))
+      return m_sprite_cache[value];
     SVG svg = new SVG();
     svg.width = m_size;
     svg.height = m_size;
@@ -155,7 +159,8 @@ public class ElementStyleProvider
       MaxCordDeviation = 0.0f,
       MaxTanAngleDeviation = 0.0f
     });
-    return VectorUtils.BuildSprite(geometries, 1, VectorUtils.Alignment.Center, Vector2.zero, 128, false);
+    m_sprite_cache[value] = VectorUtils.BuildSprite(geometries, 1, VectorUtils.Alignment.Center, Vector2.zero, 128, false);
+    return m_sprite_cache[value];
   }
 
   private Vector2 _UnitVector(float angle, float size = 1.0f)

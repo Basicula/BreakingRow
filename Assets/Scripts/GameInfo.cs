@@ -42,6 +42,13 @@ public class GameInfo : MonoBehaviour
     }
   }
 
+  public void Reset()
+  {
+    m_score = 0;
+    m_moves_count = 0;
+    this._UpdateTexts();
+  }
+
   private void _UpdateTexts()
   {
     score_text.text = m_score.ToString();
