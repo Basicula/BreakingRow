@@ -3,12 +3,13 @@ using UnityEngine;
 
 public class GameField : MonoBehaviour
 {
-  public int width;
-  public int height;
-  public GameObject game_element_prefab;
-  public bool is_auto_play;
-  public GameInfo game_info;
-  public GameObject abilities;
+  [SerializeReference] private int m_width;
+  [SerializeReference] private int m_height;
+  [SerializeReference] private GameObject m_game_element_prefab;
+  [SerializeReference] private bool m_is_auto_play;
+  [SerializeReference] private GameInfo m_game_info;
+  [SerializeReference] private GameObject m_abilities;
+  [SerializeReference] private GameObject m_input_handler;
 
   private GameElement[,] m_field;
   private GameFieldData m_field_data;
@@ -24,8 +25,6 @@ public class GameField : MonoBehaviour
   private Vector2 m_mouse_down_position;
   private ((int, int), (int, int))? m_reverse_move;
 
-  [SerializeReference] private GameObject m_input_handler;
-
   public GameField()
   {
     m_to_create = new List<(int, int)>();
@@ -36,24 +35,24 @@ public class GameField : MonoBehaviour
   void Start()
   {
     Camera.main.orthographicSize = Screen.height / 2;
-    Camera.main.pixelRect = new Rect(0, 0, Screen.width, Screen.height);
-    float screen_width = Screen.width;
-    float screen_height = Screen.height;
-    var min_dimmension = Mathf.Min(screen_width, screen_height);
-    m_grid_step = Mathf.Min(screen_width / width, screen_height / height);
+    var active_zone = m_input_handler.GetComponent<RectTransform>();
+    float max_width = active_zone.rect.width;
+    float max_height = active_zone.rect.height;
+    var active_zone_center = active_zone.localPosition;
+    m_grid_step = Mathf.Min(max_width / m_width, max_height / m_height);
     m_half_grid_step = m_grid_step / 2;
     m_element_offset = m_grid_step * 0.1f;
     m_element_size = m_grid_step - 2 * m_element_offset;
     m_element_style_provider = new ElementStyleProvider(m_element_size);
-    m_field = new GameElement[height, width];
-    m_field_data = new GameFieldData(width, height);
-    game_info.moves_count = m_field_data.GetAllMoves().Count;
-    m_field_center = new Vector2(min_dimmension / 2, min_dimmension / 2);
-    for (int row_id = 0; row_id < height; ++row_id)
-      for (int column_id = 0; column_id < width; ++column_id)
+    m_field = new GameElement[m_height, m_width];
+    m_field_data = new GameFieldData(m_width, m_height);
+    m_game_info.moves_count = m_field_data.GetAllMoves().Count;
+    m_field_center = new Vector2(m_grid_step * m_width / 2 - active_zone_center.x, m_grid_step * m_height / 2 + active_zone_center.y);
+    for (int row_id = 0; row_id < m_height; ++row_id)
+      for (int column_id = 0; column_id < m_width; ++column_id)
       {
         Vector2 position = this._GetElementPosition(row_id, column_id);
-        m_field[row_id, column_id] = Instantiate(game_element_prefab, position, Quaternion.identity).GetComponent<GameElement>();
+        m_field[row_id, column_id] = Instantiate(m_game_element_prefab, position, Quaternion.identity).GetComponent<GameElement>();
         m_field[row_id, column_id].transform.parent = transform;
         this._InitElement(row_id, column_id);
       }
@@ -69,7 +68,7 @@ public class GameField : MonoBehaviour
       this._MakeMove(m_reverse_move.Value.Item1, m_reverse_move.Value.Item2);
       m_reverse_move = null;
     }
-    game_info.moves_count = m_field_data.GetAllMoves().Count;
+    m_game_info.moves_count = m_field_data.GetAllMoves().Count;
     if (m_to_create.Count != 0)
     {
       foreach (var (row_id, column_id) in m_to_create)
@@ -111,7 +110,7 @@ public class GameField : MonoBehaviour
           if (m_field_data.At(element.Item1, element.Item2) != -1)
             m_to_create.Add(element);
         }
-        game_info.UpdateScore(group_details.value, group_details.group.Count);
+        m_game_info.UpdateScore(group_details.value, group_details.group.Count);
       }
       return;
     }
@@ -121,14 +120,14 @@ public class GameField : MonoBehaviour
   public void Restart()
   {
     m_field_data.Reset();
-    game_info.Reset();
-    for (int ability_id = 0; ability_id < abilities.transform.childCount; ++ability_id)
+    m_game_info.Reset();
+    for (int ability_id = 0; ability_id < m_abilities.transform.childCount; ++ability_id)
     {
-      var ability_game_object = abilities.transform.GetChild(ability_id).gameObject;
+      var ability_game_object = m_abilities.transform.GetChild(ability_id).gameObject;
       ability_game_object.GetComponent<Ability>().Reset();
     }
-    for (int row_id = 0; row_id < height; ++row_id)
-      for (int column_id = 0; column_id < width; ++column_id)
+    for (int row_id = 0; row_id < m_height; ++row_id)
+      for (int column_id = 0; column_id < m_width; ++column_id)
         this._InitElement(row_id, column_id);
   }
 
@@ -175,8 +174,8 @@ public class GameField : MonoBehaviour
     foreach (var element_position in m_highlighted_elements)
       if (!elements_to_highlight.Contains(element_position))
         m_field[element_position.Item1, element_position.Item2].UpdateHighlighting(false);
-    if (main_element_position.Item1 >= height || main_element_position.Item1 < 0 ||
-      main_element_position.Item2 >= width || main_element_position.Item2 < 0)
+    if (main_element_position.Item1 >= m_height || main_element_position.Item1 < 0 ||
+      main_element_position.Item2 >= m_width || main_element_position.Item2 < 0)
       m_highlighted_elements.Clear();
     else
     {
@@ -190,10 +189,10 @@ public class GameField : MonoBehaviour
   private void _HandleAbility(string i_ability_name, Ability i_ability, Vector2 i_applied_position)
   {
     var main_element_position = this._GetElementPosition(Camera.main.ScreenToWorldPoint(i_applied_position));
-    if (main_element_position.Item1 >= height || main_element_position.Item1 < 0 ||
-      main_element_position.Item2 >= width || main_element_position.Item2 < 0)
+    if (main_element_position.Item1 >= m_height || main_element_position.Item1 < 0 ||
+      main_element_position.Item2 >= m_width || main_element_position.Item2 < 0)
       return;
-    game_info.SpentScore(i_ability.price);
+    m_game_info.SpentScore(i_ability.price);
     i_ability.NextPrice();
     switch (i_ability_name)
     {
@@ -202,7 +201,7 @@ public class GameField : MonoBehaviour
           main_element_position.Item1, main_element_position.Item2);
         m_field[main_element_position.Item1, main_element_position.Item2].Destroy();
         foreach (var element_info in removed_zone_info)
-          game_info.UpdateScore(element_info.Key, element_info.Value);
+          m_game_info.UpdateScore(element_info.Key, element_info.Value);
         break;
       default:
         return;
@@ -241,10 +240,16 @@ public class GameField : MonoBehaviour
 
   private void _InitInputHandler()
   {
+    // Fit input handler size to actual grid size
     var input_handler_rect_transform = m_input_handler.GetComponent<RectTransform>();
-    var height_fraction = (Screen.height - m_grid_step * height) / Screen.height / 2;
-    input_handler_rect_transform.anchorMin = new Vector2(0, height_fraction);
-    input_handler_rect_transform.anchorMax = new Vector2(1, 1 - height_fraction);
+    var rect = input_handler_rect_transform.rect;
+    var anchor_delta = input_handler_rect_transform.anchorMax - input_handler_rect_transform.anchorMin;
+    var height_fraction = anchor_delta.y * (rect.height - m_grid_step * m_height) / rect.height / 2;
+    var width_fraction = anchor_delta.x * (rect.width - m_grid_step * m_width) / rect.width / 2;
+    input_handler_rect_transform.anchorMin += new Vector2(width_fraction, height_fraction);
+    input_handler_rect_transform.anchorMax -= new Vector2(width_fraction, height_fraction);
+
+    // Init input handler callbacks
     var input_handler_component = m_input_handler.GetComponent<GameFieldInputHandler>();
     input_handler_component.on_input_down = this._HandlePointerDown;
     input_handler_component.on_input_up = this._HandlePointerUp;
@@ -254,7 +259,7 @@ public class GameField : MonoBehaviour
 
   private void _AutoMove()
   {
-    if (!is_auto_play)
+    if (!m_is_auto_play)
       return;
     var moves = m_field_data.GetAllMoves();
     if (moves.Count > 0)
@@ -316,8 +321,8 @@ public class GameField : MonoBehaviour
 
   private bool _IsAvailable()
   {
-    for (int i = 0; i < height; ++i)
-      for (int j = 0; j < width; ++j)
+    for (int i = 0; i < m_height; ++i)
+      for (int j = 0; j < m_width; ++j)
         if (!m_field[i, j].IsAvailable())
           return false;
     return true;
