@@ -24,33 +24,42 @@ public class GameInfo : MonoBehaviour
   public void UpdateScore(int i_value, int i_count)
   {
     m_score += Mathf.FloorToInt(Mathf.Pow(2, i_value)) * i_count;
-    PlayerPrefs.SetInt(m_score_key, m_score);
     if (m_score > m_highest_score)
-    {
       m_highest_score = m_score;
-      PlayerPrefs.SetInt(m_highest_score_key, m_highest_score);
-    }
-    PlayerPrefs.Save();
-    this._UpdateTexts();
+    this._Update();
+  }
+
+  public void SpentScore(int i_spent_score)
+  {
+    m_score -= i_spent_score;
+    this._Update();
   }
 
   public int moves_count
   {
     set {
       m_moves_count = value;
-      this._UpdateTexts();
+      this._Update();
     }
+  }
+
+  public int score
+  {
+    get => m_score;
   }
 
   public void Reset()
   {
     m_score = 0;
     m_moves_count = 0;
-    this._UpdateTexts();
+    this._Update();
   }
 
-  private void _UpdateTexts()
+  private void _Update()
   {
+    PlayerPrefs.SetInt(m_score_key, m_score);
+    PlayerPrefs.SetInt(m_highest_score_key, m_highest_score);
+    PlayerPrefs.Save();
     score_text.text = m_score.ToString();
     moves_count_text.text = m_moves_count.ToString();
     highest_score_text.text = m_highest_score.ToString();

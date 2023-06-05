@@ -10,6 +10,7 @@ public class GameElement : MonoBehaviour
     Destroying,
     Moving,
     Selected,
+    Highlighted,
     Undefined
   }
 
@@ -19,6 +20,7 @@ public class GameElement : MonoBehaviour
   private float m_destroy_start_time;
   private float m_moving_start_time;
   private float m_select_start_time;
+  private float m_highlight_start_time;
   private Vector3 m_move_target_position;
   private Vector3 m_move_start_position;
   private List<Vector3> m_shake_animation_control_rotations;
@@ -90,6 +92,14 @@ public class GameElement : MonoBehaviour
           Time.time - m_select_start_time
         );
         break;
+      case State.Highlighted:
+        transform.eulerAngles = VectorUtilities.Lerp(
+          m_shake_animation_control_rotations,
+          m_animation_duration,
+          Time.time - m_highlight_start_time
+        );
+        break;
+      case State.Undefined:
       case State.Waiting:
       default:
         return;
@@ -138,11 +148,14 @@ public class GameElement : MonoBehaviour
 
   public bool IsAvailable()
   {
-    return m_state == State.Waiting;
+    return m_state == State.Waiting || m_state == State.Highlighted ||
+      m_state == State.Selected;
   }
 
   public void UpdateSelection(bool is_selected)
   {
+    if (!IsAvailable())
+      return;
     if (is_selected)
     {
       m_state = State.Selected;
@@ -153,6 +166,22 @@ public class GameElement : MonoBehaviour
       m_state = State.Waiting;
       transform.eulerAngles = new Vector3(0, 0, 0);
       transform.localScale = new Vector3(1, 1, 1);
+    }
+  }
+
+  public void UpdateHighlighting(bool is_highlighted)
+  {
+    if (!IsAvailable())
+      return;
+    if (is_highlighted)
+    {
+      m_state = State.Highlighted;
+      m_highlight_start_time = Time.time;
+    }
+    else
+    {
+      m_state = State.Waiting;
+      transform.eulerAngles = new Vector3(0, 0, 0);
     }
   }
 }
