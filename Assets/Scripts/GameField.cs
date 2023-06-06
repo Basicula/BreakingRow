@@ -195,6 +195,16 @@ public class GameField : MonoBehaviour
             if (this._IsValidCell(row_id, column_id))
               elements_to_highlight.Add((row_id, column_id));
         break;
+      case "RemoveElementsByValue":
+        if (this._IsValidCell(main_element_position))
+        {
+          var target_value = m_field_data.At(main_element_position.Item1, main_element_position.Item2);
+          for (int row_id = 0; row_id < m_height; ++row_id)
+            for (int column_id = 0; column_id < m_width; ++column_id)
+              if (m_field_data.At(row_id, column_id) == target_value)
+                elements_to_highlight.Add((row_id, column_id));
+        }
+        break;
       default:
         break;
     }
@@ -236,6 +246,15 @@ public class GameField : MonoBehaviour
               m_field[row_id, column_id].Destroy();
         foreach (var element_info in removed_zone_info)
           m_game_info.UpdateScore(element_info.Key, element_info.Value);
+        break;
+      case "RemoveElementsByValue":
+        var value = m_field_data.At(main_element_position.Item1, main_element_position.Item2);
+        for (int row_id = 0; row_id < m_height; ++row_id)
+          for (int column_id = 0; column_id < m_width; ++column_id)
+            if (m_field_data.At(row_id, column_id) == value)
+              m_field[row_id, column_id].Destroy();
+        var removed_count = m_field_data.RemoveValue(value);
+        m_game_info.UpdateScore(value, removed_count);
         break;
       default:
         return;
