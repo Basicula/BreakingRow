@@ -4,8 +4,8 @@ using UnityEngine.EventSystems;
 
 public class GameFieldInputHandler : MonoBehaviour, IPointerDownHandler, IPointerUpHandler, IPointerMoveHandler, IDropHandler
 {
-  public Action on_input_down;
-  public Action on_input_up;
+  public Action<Vector2> on_input_down;
+  public Action<Vector2> on_input_up;
   public Action<string, Vector2> on_ability_move;
   public Action<string, Ability, Vector2> on_ability_apply;
 
@@ -18,7 +18,7 @@ public class GameFieldInputHandler : MonoBehaviour, IPointerDownHandler, IPointe
 
   public void OnPointerDown(PointerEventData eventData)
   {
-    on_input_down();
+    on_input_down(eventData.position);
   }
 
   public void OnPointerMove(PointerEventData eventData)
@@ -32,6 +32,6 @@ public class GameFieldInputHandler : MonoBehaviour, IPointerDownHandler, IPointe
 
   public void OnPointerUp(PointerEventData eventData)
   {
-    on_input_up();
+    on_input_up(eventData.position);
   }
 }

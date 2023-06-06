@@ -131,42 +131,69 @@ public class GameField : MonoBehaviour
         this._InitElement(row_id, column_id);
   }
 
-  private Vector2 _GetMouseEventPosition()
+  private Vector2 _PointerEventPositionToWorldPosition(Vector2 i_event_position)
   {
-    var world_mouse_event_position = Camera.main.ScreenToWorldPoint(Input.mousePosition);
+    var world_mouse_event_position = Camera.main.ScreenToWorldPoint(i_event_position);
     return new Vector2(world_mouse_event_position.x, world_mouse_event_position.y);
   }
 
-  private void _HandlePointerDown()
+  private void _HandlePointerDown(Vector2 i_event_position)
   {
     if (!this._IsAvailable())
       return;
-    m_mouse_down_position = this._GetMouseEventPosition();
-    this._SelectElement(this._GetElementPosition(m_mouse_down_position));
+    m_mouse_down_position = this._PointerEventPositionToWorldPosition(i_event_position);
+    var element_position = this._GetElementPosition(m_mouse_down_position);
+    if (!this._IsValidCell(element_position))
+    {
+      Debug.LogError($"Bad element position on pointer down: {element_position} with event position {i_event_position}");
+      return;
+    }
+    this._SelectElement(element_position);
     this._ProcessSelectedElements();
   }
 
-  private void _HandlePointerUp()
+  private void _HandlePointerUp(Vector2 i_event_position)
   {
     if (m_selected_elements.Count != 1)
       return;
-    var mouse_up_position = this._GetMouseEventPosition();
+    var mouse_up_position = this._PointerEventPositionToWorldPosition(i_event_position);
     var delta = mouse_up_position - m_mouse_down_position;
     if (delta.magnitude / m_grid_step < 0.5)
       return;
     delta.Normalize();
-    this._SelectElement(this._GetElementPosition(delta * m_grid_step + m_mouse_down_position));
+    var element_position = this._GetElementPosition(m_mouse_down_position + delta * m_grid_step);
+    if (!this._IsValidCell(element_position))
+    {
+      Debug.LogError($"Bad element position on pointer up: {element_position} with event position {i_event_position}");
+      return;
+    }
+    this._SelectElement(element_position);
     this._ProcessSelectedElements();
   }
 
   private void _HandleAbilityMove(string i_ability_name, Vector2 i_event_position)
   {
+    if (!this._IsAvailable())
+      return;
     var elements_to_highlight = new List<(int, int)>();
     var main_element_position = this._GetElementPosition(Camera.main.ScreenToWorldPoint(i_event_position));
+    if (!this._IsValidCell(main_element_position))
+    {
+      foreach (var element_position in m_highlighted_elements)
+        m_field[element_position.Item1, element_position.Item2].UpdateHighlighting(false);
+      m_highlighted_elements.Clear();
+      return;
+    }
     switch (i_ability_name)
     {
       case "RemoveElement":
         elements_to_highlight.Add(main_element_position);
+        break;
+      case "Bomb":
+        for (int row_id = main_element_position.Item1 - 1; row_id <= main_element_position.Item1 + 1; ++row_id)
+          for (int column_id = main_element_position.Item2 - 1; column_id <= main_element_position.Item2 + 1; ++column_id)
+            if (this._IsValidCell(row_id, column_id))
+              elements_to_highlight.Add((row_id, column_id));
         break;
       default:
         break;
@@ -174,38 +201,46 @@ public class GameField : MonoBehaviour
     foreach (var element_position in m_highlighted_elements)
       if (!elements_to_highlight.Contains(element_position))
         m_field[element_position.Item1, element_position.Item2].UpdateHighlighting(false);
-    if (main_element_position.Item1 >= m_height || main_element_position.Item1 < 0 ||
-      main_element_position.Item2 >= m_width || main_element_position.Item2 < 0)
-      m_highlighted_elements.Clear();
-    else
-    {
-      foreach (var element_position in elements_to_highlight)
-        if (!m_highlighted_elements.Contains(element_position))
-          m_field[element_position.Item1, element_position.Item2].UpdateHighlighting(true);
-      m_highlighted_elements = elements_to_highlight;
-    }
+    foreach (var element_position in elements_to_highlight)
+      if (!m_highlighted_elements.Contains(element_position))
+        m_field[element_position.Item1, element_position.Item2].UpdateHighlighting(true);
+    m_highlighted_elements = elements_to_highlight;
   }
 
   private void _HandleAbility(string i_ability_name, Ability i_ability, Vector2 i_applied_position)
   {
+    if (!this._IsAvailable())
+      return;
     var main_element_position = this._GetElementPosition(Camera.main.ScreenToWorldPoint(i_applied_position));
-    if (main_element_position.Item1 >= m_height || main_element_position.Item1 < 0 ||
-      main_element_position.Item2 >= m_width || main_element_position.Item2 < 0)
+    if (!this._IsValidCell(main_element_position))
       return;
     m_game_info.SpentScore(i_ability.price);
     i_ability.NextPrice();
     switch (i_ability_name)
     {
       case "RemoveElement":
-        var removed_zone_info = m_field_data.RemoveZone(main_element_position.Item1, main_element_position.Item2,
+        var removed_element_info = m_field_data.RemoveZone(main_element_position.Item1, main_element_position.Item2,
           main_element_position.Item1, main_element_position.Item2);
         m_field[main_element_position.Item1, main_element_position.Item2].Destroy();
+        foreach (var element_info in removed_element_info)
+          m_game_info.UpdateScore(element_info.Key, element_info.Value);
+        break;
+      case "Bomb":
+        var zone_to_remove = ((main_element_position.Item1 - 1, main_element_position.Item2 - 1),
+          (main_element_position.Item1 + 1, main_element_position.Item2 + 1));
+        var removed_zone_info = m_field_data.RemoveZone(zone_to_remove.Item1.Item1, zone_to_remove.Item1.Item2,
+          zone_to_remove.Item2.Item1, zone_to_remove.Item2.Item2);
+        for (int row_id = zone_to_remove.Item1.Item1; row_id <= zone_to_remove.Item2.Item1; ++row_id)
+          for (int column_id = zone_to_remove.Item1.Item2; column_id <= zone_to_remove.Item2.Item2; ++column_id)
+            if (this._IsValidCell(row_id, column_id))
+              m_field[row_id, column_id].Destroy();
         foreach (var element_info in removed_zone_info)
           m_game_info.UpdateScore(element_info.Key, element_info.Value);
         break;
       default:
         return;
     }
+    m_highlighted_elements.Clear();
   }
 
   private void _SelectElement((int, int) i_position)
@@ -326,5 +361,15 @@ public class GameField : MonoBehaviour
         if (!m_field[i, j].IsAvailable())
           return false;
     return true;
+  }
+
+  private bool _IsValidCell(int i_row_id, int i_column_id)
+  {
+    return i_row_id >= 0 && i_row_id < m_height && i_column_id >= 0 && i_column_id < m_width;
+  }
+
+  private bool _IsValidCell((int, int) i_position)
+  {
+    return _IsValidCell(i_position.Item1, i_position.Item2);
   }
 }

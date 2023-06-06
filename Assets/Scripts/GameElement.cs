@@ -136,6 +136,7 @@ public class GameElement : MonoBehaviour
     text_handler_gameobject.GetComponent<TextMesh>().text = element_number_text;
     m_state = State.Creating;
     m_creation_start_time = Time.time;
+    transform.eulerAngles = new Vector3(0, 0, 0);
   }
 
   public void MoveTo(Vector3 position)
