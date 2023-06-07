@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using UnityEngine;
 using TMPro;
 
@@ -13,6 +14,7 @@ public class GameInfo : MonoBehaviour
 
   private const string m_score_key = "Score";
   private const string m_highest_score_key = "HighestScore";
+  private readonly Dictionary<int, int> m_score_bonuses = new() { { 3, 1 }, { 4, 2 }, { 5, 5 }, { 6, 5 }, { 7, 10 } };
 
   void Start()
   {
@@ -23,7 +25,12 @@ public class GameInfo : MonoBehaviour
 
   public void UpdateScore(int i_value, int i_count)
   {
-    m_score += Mathf.FloorToInt(Mathf.Pow(2, i_value)) * i_count;
+    int bonus_multiplier = 1;
+    if (i_count > 7)
+      bonus_multiplier = 25;
+    else if (i_count > 2)
+      bonus_multiplier = m_score_bonuses[i_count];
+    m_score += Mathf.FloorToInt(Mathf.Pow(2, i_value)) * i_count * bonus_multiplier;
     if (m_score > m_highest_score)
       m_highest_score = m_score;
     this._Update();
@@ -37,7 +44,8 @@ public class GameInfo : MonoBehaviour
 
   public int moves_count
   {
-    set {
+    set
+    {
       m_moves_count = value;
       this._Update();
     }
