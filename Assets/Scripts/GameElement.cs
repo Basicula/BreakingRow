@@ -133,7 +133,10 @@ public class GameElement : MonoBehaviour
     {
       element_number_text = Mathf.FloorToInt(Mathf.Pow(2, value)).ToString();
     }
-    text_handler_gameobject.GetComponent<TextMesh>().text = element_number_text;
+    var text_mesh = text_handler_gameobject.GetComponent<TextMesh>();
+    text_mesh.text = element_number_text;
+    text_mesh.fontSize = Mathf.RoundToInt(Mathf.Min(sprite.rect.width / element_number_text.Length, sprite.rect.height / 2));
+    text_mesh.fontSize *= text_mesh.fontSize;
     m_state = State.Creating;
     m_creation_start_time = Time.time;
     transform.eulerAngles = new Vector3(0, 0, 0);
