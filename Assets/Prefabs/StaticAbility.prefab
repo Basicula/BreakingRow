@@ -228,9 +228,9 @@ GameObject:
   - component: {fileID: 7899922776452433644}
   - component: {fileID: 7899922776452433645}
   - component: {fileID: 7899922776452433642}
-  - component: {fileID: 7899922776452433643}
+  - component: {fileID: -4988889265671095312}
   m_Layer: 5
-  m_Name: Ability
+  m_Name: StaticAbility
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -341,7 +341,7 @@ MonoBehaviour:
   m_OnClick:
     m_PersistentCalls:
       m_Calls: []
---- !u!114 &7899922776452433643
+--- !u!114 &-4988889265671095312
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -350,7 +350,7 @@ MonoBehaviour:
   m_GameObject: {fileID: 7899922776452433641}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 8ce01502b3b7c3147b8cd84e4ac6594b, type: 3}
+  m_Script: {fileID: 11500000, guid: 30b8bf02a9e11b94382232c25b46eb16, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
   m_price_change_rule: 0

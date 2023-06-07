@@ -1,9 +1,8 @@
 ﻿using UnityEngine;
-using UnityEngine.EventSystems;
 using UnityEngine.UI;
 using TMPro;
 
-public class Ability : MonoBehaviour, IDragHandler, IBeginDragHandler, IEndDragHandler
+abstract public class AbilityBase : MonoBehaviour
 {
   public enum PriceChangeRule
   {
@@ -11,17 +10,14 @@ public class Ability : MonoBehaviour, IDragHandler, IBeginDragHandler, IEndDragH
     Multiplicative
   }
 
-  [SerializeReference] private PriceChangeRule m_price_change_rule;
-  [SerializeReference] private int m_starting_price;
-  [SerializeReference] private int m_price_step;
-  [SerializeReference] private int m_current_price;
+  [SerializeReference] protected PriceChangeRule m_price_change_rule;
+  [SerializeReference] protected int m_starting_price;
+  [SerializeReference] protected int m_price_step;
+  [SerializeReference] protected int m_current_price;
   [SerializeReference] private GameInfo m_game_info;
 
+  protected Button m_button;
   private TMP_Text m_price_text;
-  private Vector2 m_original_image_position;
-  private RectTransform m_image_transform;
-  private CanvasGroup m_canvas_group;
-  private Button m_button;
 
   public void NextPrice()
   {
@@ -39,8 +35,14 @@ public class Ability : MonoBehaviour, IDragHandler, IBeginDragHandler, IEndDragH
     this._Update();
   }
 
+  abstract protected void _Init();
+
   private void Start()
   {
+    m_button = gameObject.GetComponent<Button>();
+    m_price_text = transform.GetChild(2).gameObject.GetComponent<TMP_Text>();
+    this._Init();
+
     this._Load();
     this._Update();
   }
@@ -59,41 +61,10 @@ public class Ability : MonoBehaviour, IDragHandler, IBeginDragHandler, IEndDragH
     this._Update();
   }
 
-  public void OnDrag(PointerEventData eventData)
-  {
-    m_image_transform.anchoredPosition += eventData.delta;
-  }
-
-  public void OnBeginDrag(PointerEventData eventData)
-  {
-    if (!m_button.interactable)
-    {
-      eventData.pointerDrag = null;
-      return;
-    }
-    m_canvas_group.blocksRaycasts = false;
-  }
-
-  public void OnEndDrag(PointerEventData eventData)
-  {
-    m_image_transform.anchoredPosition = m_original_image_position;
-    m_canvas_group.blocksRaycasts = true;
-  }
-
   public int price
   {
     get => m_current_price;
   }
-
-  private void Awake()
-  {
-    m_button = gameObject.GetComponent<Button>();
-    m_image_transform = transform.GetChild(0).gameObject.GetComponent<RectTransform>();
-    m_canvas_group = transform.GetChild(0).gameObject.GetComponent<CanvasGroup>();
-    m_original_image_position = m_image_transform.anchoredPosition;
-    m_price_text = transform.GetChild(2).gameObject.GetComponent<TMP_Text>();
-  }
-
   private void _Update()
   {
     m_price_text.text = m_current_price.ToString();

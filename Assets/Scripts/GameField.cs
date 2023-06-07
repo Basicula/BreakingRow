@@ -124,7 +124,7 @@ public class GameField : MonoBehaviour
     for (int ability_id = 0; ability_id < m_abilities.transform.childCount; ++ability_id)
     {
       var ability_game_object = m_abilities.transform.GetChild(ability_id).gameObject;
-      ability_game_object.GetComponent<Ability>().Reset();
+      ability_game_object.GetComponent<AbilityBase>().Reset();
     }
     for (int row_id = 0; row_id < m_height; ++row_id)
       for (int column_id = 0; column_id < m_width; ++column_id)
@@ -217,7 +217,7 @@ public class GameField : MonoBehaviour
     m_highlighted_elements = elements_to_highlight;
   }
 
-  private void _HandleAbility(string i_ability_name, Ability i_ability, Vector2 i_applied_position)
+  private void _HandleAbility(string i_ability_name, AbilityBase i_ability, Vector2 i_applied_position)
   {
     if (!this._IsAvailable())
       return;
@@ -262,6 +262,27 @@ public class GameField : MonoBehaviour
     m_highlighted_elements.Clear();
   }
 
+  public void HandleStaticAbility(string i_name, StaticAbility i_ability)
+  {
+    if (!this._IsAvailable())
+      return;
+    m_game_info.SpentScore(i_ability.price);
+    i_ability.NextPrice();
+    switch (i_name)
+    {
+      case "Shuffle":
+        m_field_data.Shuffle();
+        for (int row_id = 0; row_id < m_height; ++row_id)
+          for (int column_id = 0; column_id < m_width; ++column_id)
+          {
+            m_field[row_id, column_id].Destroy();
+            m_to_create.Add((row_id, column_id));
+          }
+        break;
+      default:
+        break;
+    }
+  }
   private void _SelectElement((int, int) i_position)
   {
     m_selected_elements.Add(i_position);

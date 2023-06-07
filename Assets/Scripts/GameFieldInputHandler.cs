@@ -7,12 +7,12 @@ public class GameFieldInputHandler : MonoBehaviour, IPointerDownHandler, IPointe
   public Action<Vector2> on_input_down;
   public Action<Vector2> on_input_up;
   public Action<string, Vector2> on_ability_move;
-  public Action<string, Ability, Vector2> on_ability_apply;
+  public Action<string, AbilityBase, Vector2> on_ability_apply;
 
   public void OnDrop(PointerEventData eventData)
   {
     var active_ability_game_object = eventData.pointerPress;
-    var ability = active_ability_game_object.GetComponent<Ability>();
+    var ability = active_ability_game_object.GetComponent<MovableAbility>();
     on_ability_apply(active_ability_game_object.name, ability, eventData.position);
   }
 
