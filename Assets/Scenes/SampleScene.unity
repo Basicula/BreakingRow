@@ -1836,7 +1836,7 @@ MonoBehaviour:
   m_width: 8
   m_height: 8
   m_game_element_prefab: {fileID: 4158200364965129860, guid: 3f80bd48050dc4248a0cb65865243003, type: 3}
-  m_is_auto_play: 1
+  m_is_auto_play: 0
   m_game_info: {fileID: 1208611355}
   m_abilities: {fileID: 216259716}
   m_input_handler: {fileID: 1892398202}
