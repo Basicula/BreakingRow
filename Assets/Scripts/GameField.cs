@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using UnityEngine;
 
@@ -179,9 +180,7 @@ public class GameField : MonoBehaviour
     var main_element_position = this._GetElementPosition(Camera.main.ScreenToWorldPoint(i_event_position));
     if (!this._IsValidCell(main_element_position))
     {
-      foreach (var element_position in m_highlighted_elements)
-        m_field[element_position.Item1, element_position.Item2].UpdateHighlighting(false);
-      m_highlighted_elements.Clear();
+      this._ClearHighlighting();
       return;
     }
     switch (i_ability_name)
@@ -259,7 +258,7 @@ public class GameField : MonoBehaviour
       default:
         return;
     }
-    m_highlighted_elements.Clear();
+    this._ClearHighlighting();
   }
 
   public void HandleStaticAbility(string i_name, StaticAbility i_ability)
@@ -289,6 +288,14 @@ public class GameField : MonoBehaviour
         var removed_count = m_field_data.RemoveValue(small_value);
         m_game_info.UpdateScore(small_value, removed_count);
         break;
+      case "Search":
+        var moves = m_field_data.GetAllMoves();
+        var move = moves[UnityEngine.Random.Range(0, moves.Count)];
+        this._ClearHighlighting();
+        this._HighlightElement(move.first);
+        this._HighlightElement(move.second);
+        Invoke("_ClearHighlighting", 1);
+        break;
       default:
         break;
     }
@@ -297,6 +304,19 @@ public class GameField : MonoBehaviour
   {
     m_selected_elements.Add(i_position);
     m_field[i_position.Item1, i_position.Item2].UpdateSelection(true);
+  }
+
+  private void _HighlightElement((int, int) i_position)
+  {
+    m_highlighted_elements.Add(i_position);
+    m_field[i_position.Item1, i_position.Item2].UpdateHighlighting(true);
+  }
+
+  private void _ClearHighlighting()
+  {
+    foreach (var element_position in m_highlighted_elements)
+      m_field[element_position.Item1, element_position.Item2].UpdateHighlighting(false);
+    m_highlighted_elements.Clear();
   }
 
   private void _ProcessSelectedElements()
@@ -358,7 +378,7 @@ public class GameField : MonoBehaviour
           break;
         ++max_strike_value_count;
       }
-      var move_index = Random.Range(0, max_strike_value_count);
+      var move_index = UnityEngine.Random.Range(0, max_strike_value_count);
       var move = moves[move_index];
       this._MakeMove(move.first, move.second);
     }
