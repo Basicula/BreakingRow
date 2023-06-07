@@ -279,6 +279,16 @@ public class GameField : MonoBehaviour
             m_to_create.Add((row_id, column_id));
           }
         break;
+      case "UpgradeGenerator":
+        var small_value = m_field_data.values_interval[0];
+        m_field_data.IncreaseValuesInterval();
+        for (int row_id = 0; row_id < m_height; ++row_id)
+          for (int column_id = 0; column_id < m_width; ++column_id)
+            if (m_field_data.At(row_id, column_id) == small_value)
+              m_field[row_id, column_id].Destroy();
+        var removed_count = m_field_data.RemoveValue(small_value);
+        m_game_info.UpdateScore(small_value, removed_count);
+        break;
       default:
         break;
     }
