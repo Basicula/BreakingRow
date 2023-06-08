@@ -68,10 +68,6 @@ abstract public class AbilityBase : MonoBehaviour
   private void _Update()
   {
     m_price_text.text = m_current_price.ToString();
-  }
-
-  private void OnDestroy()
-  {
     this._Save();
   }
 

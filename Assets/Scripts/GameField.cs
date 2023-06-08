@@ -116,6 +116,7 @@ public class GameField : MonoBehaviour
       return;
     }
     this._AutoMove();
+    m_field_data.Save();
   }
 
   public void Restart()
