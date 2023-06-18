@@ -42,7 +42,7 @@ public class GameField : MonoBehaviour
     var active_zone_center = active_zone.localPosition;
     m_grid_step = Mathf.Min(max_width / m_width, max_height / m_height);
     m_half_grid_step = m_grid_step / 2;
-    m_element_offset = m_grid_step * 0.1f;
+    m_element_offset = m_grid_step * 0.05f;
     m_element_size = m_grid_step - 2 * m_element_offset;
     m_element_style_provider = new ElementStyleProvider(m_element_size);
     m_field = new GameElement[m_height, m_width];
@@ -418,6 +418,8 @@ public class GameField : MonoBehaviour
       m_field[row_id, column_id].Create(m_element_style_provider.Get(value), value);
     else
       m_field[row_id, column_id].Destroy();
+    m_field[row_id, column_id].transform.GetChild(2).GetComponent<SpriteRenderer>().size = new Vector2(m_element_size, m_element_size);
+    m_field[row_id, column_id].transform.GetChild(3).GetComponent<SpriteRenderer>().size = new Vector2(m_grid_step, m_grid_step);
   }
 
   private void OnDestroy()
