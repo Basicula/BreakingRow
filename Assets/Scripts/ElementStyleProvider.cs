@@ -6,9 +6,16 @@ using System;
 
 public class ElementStyleProvider
 {
+  public struct ElementProps
+  {
+    public Sprite sprite;
+    public string number;
+    public int font_size;
+  }
+
   private string[] m_colors;
   private List<SVGPath> m_paths;
-  private Dictionary<int, Sprite> m_sprite_cache;
+  private Dictionary<int, ElementProps> m_sprite_cache;
   private float m_size;
   private float m_line_width;
 
@@ -21,7 +28,7 @@ public class ElementStyleProvider
       "#3DFF53", "#FF4828", "#0008FF", "#14FFF3", "#FF05FA",
       "#FFFB28", "#FF6D0A", "#CB0032", "#00990A", "#990054"
     };
-    m_sprite_cache = new Dictionary<int, Sprite>();
+    m_sprite_cache = new Dictionary<int, ElementProps>();
 
     var shape_provider = new ShapeProvider(size, m_line_width);
 
@@ -103,7 +110,7 @@ public class ElementStyleProvider
     };
   }
 
-  public Sprite Get(int value)
+  public ElementProps Get(int value)
   {
     if (m_sprite_cache.ContainsKey(value))
       return m_sprite_cache[value];
@@ -130,7 +137,25 @@ public class ElementStyleProvider
       MaxCordDeviation = 0.0f,
       MaxTanAngleDeviation = 0.0f
     });
-    m_sprite_cache[value] = VectorUtils.BuildSprite(geometries, 1, VectorUtils.Alignment.Center, Vector2.zero, 128, false);
+
+    var element_props = new ElementProps();
+
+    if (value > 20)
+    {
+      char[] exponents = new char[10] { '⁰', '¹', '²', '³', '⁴', '⁵', '⁶', '⁷', '⁸', '⁹' };
+      string exponent = "";
+      while (value > 0)
+      {
+        exponent = exponents[value % 10] + exponent;
+        value /= 10;
+      }
+      element_props.number = $"2{exponent}";
+    }
+    else
+      element_props.number = Mathf.FloorToInt(Mathf.Pow(2, value)).ToString();
+    element_props.sprite = VectorUtils.BuildSprite(geometries, 1, VectorUtils.Alignment.Center, Vector2.zero, 128, false);
+    element_props.font_size = Mathf.RoundToInt(m_size * 12 / element_props.number.Length);
+    m_sprite_cache[value] = element_props;
     return m_sprite_cache[value];
   }
 }

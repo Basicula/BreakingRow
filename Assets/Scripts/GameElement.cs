@@ -112,35 +112,20 @@ public class GameElement : MonoBehaviour
     m_destroy_start_time = Time.time;
   }
 
-  public void Create(Sprite sprite, int value)
+  public void Create(ElementStyleProvider.ElementProps i_element_props)
   {
+    transform.localScale = new Vector3(1, 1, 1);
     var sprite_handler_gameobject = transform.GetChild(0).gameObject;
     var text_handler_gameobject = transform.GetChild(1).gameObject;
     var sprite_renderer = sprite_handler_gameobject.GetComponent<SpriteRenderer>();
-    sprite_renderer.sprite = sprite;
-    string element_number_text;
-    if (value > 20)
-    {
-      char[] exponents = new char[10] { '⁰', '¹', '²', '³', '⁴', '⁵', '⁶', '⁷', '⁸', '⁹' };
-      string exponent = "";
-      while (value > 0)
-      {
-        exponent = exponents[value % 10] + exponent;
-        value /= 10;
-      }
-      element_number_text = $"2{exponent}";
-    }
-    else
-    {
-      element_number_text = Mathf.FloorToInt(Mathf.Pow(2, value)).ToString();
-    }
+    sprite_renderer.sprite = i_element_props.sprite;
     var text_mesh = text_handler_gameobject.GetComponent<TextMesh>();
-    text_mesh.text = element_number_text;
-    var text_bounds = text_handler_gameobject.GetComponent<MeshRenderer>().bounds;
-    text_mesh.fontSize = Mathf.RoundToInt(sprite.bounds.size.magnitude / text_bounds.size.magnitude);
+    text_mesh.text = i_element_props.number;
+    text_mesh.fontSize = i_element_props.font_size;
     m_state = State.Creating;
     m_creation_start_time = Time.time;
     transform.eulerAngles = new Vector3(0, 0, 0);
+    transform.localScale = new Vector3(0, 0, 0);
   }
 
   public void MoveTo(Vector3 position)

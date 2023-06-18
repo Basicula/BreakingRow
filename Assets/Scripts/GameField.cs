@@ -415,7 +415,7 @@ public class GameField : MonoBehaviour
   {
     int value = m_field_data.At(row_id, column_id);
     if (value >= 0)
-      m_field[row_id, column_id].Create(m_element_style_provider.Get(value), value);
+      m_field[row_id, column_id].Create(m_element_style_provider.Get(value));
     else
       m_field[row_id, column_id].Destroy();
     m_field[row_id, column_id].transform.GetChild(2).GetComponent<SpriteRenderer>().size = new Vector2(m_element_size, m_element_size);
