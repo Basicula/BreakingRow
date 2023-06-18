@@ -10,6 +10,7 @@ public class GameElement : MonoBehaviour
     Destroying,
     Moving,
     Selected,
+    Highlighted,
     Undefined
   }
 
@@ -19,6 +20,7 @@ public class GameElement : MonoBehaviour
   private float m_destroy_start_time;
   private float m_moving_start_time;
   private float m_select_start_time;
+  private float m_highlight_start_time;
   private Vector3 m_move_target_position;
   private Vector3 m_move_start_position;
   private List<Vector3> m_shake_animation_control_rotations;
@@ -90,6 +92,14 @@ public class GameElement : MonoBehaviour
           Time.time - m_select_start_time
         );
         break;
+      case State.Highlighted:
+        transform.eulerAngles = VectorUtilities.Lerp(
+          m_shake_animation_control_rotations,
+          m_animation_duration,
+          Time.time - m_highlight_start_time
+        );
+        break;
+      case State.Undefined:
       case State.Waiting:
       default:
         return;
@@ -102,30 +112,20 @@ public class GameElement : MonoBehaviour
     m_destroy_start_time = Time.time;
   }
 
-  public void Create(Sprite sprite, int value)
+  public void Create(ElementStyleProvider.ElementProps i_element_props)
   {
+    transform.localScale = new Vector3(1, 1, 1);
     var sprite_handler_gameobject = transform.GetChild(0).gameObject;
     var text_handler_gameobject = transform.GetChild(1).gameObject;
-    sprite_handler_gameobject.GetComponent<SpriteRenderer>().sprite = sprite;
-    string element_number_text;
-    if (value > 15)
-    {
-      char[] exponents = new char[10] { '⁰', '¹', '²', '³', '⁴', '⁵', '⁶', '⁷', '⁸', '⁹' };
-      string exponent = "";
-      while (value > 0)
-      {
-        exponent = exponents[value % 10] + exponent;
-        value /= 10;
-      }
-      element_number_text = $"2{exponent}";
-    }
-    else
-    {
-      element_number_text = Mathf.FloorToInt(Mathf.Pow(2, value)).ToString();
-    }
-    text_handler_gameobject.GetComponent<TextMesh>().text = element_number_text;
+    var sprite_renderer = sprite_handler_gameobject.GetComponent<SpriteRenderer>();
+    sprite_renderer.sprite = i_element_props.sprite;
+    var text_mesh = text_handler_gameobject.GetComponent<TextMesh>();
+    text_mesh.text = i_element_props.number;
+    text_mesh.fontSize = i_element_props.font_size;
     m_state = State.Creating;
     m_creation_start_time = Time.time;
+    transform.eulerAngles = new Vector3(0, 0, 0);
+    transform.localScale = new Vector3(0, 0, 0);
   }
 
   public void MoveTo(Vector3 position)
@@ -138,11 +138,14 @@ public class GameElement : MonoBehaviour
 
   public bool IsAvailable()
   {
-    return m_state == State.Waiting;
+    return m_state == State.Waiting || m_state == State.Highlighted ||
+      m_state == State.Selected;
   }
 
   public void UpdateSelection(bool is_selected)
   {
+    if (!IsAvailable())
+      return;
     if (is_selected)
     {
       m_state = State.Selected;
@@ -153,6 +156,22 @@ public class GameElement : MonoBehaviour
       m_state = State.Waiting;
       transform.eulerAngles = new Vector3(0, 0, 0);
       transform.localScale = new Vector3(1, 1, 1);
+    }
+  }
+
+  public void UpdateHighlighting(bool is_highlighted)
+  {
+    if (!IsAvailable())
+      return;
+    if (is_highlighted)
+    {
+      m_state = State.Highlighted;
+      m_highlight_start_time = Time.time;
+    }
+    else
+    {
+      m_state = State.Waiting;
+      transform.eulerAngles = new Vector3(0, 0, 0);
     }
   }
 }
