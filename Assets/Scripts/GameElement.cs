@@ -116,9 +116,10 @@ public class GameElement : MonoBehaviour
   {
     var sprite_handler_gameobject = transform.GetChild(0).gameObject;
     var text_handler_gameobject = transform.GetChild(1).gameObject;
-    sprite_handler_gameobject.GetComponent<SpriteRenderer>().sprite = sprite;
+    var sprite_renderer = sprite_handler_gameobject.GetComponent<SpriteRenderer>();
+    sprite_renderer.sprite = sprite;
     string element_number_text;
-    if (value > 15)
+    if (value > 20)
     {
       char[] exponents = new char[10] { '⁰', '¹', '²', '³', '⁴', '⁵', '⁶', '⁷', '⁸', '⁹' };
       string exponent = "";
@@ -135,8 +136,8 @@ public class GameElement : MonoBehaviour
     }
     var text_mesh = text_handler_gameobject.GetComponent<TextMesh>();
     text_mesh.text = element_number_text;
-    text_mesh.fontSize = Mathf.RoundToInt(Mathf.Min(sprite.rect.width / element_number_text.Length, sprite.rect.height / 2));
-    text_mesh.fontSize *= text_mesh.fontSize;
+    var text_bounds = text_handler_gameobject.GetComponent<MeshRenderer>().bounds;
+    text_mesh.fontSize = Mathf.RoundToInt(sprite.bounds.size.magnitude / text_bounds.size.magnitude);
     m_state = State.Creating;
     m_creation_start_time = Time.time;
     transform.eulerAngles = new Vector3(0, 0, 0);
