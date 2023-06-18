@@ -41,4 +41,3 @@
     - [ ] Settings
     - [ ] About
     - [ ] Statistics
-
