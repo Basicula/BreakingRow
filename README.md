@@ -35,6 +35,7 @@
         - [ ] Stripes pallet
         - [ ] Other patterns ?
   - [ ] Text particles for score changes
+  - [ ] Combo visualization
   - [ ] UI
     - [ ] Main menu
     - [ ] Available game modes choice
