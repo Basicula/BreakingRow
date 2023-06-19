@@ -1,4 +1,5 @@
 ﻿using System.Collections.Generic;
+using TMPro;
 using UnityEngine;
 
 public class GameElement : MonoBehaviour
@@ -116,12 +117,14 @@ public class GameElement : MonoBehaviour
   {
     transform.localScale = new Vector3(1, 1, 1);
     var sprite_handler_gameobject = transform.GetChild(0).gameObject;
-    var text_handler_gameobject = transform.GetChild(1).gameObject;
+    var text_canvas_handler_gameobject = transform.GetChild(1).gameObject;
+    var tmp_handler_gameobject = text_canvas_handler_gameobject.transform.GetChild(0).gameObject;
+    var tmp_rect = tmp_handler_gameobject.GetComponent<RectTransform>();
+    tmp_rect.sizeDelta = new Vector2(i_element_props.text_zone_size, i_element_props.text_zone_size);
+    var tmp_text = tmp_handler_gameobject.GetComponent<TMP_Text>();
+    tmp_text.text = i_element_props.number;
     var sprite_renderer = sprite_handler_gameobject.GetComponent<SpriteRenderer>();
     sprite_renderer.sprite = i_element_props.sprite;
-    var text_mesh = text_handler_gameobject.GetComponent<TextMesh>();
-    text_mesh.text = i_element_props.number;
-    text_mesh.fontSize = i_element_props.font_size;
     m_state = State.Creating;
     m_creation_start_time = Time.time;
     transform.eulerAngles = new Vector3(0, 0, 0);

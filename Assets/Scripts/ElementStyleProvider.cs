@@ -10,7 +10,7 @@ public class ElementStyleProvider
   {
     public Sprite sprite;
     public string number;
-    public int font_size;
+    public float text_zone_size;
   }
 
   private string[] m_colors;
@@ -154,7 +154,7 @@ public class ElementStyleProvider
     else
       element_props.number = Mathf.FloorToInt(Mathf.Pow(2, value)).ToString();
     element_props.sprite = VectorUtils.BuildSprite(geometries, 1, VectorUtils.Alignment.Center, Vector2.zero, 128, false);
-    element_props.font_size = Mathf.RoundToInt(m_size * 12 / element_props.number.Length);
+    element_props.text_zone_size = m_size * 0.5f;
     m_sprite_cache[value] = element_props;
     return m_sprite_cache[value];
   }
