@@ -1,140 +1,36 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
 
-public class GameFieldData
+public abstract class FieldBase
 {
-  private int m_width;
-  private int m_height;
-  private int[,] m_field;
-  private int[] m_values_interval;
-  private float[] m_values_probability_mask;
+  protected int m_width;
+  protected int m_height;
+  protected int[,] m_field;
 
-  private static void _InitArray<T>(T[,] array, T default_value)
+  protected int[] m_values_interval;
+  protected float[] m_values_probability_interval;
+
+  protected string m_identifier;
+
+  private string m_save_file_path;
+
+  protected FieldBase(int width, int height)
   {
-    for (int i = 0; i < array.GetLength(0); ++i)
-      for (int j = 0; j < array.GetLength(1); ++j)
-        array[i, j] = default_value;
-  }
+    m_save_file_path = $"{Application.persistentDataPath}/{m_identifier}FieldData({m_width}, {m_height}).json";
 
-  private static void _InitArray<T>(T[,] array, Func<T> default_value_generator)
-  {
-    for (int i = 0; i < array.GetLength(0); ++i)
-      for (int j = 0; j < array.GetLength(1); ++j)
-        array[i, j] = default_value_generator();
-  }
-
-  private int _GetRandomValue()
-  {
-    float random = UnityEngine.Random.Range(0.0f, 1.0f);
-    float accumulated_probability = 0.0f;
-    for (int i = 0; i < m_values_interval.Length; ++i)
-    {
-      if (random <= accumulated_probability)
-        return m_values_interval[i - 1];
-      accumulated_probability += m_values_probability_mask[i];
-    }
-    return m_values_interval[m_values_interval.Length - 1];
-  }
-
-  private List<(int, int)> _CrossGroupAt(int row_id, int column_id)
-  {
-    int target_value = m_field[row_id, column_id];
-
-    Func<int, int, int, bool, (int, int)> get_coordinates = (int row_id, int column_id, int range_index, bool check_row) =>
-    {
-      if (check_row)
-        return (row_id, range_index);
-      return (range_index, column_id);
-    };
-    Func<int, int, bool, (int, int)> check_line = (row_id, column_id, check_row) =>
-    {
-      var r = check_row ? column_id + 1 : row_id + 1;
-      var l = check_row ? column_id - 1 : row_id - 1;
-      var max_r = check_row ? m_width : m_height;
-      while (true)
-      {
-        var right_coordinates = get_coordinates(row_id, column_id, r, check_row);
-        if (r < max_r && At(right_coordinates.Item1, right_coordinates.Item2) == target_value)
-        {
-          ++r;
-          continue;
-        }
-        var left_coordinates = get_coordinates(row_id, column_id, l, check_row);
-        if (l >= 0 && At(left_coordinates.Item1, left_coordinates.Item2) == target_value)
-        {
-          --l;
-          continue;
-        }
-        break;
-      }
-      return (r, l);
-    };
-
-    bool[,] taken = new bool[m_height, m_width];
-    _InitArray(taken, false);
-    Queue<(int, int, bool)> to_check = new Queue<(int, int, bool)>();
-    to_check.Enqueue((row_id, column_id, true));
-    to_check.Enqueue((row_id, column_id, false));
-    List<(int, int)> group = new List<(int, int)>();
-    while (to_check.Count > 0)
-    {
-      var current_element = to_check.Dequeue();
-      (int line_r, int line_l) = check_line(current_element.Item1, current_element.Item2, current_element.Item3);
-      if (line_r - line_l > 3)
-      {
-        for (int i = line_l + 1; i < line_r; ++i)
-        {
-          var coordinates = get_coordinates(current_element.Item1, current_element.Item2, i, current_element.Item3);
-          if (taken[coordinates.Item1, coordinates.Item2])
-            continue;
-          group.Add(coordinates);
-          taken[coordinates.Item1, coordinates.Item2] = true;
-          to_check.Enqueue((coordinates.Item1, coordinates.Item2, !current_element.Item3));
-        }
-      }
-    }
-    return group;
-  }
-
-  private List<List<(int, int)>> _GetCrossGroups()
-  {
-    var taken = new bool[m_height, m_width];
-    _InitArray(taken, false);
-    var groups = new List<List<(int, int)>>();
-    for (int row_id = 0; row_id < m_height; ++row_id)
-    {
-      for (int column_id = 0; column_id < m_width; ++column_id)
-      {
-        int component_value = m_field[row_id, column_id];
-        if (component_value == -1)
-          continue;
-        if (taken[row_id, column_id])
-          continue;
-        var group = this._CrossGroupAt(row_id, column_id);
-        if (group.Count == 0)
-          continue;
-        foreach (var element in group)
-          taken[element.Item1, element.Item2] = true;
-        groups.Add(group);
-      }
-    }
-    return groups;
-  }
-
-  public GameFieldData(int width, int height)
-  {
     m_width = width;
     m_height = height;
     m_field = new int[m_height, m_width];
+    _InitIdentifier();
+    if (!_Load())
+      _BaseInit();
+  }
 
-    if (!this._Load())
-      this._InitDefault();
-
-    //for (int row_id = 0; row_id < m_height; ++row_id)
-    //  for (int column_id = 0; column_id < m_width; ++column_id)
-    //    m_field[row_id, column_id] = row_id * width + column_id;
+  public int At(int row_id, int column_id)
+  {
+    return m_field[row_id, column_id];
   }
 
   public int width
@@ -150,11 +46,6 @@ public class GameFieldData
   public int[] values_interval
   {
     get => m_values_interval;
-  }
-
-  public int At(int row_id, int column_id)
-  {
-    return m_field[row_id, column_id];
   }
 
   public void IncreaseValuesInterval()
@@ -178,10 +69,10 @@ public class GameFieldData
 
   public Dictionary<int, int> RemoveZone(int row1, int column1, int row2, int column2)
   {
-    row1 = Mathf.Min(Mathf.Max(row1, 0), m_height - 1);
-    row2 = Mathf.Min(Mathf.Max(row2, 0), m_height - 1);
-    column1 = Mathf.Min(Mathf.Max(column1, 0), m_width - 1);
-    column2 = Mathf.Min(Mathf.Max(column2, 0), m_width - 1);
+    row1 = Math.Min(Math.Max(row1, 0), m_height - 1);
+    row2 = Math.Min(Math.Max(row2, 0), m_height - 1);
+    column1 = Math.Min(Math.Max(column1, 0), m_width - 1);
+    column2 = Math.Min(Math.Max(column2, 0), m_width - 1);
     var removed_values = new Dictionary<int, int>();
     for (int row_id = row1; row_id <= row2; ++row_id)
       for (int column_id = column1; column_id <= column2; ++column_id)
@@ -206,65 +97,6 @@ public class GameFieldData
       this.group = group;
       this.value = value;
     }
-  }
-
-  public List<GroupDetails> RemoveGroups(int count = -1)
-  {
-    var groups = this._GetCrossGroups();
-    if (count == -1)
-      count = groups.Count;
-    count = Mathf.Min(count, groups.Count);
-    var group_details = new List<GroupDetails>();
-    if (count == 0)
-      return group_details;
-    for (int group_id = 0; group_id < count; ++group_id)
-    {
-      var group = groups[group_id];
-      group_details.Add(new GroupDetails(group, m_field[group[0].Item1, group[0].Item2]));
-      foreach (var element in group)
-        m_field[element.Item1, element.Item2] = -1;
-    }
-    return group_details;
-  }
-
-  public List<GroupDetails> AccumulateGroups(int count = -1)
-  {
-    var groups = this._GetCrossGroups();
-    if (count == -1)
-      count = groups.Count;
-    count = Mathf.Min(count, groups.Count);
-    var group_details = new List<GroupDetails>();
-    if (count == 0)
-      return group_details;
-    for (int group_id = 0; group_id < count; ++group_id)
-    {
-      var group = groups[group_id];
-      var value = m_field[group[0].Item1, group[0].Item2];
-      group_details.Add(new GroupDetails(group, value));
-      var accumulated_value = (int)Mathf.Pow(2, value) * group.Count;
-      var values = new Queue<int>();
-      var pow = 0;
-      while (accumulated_value > 0)
-      {
-        if (accumulated_value % 2 == 1)
-          values.Enqueue(pow);
-        accumulated_value = accumulated_value / 2;
-        ++pow;
-      }
-      for (int i = 0; i < group.Count; ++i)
-      {
-        var j = UnityEngine.Random.Range(0, group.Count);
-        (group[i], group[j]) = (group[j], group[i]);
-      }
-      foreach (var element in group)
-      {
-        var new_value = -1;
-        if (values.Count > 0)
-          new_value = values.Dequeue();
-        m_field[element.Item1, element.Item2] = new_value;
-      }
-    }
-    return group_details;
   }
 
   public bool HasGroups()
@@ -404,7 +236,7 @@ public class GameFieldData
           var second_cross_group = this._CrossGroupAt(neighbor_row_id, neighbor_column_id);
           if (first_cross_group.Count > 0 || second_cross_group.Count > 0)
           {
-            new_move.strike = Mathf.Max(first_cross_group.Count, second_cross_group.Count);
+            new_move.strike = Math.Max(first_cross_group.Count, second_cross_group.Count);
             if (!is_move_exists(new_move))
               moves_data.Add(new_move);
           }
@@ -436,25 +268,158 @@ public class GameFieldData
     } while (GetAllMoves().Count == 0);
   }
 
-  public void Reset()
+  private int _GetRandomValue()
   {
-    var path = Application.persistentDataPath + "/GameFieldData.json";
-    System.IO.File.Delete(path);
-    this._InitDefault();
+    float random = UnityEngine.Random.Range(0.0f, 1.0f);
+    float accumulated_probability = 0.0f;
+    for (int i = 0; i < m_values_interval.Length; ++i)
+    {
+      if (random <= accumulated_probability)
+        return m_values_interval[i - 1];
+      accumulated_probability += m_values_probability_interval[i];
+    }
+    return m_values_interval[m_values_interval.Length - 1];
   }
 
-  private void _InitDefault()
+  protected static void _InitArray<T>(T[,] array, T default_value)
   {
-    m_values_interval = new int[4] { 0, 1, 2, 3 };
-    m_values_probability_mask = new float[4] { 0.4f, 0.3f, 0.2f, 0.2f };
-    _InitArray(m_field, this._GetRandomValue);
+    for (int i = 0; i < array.GetLength(0); ++i)
+      for (int j = 0; j < array.GetLength(1); ++j)
+        array[i, j] = default_value;
+  }
+
+  protected static void _InitArray<T>(T[,] array, Func<T> default_value_generator)
+  {
+    for (int i = 0; i < array.GetLength(0); ++i)
+      for (int j = 0; j < array.GetLength(1); ++j)
+        array[i, j] = default_value_generator();
+  }
+
+  private List<(int, int)> _CrossGroupAt(int row_id, int column_id)
+  {
+    int target_value = m_field[row_id, column_id];
+
+    Func<int, int, int, bool, (int, int)> get_coordinates = (int row_id, int column_id, int range_index, bool check_row) =>
+    {
+      if (check_row)
+        return (row_id, range_index);
+      return (range_index, column_id);
+    };
+    Func<int, int, bool, (int, int)> check_line = (row_id, column_id, check_row) =>
+    {
+      var r = check_row ? column_id + 1 : row_id + 1;
+      var l = check_row ? column_id - 1 : row_id - 1;
+      var max_r = check_row ? m_width : m_height;
+      while (true)
+      {
+        var right_coordinates = get_coordinates(row_id, column_id, r, check_row);
+        if (r < max_r && At(right_coordinates.Item1, right_coordinates.Item2) == target_value)
+        {
+          ++r;
+          continue;
+        }
+        var left_coordinates = get_coordinates(row_id, column_id, l, check_row);
+        if (l >= 0 && At(left_coordinates.Item1, left_coordinates.Item2) == target_value)
+        {
+          --l;
+          continue;
+        }
+        break;
+      }
+      return (r, l);
+    };
+
+    bool[,] taken = new bool[m_height, m_width];
+    _InitArray(taken, false);
+    Queue<(int, int, bool)> to_check = new Queue<(int, int, bool)>();
+    to_check.Enqueue((row_id, column_id, true));
+    to_check.Enqueue((row_id, column_id, false));
+    List<(int, int)> group = new List<(int, int)>();
+    while (to_check.Count > 0)
+    {
+      var current_element = to_check.Dequeue();
+      (int line_r, int line_l) = check_line(current_element.Item1, current_element.Item2, current_element.Item3);
+      if (line_r - line_l > 3)
+      {
+        for (int i = line_l + 1; i < line_r; ++i)
+        {
+          var coordinates = get_coordinates(current_element.Item1, current_element.Item2, i, current_element.Item3);
+          if (taken[coordinates.Item1, coordinates.Item2])
+            continue;
+          group.Add(coordinates);
+          taken[coordinates.Item1, coordinates.Item2] = true;
+          to_check.Enqueue((coordinates.Item1, coordinates.Item2, !current_element.Item3));
+        }
+      }
+    }
+    return group;
+  }
+
+  protected List<List<(int, int)>> _GetCrossGroups()
+  {
+    var taken = new bool[m_height, m_width];
+    _InitArray(taken, false);
+    var groups = new List<List<(int, int)>>();
+    for (int row_id = 0; row_id < m_height; ++row_id)
+    {
+      for (int column_id = 0; column_id < m_width; ++column_id)
+      {
+        int component_value = m_field[row_id, column_id];
+        if (component_value == -1)
+          continue;
+        if (taken[row_id, column_id])
+          continue;
+        var group = this._CrossGroupAt(row_id, column_id);
+        if (group.Count == 0)
+          continue;
+        foreach (var element in group)
+          taken[element.Item1, element.Item2] = true;
+        groups.Add(group);
+      }
+    }
+    return groups;
+  }
+
+  protected List<GroupDetails> _RemoveGroups(int count = -1)
+  {
+    var groups = _GetCrossGroups();
+    if (count == -1)
+      count = groups.Count;
+    count = Math.Min(count, groups.Count);
+    var group_details = new List<GroupDetails>();
+    if (count == 0)
+      return group_details;
+    for (int group_id = 0; group_id < count; ++group_id)
+    {
+      var group = groups[group_id];
+      group_details.Add(new GroupDetails(group, m_field[group[0].Item1, group[0].Item2]));
+      foreach (var element in group)
+        m_field[element.Item1, element.Item2] = -1;
+    }
+    return group_details;
+  }
+
+  protected abstract void _InitIntervals();
+  protected abstract void _InitIdentifier();
+  public abstract List<GroupDetails> ProcessGroups();
+
+  private void _BaseInit()
+  {
+    _InitIntervals();
+    _InitArray(m_field, _GetRandomValue);
     while (true)
     {
-      var removed_groups_sizes = RemoveGroups();
+      var removed_groups_sizes = _RemoveGroups();
       if (removed_groups_sizes.Count == 0)
         break;
       SpawnNewValues();
     }
+  }
+
+  public void Reset()
+  {
+    System.IO.File.Delete(m_save_file_path);
+    _BaseInit();
   }
 
   private class SerializableData
@@ -466,12 +431,11 @@ public class GameFieldData
     public float[] values_probability_mask;
   }
 
-  private bool _Load()
+  protected bool _Load()
   {
-    var path = Application.persistentDataPath + "/GameFieldData.json";
-    if (!System.IO.File.Exists(path))
+    if (!System.IO.File.Exists(m_save_file_path))
       return false;
-    var json_data = System.IO.File.ReadAllText(path);
+    var json_data = System.IO.File.ReadAllText(m_save_file_path);
     var data = JsonUtility.FromJson<SerializableData>(json_data);
     m_width = data.width;
     m_height = data.height;
@@ -479,19 +443,19 @@ public class GameFieldData
       for (int column_id = 0; column_id < m_width; ++column_id)
         m_field[row_id, column_id] = data.field[row_id * m_width + column_id];
     m_values_interval = data.values_interval;
-    m_values_probability_mask = data.values_probability_mask;
+    m_values_probability_interval = data.values_probability_mask;
     return true;
   }
 
   public void Save()
   {
     var data = new SerializableData();
-    data.width = this.m_width;
-    data.height = this.m_height;
-    data.field = this.m_field.Cast<int>().ToArray();
-    data.values_interval = this.m_values_interval;
-    data.values_probability_mask = this.m_values_probability_mask;
+    data.width = m_width;
+    data.height = m_height;
+    data.field = m_field.Cast<int>().ToArray();
+    data.values_interval = m_values_interval;
+    data.values_probability_mask = m_values_probability_interval;
     var json = JsonUtility.ToJson(data);
-    System.IO.File.WriteAllText(Application.persistentDataPath + "/GameFieldData.json", json);
+    System.IO.File.WriteAllText(m_save_file_path, json);
   }
 }
