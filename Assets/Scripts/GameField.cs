@@ -10,8 +10,8 @@ public class GameField : MonoBehaviour
   [SerializeReference] private bool m_is_auto_play;
   [SerializeReference] private GameInfo m_game_info;
   [SerializeReference] private GameObject m_abilities;
-  [SerializeReference] private GameObject m_input_handler;
 
+  private GameObject m_input_handler;
   private GameElement[,] m_field;
   private AccumulatedFieldData m_field_data;
   private ElementStyleProvider m_element_style_provider;
@@ -36,6 +36,7 @@ public class GameField : MonoBehaviour
   void Start()
   {
     Camera.main.orthographicSize = Screen.height / 2;
+    m_input_handler = gameObject.transform.GetChild(0).GetChild(0).gameObject;
     var active_zone = m_input_handler.GetComponent<RectTransform>();
     float max_width = active_zone.rect.width;
     float max_height = active_zone.rect.height;
