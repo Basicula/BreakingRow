@@ -16,14 +16,28 @@ public abstract class FieldBase
 
   private string m_save_file_path;
 
+  public static FieldBase InitField(string i_scene_name, int i_width, int i_height)
+  {
+    switch (i_scene_name)
+    {
+      case "AccumulatedGame":
+        return new AccumulatedFieldData(i_width, i_height);
+      case "ClassicGame":
+        return new ClassicFieldData(i_width, i_height);
+      default:
+        break;
+    }
+    throw new Exception($"Can't determine field data for scene {i_scene_name}");
+  }
+
   protected FieldBase(int width, int height)
   {
-    m_save_file_path = $"{Application.persistentDataPath}/{m_identifier}FieldData({m_width}, {m_height}).json";
-
     m_width = width;
     m_height = height;
     m_field = new int[m_height, m_width];
+
     _InitIdentifier();
+    m_save_file_path = $"{Application.persistentDataPath}/{m_identifier}FieldData({m_width}, {m_height}).json";
     if (!_Load())
       _BaseInit();
   }
@@ -422,7 +436,7 @@ public abstract class FieldBase
     _BaseInit();
   }
 
-  private class SerializableData
+  private struct SerializableData
   {
     public int width;
     public int height;
@@ -433,10 +447,9 @@ public abstract class FieldBase
 
   protected bool _Load()
   {
-    if (!System.IO.File.Exists(m_save_file_path))
+    var data = new SerializableData();
+    if (!SaveLoad.Load(ref data, m_save_file_path))
       return false;
-    var json_data = System.IO.File.ReadAllText(m_save_file_path);
-    var data = JsonUtility.FromJson<SerializableData>(json_data);
     m_width = data.width;
     m_height = data.height;
     for (int row_id = 0; row_id < m_height; ++row_id)
@@ -455,7 +468,6 @@ public abstract class FieldBase
     data.field = m_field.Cast<int>().ToArray();
     data.values_interval = m_values_interval;
     data.values_probability_mask = m_values_probability_interval;
-    var json = JsonUtility.ToJson(data);
-    System.IO.File.WriteAllText(m_save_file_path, json);
+    SaveLoad.Save(data, m_save_file_path);
   }
 }
