@@ -3,7 +3,7 @@
 
 - [x] Score bonus for greater combinations
 - [ ] Gameplay
-  - [ ] Classic - simple match 3 game combined elements will be simply removed
+  - [x] Classic - simple match 3 game combined elements will be simply removed
   - [x] Accumulative - match 3 game but combined elements will be accumulated like in 2048
   - [ ] Mine down - match 3 game with some sort of "ground" that is mined by making combinations near it
 - [x] Abilities
