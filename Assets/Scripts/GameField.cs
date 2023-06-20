@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.SceneManagement;
 
 public class GameField : MonoBehaviour
 {
@@ -13,7 +14,7 @@ public class GameField : MonoBehaviour
 
   private GameObject m_input_handler;
   private GameElement[,] m_field;
-  private AccumulatedFieldData m_field_data;
+  private FieldBase m_field_data;
   private ElementStyleProvider m_element_style_provider;
   private float m_grid_step;
   private float m_half_grid_step;
@@ -47,7 +48,7 @@ public class GameField : MonoBehaviour
     m_element_size = m_grid_step - 2 * m_element_offset;
     m_element_style_provider = new ElementStyleProvider(m_element_size);
     m_field = new GameElement[m_height, m_width];
-    m_field_data = new AccumulatedFieldData(m_width, m_height);
+    m_field_data = FieldBase.InitField(SceneManager.GetActiveScene().name, m_width, m_height);
     m_game_info.moves_count = m_field_data.GetAllMoves().Count;
     m_field_center = new Vector2(m_grid_step * m_width / 2 - active_zone_center.x, m_grid_step * m_height / 2 + active_zone_center.y);
     for (int row_id = 0; row_id < m_height; ++row_id)
