@@ -135,6 +135,18 @@ PrefabInstance:
   m_Modification:
     m_TransformParent: {fileID: 0}
     m_Modifications:
+    - target: {fileID: 1547298802093129269, guid: 6f7315aedcfb4194c9dc6897a752ef85, type: 3}
+      propertyPath: m_game_field
+      value: 
+      objectReference: {fileID: 1283188388}
+    - target: {fileID: 1547298802409886627, guid: 6f7315aedcfb4194c9dc6897a752ef85, type: 3}
+      propertyPath: m_game_field
+      value: 
+      objectReference: {fileID: 1283188388}
+    - target: {fileID: 1547298803808814798, guid: 6f7315aedcfb4194c9dc6897a752ef85, type: 3}
+      propertyPath: m_game_field
+      value: 
+      objectReference: {fileID: 1283188388}
     - target: {fileID: 3439338022352699393, guid: 6f7315aedcfb4194c9dc6897a752ef85, type: 3}
       propertyPath: m_Pivot.x
       value: 0
