@@ -2,7 +2,6 @@ using System.IO;
 using System.Collections.Generic;
 using UnityEngine;
 using Unity.VectorGraphics;
-using System;
 
 public class ElementStyleProvider
 {
@@ -119,7 +118,8 @@ public class ElementStyleProvider
       // Unity ignores this information but leave it as it's needed for correct SVG
       svg.width = m_size;
       svg.height = m_size;
-      svg.view_box = $"{-m_size / 2} {-m_size / 2} {m_size} {m_size}";
+      svg.viewbox_min = new Vector2(-m_size / 2, -m_size / 2);
+      svg.viewbox_size = new Vector2(m_size, m_size);
     }
     SVGPath path = m_paths[value % m_paths.Count];
     path.fill_color = m_colors[value % m_colors.Length];
