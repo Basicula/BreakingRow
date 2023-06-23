@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.SceneManagement;
 
 public class GameField : MonoBehaviour
 {
@@ -10,10 +11,10 @@ public class GameField : MonoBehaviour
   [SerializeReference] private bool m_is_auto_play;
   [SerializeReference] private GameInfo m_game_info;
   [SerializeReference] private GameObject m_abilities;
-  [SerializeReference] private GameObject m_input_handler;
 
+  private GameObject m_input_handler;
   private GameElement[,] m_field;
-  private GameFieldData m_field_data;
+  private FieldBase m_field_data;
   private ElementStyleProvider m_element_style_provider;
   private float m_grid_step;
   private float m_half_grid_step;
@@ -36,6 +37,7 @@ public class GameField : MonoBehaviour
   void Start()
   {
     Camera.main.orthographicSize = Screen.height / 2;
+    m_input_handler = gameObject.transform.GetChild(0).GetChild(0).gameObject;
     var active_zone = m_input_handler.GetComponent<RectTransform>();
     float max_width = active_zone.rect.width;
     float max_height = active_zone.rect.height;
@@ -46,7 +48,7 @@ public class GameField : MonoBehaviour
     m_element_size = m_grid_step - 2 * m_element_offset;
     m_element_style_provider = new ElementStyleProvider(m_element_size);
     m_field = new GameElement[m_height, m_width];
-    m_field_data = new GameFieldData(m_width, m_height);
+    m_field_data = FieldBase.InitField(SceneManager.GetActiveScene().name, m_width, m_height);
     m_game_info.moves_count = m_field_data.GetAllMoves().Count;
     m_field_center = new Vector2(m_grid_step * m_width / 2 - active_zone_center.x, m_grid_step * m_height / 2 + active_zone_center.y);
     for (int row_id = 0; row_id < m_height; ++row_id)
@@ -102,7 +104,7 @@ public class GameField : MonoBehaviour
     }
     if (m_field_data.HasGroups())
     {
-      var groups_details = m_field_data.AccumulateGroups();
+      var groups_details = m_field_data.ProcessGroups();
       foreach (var group_details in groups_details)
       {
         foreach (var element in group_details.group)
@@ -370,7 +372,7 @@ public class GameField : MonoBehaviour
     var moves = m_field_data.GetAllMoves();
     if (moves.Count > 0)
     {
-      moves.Sort((GameFieldData.MoveDetails first, GameFieldData.MoveDetails second) => second.strike - first.strike);
+      moves.Sort((FieldBase.MoveDetails first, FieldBase.MoveDetails second) => second.strike - first.strike);
       var max_strike_value = moves[0].strike;
       int max_strike_value_count = 0;
       foreach (var move_details in moves)

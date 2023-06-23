@@ -1,6 +1,7 @@
 ﻿using UnityEngine;
 using UnityEngine.UI;
 using TMPro;
+using UnityEngine.SceneManagement;
 
 abstract public class AbilityBase : MonoBehaviour
 {
@@ -18,6 +19,7 @@ abstract public class AbilityBase : MonoBehaviour
 
   protected Button m_button;
   private TMP_Text m_price_text;
+  private string m_save_file_path;
 
   public void NextPrice()
   {
@@ -42,6 +44,8 @@ abstract public class AbilityBase : MonoBehaviour
     m_button = gameObject.GetComponent<Button>();
     m_price_text = transform.GetChild(2).gameObject.GetComponent<TMP_Text>();
     this._Init();
+
+    m_save_file_path = Application.persistentDataPath + $"/{SceneManager.GetActiveScene().name}{gameObject.name}Ability.json";
 
     this._Load();
     this._Update();
@@ -81,16 +85,13 @@ abstract public class AbilityBase : MonoBehaviour
 
   private void _Load()
   {
-    var path = Application.persistentDataPath + $"/{gameObject.name}Ability.json";
-    if (!System.IO.File.Exists(path))
+    var data = new SerializableData();
+    if (!SaveLoad.Load(ref data, m_save_file_path))
       return;
-    var json_data = System.IO.File.ReadAllText(path);
-    var data = JsonUtility.FromJson<SerializableData>(json_data);
     m_price_change_rule = data.price_change_rule;
     m_starting_price = data.starting_price;
     m_price_step = data.price_step;
     m_current_price = data.current_price;
-    return;
   }
 
   private void _Save()
@@ -100,7 +101,6 @@ abstract public class AbilityBase : MonoBehaviour
     data.starting_price = this.m_starting_price;
     data.price_step = this.m_price_step;
     data.current_price = this.m_current_price;
-    var json = JsonUtility.ToJson(data);
-    System.IO.File.WriteAllText(Application.persistentDataPath + $"/{gameObject.name}Ability.json", json);
+    SaveLoad.Save(data, m_save_file_path);
   }
 }
