@@ -38,17 +38,15 @@ abstract public class AbilityBase : MonoBehaviour
       default:
         break;
     }
+    _StartCooldown(Time.time);
     this._Update();
-    _StartCooldown();
   }
 
   abstract protected void _Init();
 
   private void Start()
   {
-    m_cooldown_start_time = Time.time - m_cooldown_time;
     m_button = gameObject.GetComponent<Button>();
-    m_button.interactable = false;
     m_price_text = transform.GetChild(2).gameObject.GetComponent<TMP_Text>();
     m_cooldown_overlay = transform.GetChild(3).gameObject.GetComponent<Image>();
     m_cooldown_timer = transform.GetChild(4).gameObject.GetComponent<TMP_Text>();
@@ -56,7 +54,13 @@ abstract public class AbilityBase : MonoBehaviour
 
     m_save_file_path = Application.persistentDataPath + $"/{SceneManager.GetActiveScene().name}{gameObject.name}Ability.json";
 
-    this._Load();
+    if (_Load())
+    {
+      if (Time.time - m_cooldown_start_time < m_cooldown_time)
+        _StartCooldown(m_cooldown_start_time);
+    }
+    else
+      m_cooldown_start_time = Time.time - m_cooldown_time;
     this._Update();
   }
 
@@ -67,6 +71,7 @@ abstract public class AbilityBase : MonoBehaviour
     {
       m_cooldown_timer.text = Mathf.CeilToInt(m_cooldown_time - elapsed_cooldown_time).ToString();
       m_cooldown_overlay.fillAmount = 1.0f - elapsed_cooldown_time / m_cooldown_time;
+      _Save();
     }
     else if (m_cooldown_timer.IsActive())
     {
@@ -95,14 +100,14 @@ abstract public class AbilityBase : MonoBehaviour
     this._Save();
   }
 
-  private void _StartCooldown()
+  private void _StartCooldown(float i_custom_start)
   {
     m_button.interactable = false;
     m_cooldown_timer.gameObject.SetActive(true);
     m_cooldown_overlay.gameObject.SetActive(true);
     m_cooldown_timer.text = m_cooldown_time.ToString();
     m_cooldown_overlay.fillAmount = 1.0f;
-    m_cooldown_start_time = Time.time;
+    m_cooldown_start_time = i_custom_start;
   }
 
   struct SerializableData
@@ -111,26 +116,30 @@ abstract public class AbilityBase : MonoBehaviour
     public int starting_price;
     public int price_step;
     public int current_price;
+    public int cooldown_elapsed_time;
   }
 
-  private void _Load()
+  private bool _Load()
   {
     var data = new SerializableData();
     if (!SaveLoad.Load(ref data, m_save_file_path))
-      return;
+      return false;
     m_price_change_rule = data.price_change_rule;
     m_starting_price = data.starting_price;
     m_price_step = data.price_step;
     m_current_price = data.current_price;
+    m_cooldown_start_time = Time.time - data.cooldown_elapsed_time;
+    return true;
   }
 
   private void _Save()
   {
     var data = new SerializableData();
-    data.price_change_rule = this.m_price_change_rule;
-    data.starting_price = this.m_starting_price;
-    data.price_step = this.m_price_step;
-    data.current_price = this.m_current_price;
+    data.price_change_rule = m_price_change_rule;
+    data.starting_price = m_starting_price;
+    data.price_step = m_price_step;
+    data.current_price = m_current_price;
+    data.cooldown_elapsed_time = Mathf.CeilToInt(Time.time - m_cooldown_start_time);
     SaveLoad.Save(data, m_save_file_path);
   }
 }
