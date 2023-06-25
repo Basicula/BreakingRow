@@ -3,43 +3,41 @@ using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
 
-public abstract class FieldBase
+public class FieldData
 {
-  protected int m_width;
-  protected int m_height;
-  protected int[,] m_field;
+  public enum Mode
+  {
+    Classic,
+    Accumulated
+  }
 
-  protected int[] m_values_interval;
-  protected float[] m_values_probability_interval;
+  private int m_width;
+  private int m_height;
+  private int[,] m_field;
 
-  protected string m_identifier;
+  private int m_active_elements_count;
+  private int[] m_values_interval;
+  private float[] m_values_probability_interval;
+
+  private Mode m_mode;
 
   private string m_save_file_path;
 
-  public static FieldBase InitField(string i_scene_name, int i_width, int i_height)
-  {
-    switch (i_scene_name)
-    {
-      case "AccumulatedGame":
-        return new AccumulatedFieldData(i_width, i_height);
-      case "ClassicGame":
-        return new ClassicFieldData(i_width, i_height);
-      default:
-        break;
-    }
-    throw new Exception($"Can't determine field data for scene {i_scene_name}");
-  }
-
-  protected FieldBase(int width, int height)
+  public FieldData(int width, int height, Mode i_mode, int i_active_elements_count)
   {
     m_width = width;
     m_height = height;
     m_field = new int[m_height, m_width];
+    m_mode = i_mode;
+    m_active_elements_count = i_active_elements_count;
 
-    _InitIdentifier();
-    m_save_file_path = $"{Application.persistentDataPath}/{m_identifier}FieldData({m_width}, {m_height}).json";
+    m_save_file_path = $"{Application.persistentDataPath}/{m_mode}FieldData({m_width}, {m_height}).json";
     if (!_Load())
-      _BaseInit();
+      _Init();
+
+    //for (int row_id = 0; row_id < m_height; ++row_id)
+    //  for (int column_id = 0; column_id < m_width; ++column_id)
+    //    m_field[row_id, column_id] = row_id * width + column_id;
   }
 
   public int At(int row_id, int column_id)
@@ -295,14 +293,14 @@ public abstract class FieldBase
     return m_values_interval[m_values_interval.Length - 1];
   }
 
-  protected static void _InitArray<T>(T[,] array, T default_value)
+  private static void _InitArray<T>(T[,] array, T default_value)
   {
     for (int i = 0; i < array.GetLength(0); ++i)
       for (int j = 0; j < array.GetLength(1); ++j)
         array[i, j] = default_value;
   }
 
-  protected static void _InitArray<T>(T[,] array, Func<T> default_value_generator)
+  private static void _InitArray<T>(T[,] array, Func<T> default_value_generator)
   {
     for (int i = 0; i < array.GetLength(0); ++i)
       for (int j = 0; j < array.GetLength(1); ++j)
@@ -369,7 +367,7 @@ public abstract class FieldBase
     return group;
   }
 
-  protected List<List<(int, int)>> _GetCrossGroups()
+  private List<List<(int, int)>> _GetCrossGroups()
   {
     var taken = new bool[m_height, m_width];
     _InitArray(taken, false);
@@ -394,7 +392,7 @@ public abstract class FieldBase
     return groups;
   }
 
-  protected List<GroupDetails> _RemoveGroups(int count = -1)
+  private List<GroupDetails> _RemoveGroups(int count = -1)
   {
     var groups = _GetCrossGroups();
     if (count == -1)
@@ -413,11 +411,73 @@ public abstract class FieldBase
     return group_details;
   }
 
-  protected abstract void _InitIntervals();
-  protected abstract void _InitIdentifier();
-  public abstract List<GroupDetails> ProcessGroups();
+  private List<GroupDetails> _AccumulateGroups()
+  {
+    var groups = _GetCrossGroups();
+    var group_details = new List<GroupDetails>();
+    for (int group_id = 0; group_id < groups.Count; ++group_id)
+    {
+      var group = groups[group_id];
+      var value = m_field[group[0].Item1, group[0].Item2];
+      group_details.Add(new GroupDetails(group, value));
+      var accumulated_value = (int)Math.Pow(2, value) * group.Count;
+      var values = new Queue<int>();
+      var pow = 0;
+      while (accumulated_value > 0)
+      {
+        if (accumulated_value % 2 == 1)
+          values.Enqueue(pow);
+        accumulated_value = accumulated_value / 2;
+        ++pow;
+      }
+      for (int i = 0; i < group.Count; ++i)
+      {
+        var j = UnityEngine.Random.Range(0, group.Count);
+        (group[i], group[j]) = (group[j], group[i]);
+      }
+      foreach (var element in group)
+      {
+        var new_value = -1;
+        if (values.Count > 0)
+          new_value = values.Dequeue();
+        m_field[element.Item1, element.Item2] = new_value;
+      }
+    }
+    return group_details;
+  }
 
-  private void _BaseInit()
+  private void _InitIntervals()
+  {
+    m_values_interval = Enumerable.Range(0, m_active_elements_count).ToArray();
+    m_values_probability_interval = new float[m_active_elements_count];
+    var mean = 0;
+    var deviation = m_active_elements_count / 2;
+
+    Func<float, float> normal_distribution = (x) =>
+      Mathf.Exp(-Mathf.Pow((x - mean) / deviation, 2) / 2) / (deviation * Mathf.Sqrt(2 * Mathf.PI));
+
+    for (int x = 0; x < m_active_elements_count; ++x)
+    {
+      m_values_probability_interval[x] = normal_distribution(x);
+      if (x > 0)
+        m_values_probability_interval[x] += normal_distribution(-x);
+    }
+  }
+
+  public List<GroupDetails> ProcessGroups()
+  {
+    switch (m_mode)
+    {
+      case Mode.Classic:
+        return _RemoveGroups();
+      case Mode.Accumulated:
+        return _AccumulateGroups();
+      default:
+        throw new NotImplementedException();
+    }
+  }
+
+  private void _Init()
   {
     _InitIntervals();
     _InitArray(m_field, _GetRandomValue);
@@ -433,7 +493,7 @@ public abstract class FieldBase
   public void Reset()
   {
     System.IO.File.Delete(m_save_file_path);
-    _BaseInit();
+    _Init();
   }
 
   private struct SerializableData
@@ -445,7 +505,7 @@ public abstract class FieldBase
     public float[] values_probability_mask;
   }
 
-  protected bool _Load()
+  private bool _Load()
   {
     var data = new SerializableData();
     if (!SaveLoad.Load(ref data, m_save_file_path))
