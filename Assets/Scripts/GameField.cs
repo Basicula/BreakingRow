@@ -64,21 +64,53 @@ public class GameField : MonoBehaviour
 
   void Update()
   {
-    if (!this._IsAvailable())
+    if (!_IsAvailable())
       return;
     if (m_reverse_move.HasValue)
     {
-      this._MakeMove(m_reverse_move.Value.Item1, m_reverse_move.Value.Item2);
+      _MakeMove(m_reverse_move.Value.Item1, m_reverse_move.Value.Item2);
       m_reverse_move = null;
     }
     m_game_info.moves_count = m_field_data.GetAllMoves().Count;
     if (m_to_create.Count != 0)
     {
       foreach (var (row_id, column_id) in m_to_create)
-        this._InitElement(row_id, column_id);
+        _InitElement(row_id, column_id);
       m_to_create.Clear();
       return;
     }
+    if (_SpawnThenMoveElements())
+      return;
+    //if (_MoveThenSpawnElements())
+    //  return;
+    if (_ProcessElementGroups())
+      return;
+    if (m_is_auto_play)
+      _AutoMove();
+    m_field_data.Save();
+  }
+
+  private bool _ProcessElementGroups()
+  {
+    if (!m_field_data.HasGroups())
+      return false;
+
+    var groups_details = m_field_data.ProcessGroups();
+    foreach (var group_details in groups_details)
+    {
+      foreach (var element in group_details.group)
+      {
+        m_field[element.Item1, element.Item2].Destroy();
+        if (m_field_data.At(element.Item1, element.Item2) != -1)
+          m_to_create.Add(element);
+      }
+      m_game_info.UpdateScore(group_details.value, group_details.group.Count);
+    }
+    return true;
+  }
+
+  private bool _MoveThenSpawnElements()
+  {
     var element_move_changes = m_field_data.ElementsMoveChanges();
     if (element_move_changes.Count > 0)
     {
@@ -87,38 +119,59 @@ public class GameField : MonoBehaviour
       {
         var first = element_move.Item1;
         var second = element_move.Item2;
+        var target_position = m_field[second.Item1, second.Item2].transform.position;
+        m_field[second.Item1, second.Item2].transform.position = m_field[first.Item1, first.Item2].transform.position;
+        m_field[first.Item1, first.Item2].MoveTo(target_position);
         (m_field[first.Item1, first.Item2], m_field[second.Item1, second.Item2]) =
           (m_field[second.Item1, second.Item2], m_field[first.Item1, first.Item2]);
-        var target_position = m_field[first.Item1, first.Item2].transform.position;
-        m_field[first.Item1, first.Item2].transform.position = m_field[second.Item1, second.Item2].transform.position;
-        m_field[second.Item1, second.Item2].MoveTo(target_position);
       }
-      return;
+      return true;
     }
     if (m_field_data.HasEmptyCells())
     {
       var created_elements = m_field_data.SpawnNewValues();
       foreach (var element_position in created_elements)
         this._InitElement(element_position.Item1, element_position.Item2);
-      return;
+      return true;
     }
-    if (m_field_data.HasGroups())
+    return false;
+  }
+
+  private bool _SpawnThenMoveElements()
+  {
+    if (m_field_data.HasEmptyCells())
     {
-      var groups_details = m_field_data.ProcessGroups();
-      foreach (var group_details in groups_details)
+      var element_move_changes = m_field_data.ElementsMoveChanges();
+      m_field_data.MoveElements();
+      foreach (var element_move in element_move_changes)
       {
-        foreach (var element in group_details.group)
-        {
-          m_field[element.Item1, element.Item2].Destroy();
-          if (m_field_data.At(element.Item1, element.Item2) != -1)
-            m_to_create.Add(element);
-        }
-        m_game_info.UpdateScore(group_details.value, group_details.group.Count);
+        var first = element_move.Item1;
+        var second = element_move.Item2;
+        m_field[second.Item1, second.Item2].transform.position = m_field[first.Item1, first.Item2].transform.position;
+        m_field[first.Item1, first.Item2].MoveTo(_GetElementPosition(second.Item1, second.Item2));
+        (m_field[first.Item1, first.Item2], m_field[second.Item1, second.Item2]) =
+          (m_field[second.Item1, second.Item2], m_field[first.Item1, first.Item2]);
       }
-      return;
+      var created_elements = m_field_data.SpawnNewValues();
+      created_elements.Sort((first, second) => first.Item2 == second.Item2 ? second.Item1 - first.Item1 : second.Item2 - first.Item2);
+      int column = -1;
+      var offset_row = -1;
+      foreach (var element_position in created_elements)
+      {
+        if (element_position.Item2 != column)
+        {
+          column = element_position.Item2;
+          offset_row = -1;
+        }
+        --offset_row;
+        _InitElement(element_position.Item1, element_position.Item2, false);
+        var target_element_position = _GetElementPosition(offset_row, element_position.Item2);
+        m_field[element_position.Item1, element_position.Item2].gameObject.transform.position = target_element_position;
+        m_field[element_position.Item1, element_position.Item2].MoveTo(_GetElementPosition(element_position.Item1, element_position.Item2));
+      }
+      return true;
     }
-    this._AutoMove();
-    m_field_data.Save();
+    return false;
   }
 
   public void Restart()
@@ -367,8 +420,6 @@ public class GameField : MonoBehaviour
 
   private void _AutoMove()
   {
-    if (!m_is_auto_play)
-      return;
     var moves = m_field_data.GetAllMoves();
     if (moves.Count > 0)
     {
@@ -383,7 +434,7 @@ public class GameField : MonoBehaviour
       }
       var move_index = UnityEngine.Random.Range(0, max_strike_value_count);
       var move = moves[move_index];
-      this._MakeMove(move.first, move.second);
+      _MakeMove(move.first, move.second);
     }
   }
 
@@ -413,11 +464,11 @@ public class GameField : MonoBehaviour
     return (row_id, column_id);
   }
 
-  private void _InitElement(int row_id, int column_id)
+  private void _InitElement(int row_id, int column_id, bool i_with_animation = true)
   {
     int value = m_field_data.At(row_id, column_id);
     if (value >= 0)
-      m_field[row_id, column_id].Create(m_element_style_provider.Get(value));
+      m_field[row_id, column_id].Create(m_element_style_provider.Get(value), i_with_animation);
     else
       m_field[row_id, column_id].Destroy();
     m_field[row_id, column_id].transform.GetChild(2).GetComponent<SpriteRenderer>().size = new Vector2(m_element_size, m_element_size);

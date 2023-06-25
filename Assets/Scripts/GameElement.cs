@@ -113,9 +113,8 @@ public class GameElement : MonoBehaviour
     m_destroy_start_time = Time.time;
   }
 
-  public void Create(ElementStyleProvider.ElementProps i_element_props)
+  public void Create(ElementStyleProvider.ElementProps i_element_props, bool i_is_animated = true)
   {
-    transform.localScale = new Vector3(1, 1, 1);
     var sprite_handler_gameobject = transform.GetChild(0).gameObject;
     var text_canvas_handler_gameobject = transform.GetChild(1).gameObject;
     var tmp_handler_gameobject = text_canvas_handler_gameobject.transform.GetChild(0).gameObject;
@@ -125,10 +124,19 @@ public class GameElement : MonoBehaviour
     tmp_text.text = i_element_props.number;
     var sprite_renderer = sprite_handler_gameobject.GetComponent<SpriteRenderer>();
     sprite_renderer.sprite = i_element_props.sprite;
-    m_state = State.Creating;
-    m_creation_start_time = Time.time;
-    transform.eulerAngles = new Vector3(0, 0, 0);
-    transform.localScale = new Vector3(0, 0, 0);
+    if (i_is_animated)
+    {
+      m_state = State.Creating;
+      m_creation_start_time = Time.time;
+      transform.eulerAngles = new Vector3(0, 0, 0);
+      transform.localScale = new Vector3(0, 0, 0);
+    }
+    else
+    {
+      m_state = State.Waiting;
+      transform.eulerAngles = new Vector3(0, 0, 0);
+      transform.localScale = new Vector3(1, 1, 1);
+    }
   }
 
   public void MoveTo(Vector3 position)
