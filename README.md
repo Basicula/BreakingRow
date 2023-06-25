@@ -7,9 +7,12 @@
   - [x] Accumulative - match 3 game but combined elements will be accumulated like in 2048
   - [ ] Mine down - match 3 game with some sort of "ground" that is mined by making combinations near it
   - [ ] Gravity changes - match 3 game with different direction of elements move(from up, from bottom, from left, from right)
+  - [ ] Finite time - match 3 game where score is time that counts down, better move greater plus time
+  - [ ] Collection mode - match 3 game where you need to move down treasures for collection
+  - [ ] Ice mode - match 3 game where inactive for long time elements start freeze, to unfreeze them need to make combination nearby
   - [ ] Different field shapes
     - [x] Classic rectangle
-    - [ ] With blockers inside
+    - [ ] With blockers/emptiness inside
     - [ ] Not rectangular shapes
 - [ ] Abilities
   - [x] Movable abilities
