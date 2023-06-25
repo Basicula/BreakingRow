@@ -7,8 +7,9 @@ public class GameField : MonoBehaviour
 {
   [SerializeReference] private int m_width;
   [SerializeReference] private int m_height;
-  [SerializeReference] private FieldData.Mode m_field_mode;
   [SerializeReference] private int m_active_elements_count;
+  [SerializeReference] private FieldData.Mode m_field_mode;
+  [SerializeReference] private FieldData.MoveDirection m_field_move_direction;
   [SerializeReference] private GameObject m_game_element_prefab;
   [SerializeReference] private bool m_is_auto_play;
 
@@ -51,7 +52,7 @@ public class GameField : MonoBehaviour
     m_element_size = m_grid_step - 2 * m_element_offset;
     m_element_style_provider = new ElementStyleProvider(m_element_size);
     m_field = new GameElement[m_height, m_width];
-    m_field_data = new FieldData(m_width, m_height, m_field_mode, m_active_elements_count);
+    m_field_data = new FieldData(m_width, m_height, m_field_mode, m_active_elements_count, m_field_move_direction);
     m_game_info.moves_count = m_field_data.GetAllMoves().Count;
     m_field_center = new Vector2(m_grid_step * m_width / 2 - active_zone_center.x, m_grid_step * m_height / 2 + active_zone_center.y);
     for (int row_id = 0; row_id < m_height; ++row_id)
@@ -156,19 +157,35 @@ public class GameField : MonoBehaviour
           (m_field[second.Item1, second.Item2], m_field[first.Item1, first.Item2]);
       }
       var created_elements = m_field_data.SpawnNewValues();
-      created_elements.Sort((first, second) => first.Item2 == second.Item2 ? second.Item1 - first.Item1 : second.Item2 - first.Item2);
-      int column = -1;
-      var offset_row = -1;
+      int main_line = -1;
+      var offset = 0;
+      var direction = m_field_data.GetMoveDirection();
+      created_elements.Sort((first, second) =>
+        direction.Item2 == 0 ?
+          first.Item2 == second.Item2 ? -direction.Item1 * (second.Item1 - first.Item1) : second.Item2 - first.Item2 :
+          first.Item1 == second.Item1 ? -direction.Item2 * (second.Item2 - first.Item2) : second.Item1 - first.Item1
+      );
       foreach (var element_position in created_elements)
       {
-        if (element_position.Item2 != column)
+        if (direction.Item2 == 0 && element_position.Item2 != main_line)
         {
-          column = element_position.Item2;
-          offset_row = -1;
+          main_line = element_position.Item2;
+          offset = 0;
         }
-        --offset_row;
+        else if (direction.Item1 == 0 && element_position.Item1 != main_line)
+        {
+          main_line = element_position.Item1;
+          offset = 0;
+        }
+        --offset;
         _InitElement(element_position.Item1, element_position.Item2, false);
-        var target_element_position = _GetElementPosition(offset_row, element_position.Item2);
+        var row_id = direction.Item1 == 0 ? 0 : direction.Item1 < 0 ? offset : m_height - 1 - offset;
+        var column_id = direction.Item2 == 0 ? 0 : direction.Item2 < 0 ? offset : m_width - 1 - offset;
+        if (row_id == 0)
+          row_id = element_position.Item1;
+        if (column_id == 0)
+          column_id = element_position.Item2;
+        var target_element_position = _GetElementPosition(row_id, column_id);
         m_field[element_position.Item1, element_position.Item2].gameObject.transform.position = target_element_position;
         m_field[element_position.Item1, element_position.Item2].MoveTo(_GetElementPosition(element_position.Item1, element_position.Item2));
       }

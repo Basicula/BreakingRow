@@ -11,6 +11,14 @@ public class FieldData
     Accumulated
   }
 
+  public enum MoveDirection
+  {
+    TopToBottom,
+    RightToLeft,
+    BottomToTop,
+    LeftToRight
+  }
+
   private int m_width;
   private int m_height;
   private int[,] m_field;
@@ -20,16 +28,18 @@ public class FieldData
   private float[] m_values_probability_interval;
 
   private Mode m_mode;
+  private MoveDirection m_move_direction;
 
   private string m_save_file_path;
 
-  public FieldData(int width, int height, Mode i_mode, int i_active_elements_count)
+  public FieldData(int width, int height, Mode i_mode, int i_active_elements_count, MoveDirection i_move_direction = MoveDirection.TopToBottom)
   {
     m_width = width;
     m_height = height;
     m_field = new int[m_height, m_width];
     m_mode = i_mode;
     m_active_elements_count = i_active_elements_count;
+    m_move_direction = i_move_direction;
 
     m_save_file_path = $"{Application.persistentDataPath}/{m_mode}FieldData({m_width}, {m_height}).json";
     if (!_Load())
@@ -127,23 +137,25 @@ public class FieldData
 
   public void MoveElements()
   {
-    for (int column_id = 0; column_id < m_width; ++column_id)
+    var changes = ElementsMoveChanges();
+    foreach (var change in changes)
+      SwapCells(change.Item1.Item1, change.Item1.Item2, change.Item2.Item1, change.Item2.Item2);
+  }
+
+  public (int, int) GetMoveDirection()
+  {
+    switch (m_move_direction)
     {
-      var empty_row_id = -1;
-      for (int row_id = m_height - 1; row_id >= 0;)
-      {
-        if (m_field[row_id, column_id] == -1 && empty_row_id == -1)
-        {
-          empty_row_id = row_id;
-        }
-        else if (empty_row_id != -1 && m_field[row_id, column_id] != -1)
-        {
-          SwapCells(row_id, column_id, empty_row_id, column_id);
-          row_id = empty_row_id;
-          empty_row_id = -1;
-        }
-        --row_id;
-      }
+      case MoveDirection.TopToBottom:
+        return (-1, 0);
+      case MoveDirection.RightToLeft:
+        return (0, 1);
+      case MoveDirection.BottomToTop:
+        return (1, 0);
+      case MoveDirection.LeftToRight:
+        return (0, -1);
+      default:
+        throw new NotImplementedException();
     }
   }
 
@@ -151,25 +163,74 @@ public class FieldData
   {
     var values = m_field.Clone() as int[,];
     var changes = new List<((int, int), (int, int))>();
-    for (int column_id = 0; column_id < m_width; ++column_id)
+
+    var start_element = (0, 0);
+    var end_element = (m_height, m_width);
+    var direction = GetMoveDirection();
+    switch (m_move_direction)
     {
-      var empty_row_id = -1;
-      for (int row_id = m_height - 1; row_id >= 0;)
+      case MoveDirection.TopToBottom:
+        start_element = (m_height - 1, 0);
+        end_element = (-1, m_width - 1);
+        break;
+      case MoveDirection.RightToLeft:
+        start_element = (0, 0);
+        end_element = (m_height - 1, m_width);
+        break;
+      case MoveDirection.BottomToTop:
+        start_element = (0, m_width - 1);
+        end_element = (m_height, 0);
+        break;
+      case MoveDirection.LeftToRight:
+        start_element = (m_height - 1, m_width - 1);
+        end_element = (0, -1);
+        break;
+      default:
+        throw new NotImplementedException();
+    }
+
+    var curr_element = start_element;
+    var empty_element = (-1, -1);
+    while (curr_element != end_element)
+    {
+      if (curr_element.Item1 < 0)
       {
-        if (values[row_id, column_id] == -1 && empty_row_id == -1)
-        {
-          empty_row_id = row_id;
-        }
-        else if (empty_row_id != -1 && values[row_id, column_id] != -1)
-        {
-          (values[row_id, column_id], values[empty_row_id, column_id]) =
-            (values[empty_row_id, column_id], values[row_id, column_id]);
-          changes.Add(((row_id, column_id), (empty_row_id, column_id)));
-          row_id = empty_row_id;
-          empty_row_id = -1;
-        }
-        --row_id;
+        curr_element.Item1 = start_element.Item1;
+        ++curr_element.Item2;
+        empty_element = (-1, -1);
       }
+      if (curr_element.Item1 >= m_height)
+      {
+        curr_element.Item1 = start_element.Item1;
+        --curr_element.Item2;
+        empty_element = (-1, -1);
+      }
+      if (curr_element.Item2 < 0)
+      {
+        curr_element.Item2 = start_element.Item2;
+        --curr_element.Item1;
+        empty_element = (-1, -1);
+      }
+      if (curr_element.Item2 >= m_width)
+      {
+        curr_element.Item2 = start_element.Item2;
+        ++curr_element.Item1;
+        empty_element = (-1, -1);
+      }
+
+      if (values[curr_element.Item1, curr_element.Item2] == -1 && empty_element == (-1, -1))
+        empty_element = curr_element;
+      else if (values[curr_element.Item1, curr_element.Item2] != -1 && empty_element != (-1, -1))
+      {
+        (values[curr_element.Item1, curr_element.Item2], values[empty_element.Item1, empty_element.Item2]) =
+          (values[empty_element.Item1, empty_element.Item2], values[curr_element.Item1, curr_element.Item2]);
+        changes.Add((curr_element, empty_element));
+        curr_element = empty_element;
+        empty_element = (-1, -1);
+      }
+
+      curr_element.Item1 += direction.Item1;
+      curr_element.Item2 += direction.Item2;
     }
     return changes;
   }
