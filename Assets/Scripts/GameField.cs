@@ -1,7 +1,5 @@
-using System;
 using System.Collections.Generic;
 using UnityEngine;
-using UnityEngine.SceneManagement;
 
 public class GameField : MonoBehaviour
 {
@@ -50,6 +48,10 @@ public class GameField : MonoBehaviour
     m_half_grid_step = m_grid_step / 2;
     m_element_offset = m_grid_step * 0.05f;
     m_element_size = m_grid_step - 2 * m_element_offset;
+
+    _InitBackgroundGrid();
+    _InitInputHandler();
+
     m_element_style_provider = new ElementStyleProvider(m_element_size);
     m_field = new GameElement[m_height, m_width];
     m_field_data = new FieldData(m_width, m_height, m_field_mode, m_active_elements_count, m_field_move_direction);
@@ -63,7 +65,6 @@ public class GameField : MonoBehaviour
         m_field[row_id, column_id].transform.parent = transform;
         this._InitElement(row_id, column_id);
       }
-    this._InitInputHandler();
   }
 
   void Update()
@@ -417,6 +418,34 @@ public class GameField : MonoBehaviour
       if (distance == 1)
         this._MakeMove(first, second);
     }
+  }
+
+  private void _InitBackgroundGrid()
+  {
+    SVG svg = new SVG();
+    var rect_size = new Vector2(m_grid_step, m_grid_step);
+    var rect_color = "rgba(200, 200, 200, 0.5)";
+    var rect_stroke_color = "#000000";
+    var rect_stroke_width = m_grid_step / 50;
+    for (int row_id = 0; row_id < m_height; ++row_id)
+      for (int column_id = 0; column_id < m_width; ++column_id)
+        svg.Add(new SVGRect(new Vector2(column_id * m_grid_step, row_id * m_grid_step), rect_size, rect_color, rect_stroke_color, rect_stroke_width));
+    svg.Add(new SVGRect(new Vector2(0, 0), new Vector2(m_width * m_grid_step, m_height * m_grid_step), "none", rect_stroke_color, 2 * rect_stroke_width));
+
+    using System.IO.StringReader textReader = new System.IO.StringReader(svg.GetXML());
+    var sceneInfo = Unity.VectorGraphics.SVGParser.ImportSVG(textReader);
+    var geometries = Unity.VectorGraphics.VectorUtils.TessellateScene(sceneInfo.Scene, new Unity.VectorGraphics.VectorUtils.TessellationOptions
+    {
+      StepDistance = 1,
+      SamplingStepSize = 1,
+      MaxCordDeviation = 0.0f,
+      MaxTanAngleDeviation = 0.0f
+    });
+    var sprite = Unity.VectorGraphics.VectorUtils.BuildSprite(geometries, 1, Unity.VectorGraphics.VectorUtils.Alignment.Center, Vector2.zero, 128, false);
+    GameObject background = new GameObject();
+    background.transform.parent = gameObject.transform;
+    background.transform.localPosition = m_input_handler.transform.localPosition;
+    background.AddComponent<SpriteRenderer>().sprite = sprite;
   }
 
   private void _InitInputHandler()
