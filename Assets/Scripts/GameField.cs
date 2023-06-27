@@ -38,7 +38,6 @@ public class GameField : MonoBehaviour
 
   void Start()
   {
-    Camera.main.orthographicSize = Screen.height / 2;
     m_input_handler = gameObject.transform.GetChild(0).GetChild(0).gameObject;
     var active_zone = m_input_handler.GetComponent<RectTransform>();
     float max_width = active_zone.rect.width;
@@ -51,6 +50,7 @@ public class GameField : MonoBehaviour
 
     _InitBackgroundGrid();
     _InitInputHandler();
+    _InitCameraViewport();
 
     m_element_style_provider = new ElementStyleProvider(m_element_size);
     m_field = new GameElement[m_height, m_width];
@@ -445,7 +445,8 @@ public class GameField : MonoBehaviour
     GameObject background = new GameObject();
     background.transform.parent = gameObject.transform;
     background.transform.localPosition = m_input_handler.transform.localPosition;
-    background.AddComponent<SpriteRenderer>().sprite = sprite;
+    var sprite_renderer = background.AddComponent<SpriteRenderer>();
+    sprite_renderer.sprite = sprite;
   }
 
   private void _InitInputHandler()
@@ -465,6 +466,21 @@ public class GameField : MonoBehaviour
     input_handler_component.on_input_up = this._HandlePointerUp;
     input_handler_component.on_ability_move = this._HandleAbilityMove;
     input_handler_component.on_ability_apply = this._HandleAbility;
+  }
+
+  private void _InitCameraViewport()
+  {
+    var active_zone = m_input_handler.GetComponent<RectTransform>();
+    Camera.main.orthographicSize = m_grid_step * m_height / 2;
+    Camera.main.aspect = 1;
+    Camera.main.transform.position = new Vector3(
+      m_input_handler.transform.localPosition.x,
+      m_input_handler.transform.localPosition.y,
+      Camera.main.transform.position.z);
+    var rect = new Rect();
+    rect.min = active_zone.anchorMin;
+    rect.max = active_zone.anchorMax;
+    Camera.main.rect = rect;
   }
 
   private void _AutoMove()
