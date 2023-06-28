@@ -32,7 +32,14 @@ public class FieldData
 
   private string m_save_file_path;
 
-  public FieldData(int width, int height, Mode i_mode, int i_active_elements_count, MoveDirection i_move_direction = MoveDirection.TopToBottom)
+  public FieldData(
+    int width,
+    int height,
+    Mode i_mode,
+    int i_active_elements_count,
+    MoveDirection i_move_direction = MoveDirection.TopToBottom,
+    string i_custom_identificator = ""
+  )
   {
     m_width = width;
     m_height = height;
@@ -41,7 +48,7 @@ public class FieldData
     m_active_elements_count = i_active_elements_count;
     m_move_direction = i_move_direction;
 
-    m_save_file_path = $"{Application.persistentDataPath}/{m_mode}FieldData({m_width}, {m_height}).json";
+    m_save_file_path = $"{Application.persistentDataPath}/{i_custom_identificator}{m_mode}FieldData({m_width}, {m_height}).json";
     if (!_Load())
       _Init();
 
