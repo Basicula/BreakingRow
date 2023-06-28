@@ -10,7 +10,7 @@
   - [ ] Finite time - match 3 game where score is time that counts down, better move greater plus time
   - [ ] Collection mode - match 3 game where you need to move down treasures for collection
   - [ ] Ice mode - match 3 game where inactive for long time elements start freeze, to unfreeze them need to make combination nearby
-  - [ ] Sandbox - as much as possible customizable math 3 game
+  - [x] Sandbox - as much as possible customizable math 3 game
   - [ ] Different field shapes
     - [x] Classic rectangle
     - [ ] With blockers/emptiness inside
