@@ -3,11 +3,18 @@ using UnityEngine;
 
 public class GameField : MonoBehaviour
 {
+  public enum SpawnMoveScenario
+  {
+    MoveThenSpawn,
+    SpawnThenMove
+  }
+
   [SerializeReference] private int m_width;
   [SerializeReference] private int m_height;
   [SerializeReference] private int m_active_elements_count;
   [SerializeReference] private FieldData.Mode m_field_mode;
   [SerializeReference] private FieldData.MoveDirection m_field_move_direction;
+  [SerializeReference] private SpawnMoveScenario m_spawn_move_scenario;
   [SerializeReference] private GameObject m_game_element_prefab;
   [SerializeReference] private bool m_is_auto_play;
 
@@ -69,10 +76,22 @@ public class GameField : MonoBehaviour
       m_to_create.Clear();
       return;
     }
-    if (_SpawnThenMoveElements())
+
+    bool scenario_result = false;
+    switch (m_spawn_move_scenario)
+    {
+      case SpawnMoveScenario.MoveThenSpawn:
+        scenario_result = _MoveThenSpawnElements();
+        break;
+      case SpawnMoveScenario.SpawnThenMove:
+        scenario_result = _SpawnThenMoveElements();
+        break;
+      default:
+        throw new System.NotImplementedException();
+    }
+    if (scenario_result)
       return;
-    //if (_MoveThenSpawnElements())
-    //  return;
+
     if (_ProcessElementGroups())
       return;
     if (m_is_auto_play)
@@ -194,19 +213,27 @@ public class GameField : MonoBehaviour
         this._InitElement(row_id, column_id);
   }
 
-  public void Init(int i_width, int i_height, int i_active_elements_count)
+  public void Init(int i_width, int i_height, int i_active_elements_count, SpawnMoveScenario i_spawn_move_scenario)
   {
-    m_field_data.Reset();
-    m_game_info.Reset();
-    Destroy(transform.GetChild(1).gameObject);
-    for (int row_id = 0; row_id < m_height; ++row_id)
-      for (int column_id = 0; column_id < m_width; ++column_id)
-        Destroy(m_field[row_id, column_id].gameObject);
+    bool is_init_needed = m_width != i_width || m_height != i_height || m_active_elements_count != i_active_elements_count;
+
+    if (is_init_needed)
+    {
+      m_field_data.Reset();
+      m_game_info.Reset();
+      Destroy(transform.GetChild(1).gameObject);
+      for (int row_id = 0; row_id < m_height; ++row_id)
+        for (int column_id = 0; column_id < m_width; ++column_id)
+          Destroy(m_field[row_id, column_id].gameObject);
+    }
 
     m_height = i_height;
     m_width = i_width;
     m_active_elements_count = i_active_elements_count;
-    _Init();
+    m_spawn_move_scenario = i_spawn_move_scenario;
+
+    if (is_init_needed)
+      _Init();
   }
 
   private void _Init()
@@ -222,7 +249,14 @@ public class GameField : MonoBehaviour
 
     m_element_style_provider = new ElementStyleProvider(m_element_size);
     m_field = new GameElement[m_height, m_width];
-    m_field_data = new FieldData(m_width, m_height, m_field_mode, m_active_elements_count, m_field_move_direction);
+    m_field_data = new FieldData(
+      m_width,
+      m_height,
+      m_field_mode,
+      m_active_elements_count,
+      m_field_move_direction,
+      UnityEngine.SceneManagement.SceneManager.GetActiveScene().name
+    );
     m_game_info.moves_count = m_field_data.GetAllMoves().Count;
     m_field_center = new Vector2(m_grid_step * m_width / 2 - m_max_active_zone_center.x, m_grid_step * m_height / 2 + m_max_active_zone_center.y);
     for (int row_id = 0; row_id < m_height; ++row_id)
@@ -604,5 +638,10 @@ public class GameField : MonoBehaviour
   public int active_elements_count
   {
     get => m_active_elements_count;
+  }
+
+  public SpawnMoveScenario spawn_move_scenario
+  {
+    get => m_spawn_move_scenario;
   }
 }
