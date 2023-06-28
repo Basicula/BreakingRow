@@ -512,7 +512,7 @@ public class GameField : MonoBehaviour
     var sceneInfo = Unity.VectorGraphics.SVGParser.ImportSVG(textReader);
     var geometries = Unity.VectorGraphics.VectorUtils.TessellateScene(sceneInfo.Scene, new Unity.VectorGraphics.VectorUtils.TessellationOptions
     {
-      StepDistance = 1,
+      StepDistance = m_grid_step,
       SamplingStepSize = 1,
       MaxCordDeviation = 0.0f,
       MaxTanAngleDeviation = 0.0f
