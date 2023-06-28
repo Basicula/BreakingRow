@@ -564,6 +564,8 @@ public class FieldData
     public int[] field;
     public int[] values_interval;
     public float[] values_probability_mask;
+    public string mode;
+    public string move_direction;
   }
 
   private bool _Load()
@@ -578,6 +580,8 @@ public class FieldData
         m_field[row_id, column_id] = data.field[row_id * m_width + column_id];
     m_values_interval = data.values_interval;
     m_values_probability_interval = data.values_probability_mask;
+    m_mode = (Mode)Enum.Parse(typeof(Mode), data.mode);
+    m_move_direction = (MoveDirection)Enum.Parse(typeof(MoveDirection), data.move_direction);
     return true;
   }
 
@@ -589,6 +593,8 @@ public class FieldData
     data.field = m_field.Cast<int>().ToArray();
     data.values_interval = m_values_interval;
     data.values_probability_mask = m_values_probability_interval;
+    data.mode = Enum.GetName(typeof(Mode), m_mode);
+    data.move_direction = Enum.GetName(typeof(MoveDirection), m_move_direction);
     SaveLoad.Save(data, m_save_file_path);
   }
 }
