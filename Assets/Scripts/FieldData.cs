@@ -32,7 +32,14 @@ public class FieldData
 
   private string m_save_file_path;
 
-  public FieldData(int width, int height, Mode i_mode, int i_active_elements_count, MoveDirection i_move_direction = MoveDirection.TopToBottom)
+  public FieldData(
+    int width,
+    int height,
+    Mode i_mode,
+    int i_active_elements_count,
+    MoveDirection i_move_direction = MoveDirection.TopToBottom,
+    string i_custom_identificator = ""
+  )
   {
     m_width = width;
     m_height = height;
@@ -41,7 +48,7 @@ public class FieldData
     m_active_elements_count = i_active_elements_count;
     m_move_direction = i_move_direction;
 
-    m_save_file_path = $"{Application.persistentDataPath}/{m_mode}FieldData({m_width}, {m_height}).json";
+    m_save_file_path = $"{Application.persistentDataPath}/{i_custom_identificator}{m_mode}FieldData({m_width}, {m_height}).json";
     if (!_Load())
       _Init();
 
@@ -68,6 +75,18 @@ public class FieldData
   public int[] values_interval
   {
     get => m_values_interval;
+  }
+
+  public MoveDirection move_direction
+  {
+    get => m_move_direction;
+    set => m_move_direction = value;
+  }
+
+  public Mode mode
+  {
+    get => m_mode;
+    set => m_mode = value;
   }
 
   public void IncreaseValuesInterval()
@@ -564,6 +583,8 @@ public class FieldData
     public int[] field;
     public int[] values_interval;
     public float[] values_probability_mask;
+    public string mode;
+    public string move_direction;
   }
 
   private bool _Load()
@@ -578,6 +599,8 @@ public class FieldData
         m_field[row_id, column_id] = data.field[row_id * m_width + column_id];
     m_values_interval = data.values_interval;
     m_values_probability_interval = data.values_probability_mask;
+    m_mode = (Mode)Enum.Parse(typeof(Mode), data.mode);
+    m_move_direction = (MoveDirection)Enum.Parse(typeof(MoveDirection), data.move_direction);
     return true;
   }
 
@@ -589,6 +612,8 @@ public class FieldData
     data.field = m_field.Cast<int>().ToArray();
     data.values_interval = m_values_interval;
     data.values_probability_mask = m_values_probability_interval;
+    data.mode = Enum.GetName(typeof(Mode), m_mode);
+    data.move_direction = Enum.GetName(typeof(MoveDirection), m_move_direction);
     SaveLoad.Save(data, m_save_file_path);
   }
 }

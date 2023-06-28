@@ -27,6 +27,11 @@ public class GameModeSelection : MonoBehaviour
     m_current_game_mode_id = 0;
 
     m_game_mode_infos = new List<GameModeInfo>();
+    m_game_mode_infos.Add(new GameModeInfo
+    {
+      name = "Sandbox",
+      description = "Configure your own match 3 game with available variety of options"
+    });
     m_game_mode_infos.Add(new GameModeInfo {
       name = "Classic",
       description = "Simple match 3 game combined elements will be simply removed"

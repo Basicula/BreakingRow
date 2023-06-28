@@ -132,8 +132,8 @@ public class ElementStyleProvider
     var sceneInfo = SVGParser.ImportSVG(textReader);
     var geometries = VectorUtils.TessellateScene(sceneInfo.Scene, new VectorUtils.TessellationOptions
     {
-      StepDistance = m_size / 1000,
-      SamplingStepSize = m_size / 1000,
+      StepDistance = m_size / 100,
+      SamplingStepSize = m_size / 100,
       MaxCordDeviation = 0.0f,
       MaxTanAngleDeviation = 0.0f
     });
