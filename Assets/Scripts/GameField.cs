@@ -218,7 +218,14 @@ public class GameField : MonoBehaviour
         this._InitElement(row_id, column_id);
   }
 
-  public void Init(int i_width, int i_height, int i_active_elements_count, SpawnMoveScenario i_spawn_move_scenario)
+  public void Init(
+    int i_width,
+    int i_height,
+    int i_active_elements_count,
+    SpawnMoveScenario i_spawn_move_scenario,
+    FieldData.Mode i_mode,
+    FieldData.MoveDirection i_move_direction
+  )
   {
     bool is_init_needed = m_width != i_width || m_height != i_height || m_active_elements_count != i_active_elements_count;
 
@@ -236,6 +243,10 @@ public class GameField : MonoBehaviour
     m_width = i_width;
     m_active_elements_count = i_active_elements_count;
     m_spawn_move_scenario = i_spawn_move_scenario;
+    m_field_mode = i_mode;
+    m_field_move_direction = i_move_direction;
+    m_field_data.mode = m_field_mode;
+    m_field_data.move_direction = m_field_move_direction;
 
     if (is_init_needed)
       _Init();
@@ -648,6 +659,16 @@ public class GameField : MonoBehaviour
   public SpawnMoveScenario spawn_move_scenario
   {
     get => m_spawn_move_scenario;
+  }
+
+  public FieldData.Mode mode
+  {
+    get => m_field_mode;
+  }
+
+  public FieldData.MoveDirection move_direction
+  {
+    get => m_field_move_direction;
   }
 
   private struct SerializableData

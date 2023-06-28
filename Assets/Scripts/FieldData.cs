@@ -77,6 +77,18 @@ public class FieldData
     get => m_values_interval;
   }
 
+  public MoveDirection move_direction
+  {
+    get => m_move_direction;
+    set => m_move_direction = value;
+  }
+
+  public Mode mode
+  {
+    get => m_mode;
+    set => m_mode = value;
+  }
+
   public void IncreaseValuesInterval()
   {
     for (int i = 0; i < m_values_interval.Length; ++i)
