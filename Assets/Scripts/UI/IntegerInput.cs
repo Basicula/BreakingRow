@@ -14,8 +14,7 @@ public class IntegerInput : MonoBehaviour
 
   private void Start()
   {
-    var input = gameObject.transform.GetChild(1).gameObject;
-    m_input_field = input.GetComponent<TMP_InputField>();
+    m_input_field = gameObject.transform.GetChild(1).gameObject.GetComponent<TMP_InputField>();
     m_input_field.text = m_value.ToString();
     m_input_field.onValueChanged.AddListener((value_text) => _ChangeValue(int.Parse(value_text)));
 
@@ -25,14 +24,19 @@ public class IntegerInput : MonoBehaviour
     decrement.GetComponent<Button>().onClick.AddListener(() => _ChangeValue(m_value - 1));
   }
 
+  private void Update()
+  {
+    if (m_value.ToString() != m_input_field.text)
+      m_input_field.text = m_value.ToString();
+  }
+
   private void _ChangeValue(int i_new_value)
   {
+    i_new_value = Mathf.Clamp(i_new_value, m_min, m_max);
+    m_input_field.text = i_new_value.ToString();
     if (i_new_value == m_value)
       return;
-    if (i_new_value < m_min || i_new_value > m_max)
-      return;
     m_value = i_new_value;
-    m_input_field.text = m_value.ToString();
     if (!(on_value_change is null))
       on_value_change();
   }
@@ -42,7 +46,6 @@ public class IntegerInput : MonoBehaviour
     set
     {
       m_value = value;
-      m_input_field.text = m_value.ToString();
     }
     get => m_value;
   }

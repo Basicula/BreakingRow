@@ -196,6 +196,7 @@ public class GameField : MonoBehaviour
 
   public void Init(int i_width, int i_height, int i_active_elements_count)
   {
+    m_field_data.Reset();
     m_game_info.Reset();
     Destroy(transform.GetChild(1).gameObject);
     for (int row_id = 0; row_id < m_height; ++row_id)
@@ -472,6 +473,7 @@ public class GameField : MonoBehaviour
     background.transform.localPosition = m_input_handler.transform.localPosition;
     var sprite_renderer = background.AddComponent<SpriteRenderer>();
     sprite_renderer.sprite = sprite;
+    sprite_renderer.sortingOrder = -1;
   }
 
   private void _InitInputHandler()
