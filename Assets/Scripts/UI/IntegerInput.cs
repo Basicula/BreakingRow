@@ -43,10 +43,7 @@ public class IntegerInput : MonoBehaviour
 
   public int value
   {
-    set
-    {
-      m_value = value;
-    }
+    set => m_value = value;
     get => m_value;
   }
 }
