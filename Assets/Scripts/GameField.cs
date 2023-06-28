@@ -40,6 +40,7 @@ public class GameField : MonoBehaviour
   private List<(int, int)> m_highlighted_elements;
   private Vector2 m_mouse_down_position;
   private ((int, int), (int, int))? m_reverse_move;
+  private string m_save_file_path;
 
   public GameField()
   {
@@ -50,6 +51,9 @@ public class GameField : MonoBehaviour
 
   void Start()
   {
+    m_save_file_path = $"{Application.persistentDataPath}/{UnityEngine.SceneManagement.SceneManager.GetActiveScene().name}GameField.json";
+    _Load();
+
     m_input_handler = gameObject.transform.GetChild(0).GetChild(0).gameObject;
     var active_zone = m_input_handler.GetComponent<RectTransform>();
     m_max_active_zone_rect = active_zone.rect;
@@ -97,6 +101,7 @@ public class GameField : MonoBehaviour
     if (m_is_auto_play)
       _AutoMove();
     m_field_data.Save();
+    _Save();
   }
 
   private bool _ProcessElementGroups()
@@ -643,5 +648,26 @@ public class GameField : MonoBehaviour
   public SpawnMoveScenario spawn_move_scenario
   {
     get => m_spawn_move_scenario;
+  }
+
+  private struct SerializableData
+  {
+    public string spawn_move_scenario;
+  }
+
+  private bool _Load()
+  {
+    var data = new SerializableData();
+    if (!SaveLoad.Load(ref data, m_save_file_path))
+      return false;
+    m_spawn_move_scenario = (SpawnMoveScenario)System.Enum.Parse(typeof(SpawnMoveScenario), data.spawn_move_scenario);
+    return true;
+  }
+
+  private void _Save()
+  {
+    var data = new SerializableData();
+    data.spawn_move_scenario = System.Enum.GetName(typeof(SpawnMoveScenario), m_spawn_move_scenario);
+    SaveLoad.Save(data, m_save_file_path);
   }
 }
