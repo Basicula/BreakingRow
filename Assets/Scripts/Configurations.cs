@@ -1,6 +1,7 @@
 ﻿using UnityEngine;
 using TMPro;
 using System.Linq;
+using UnityEngine.UI;
 
 public class Configurations : MonoBehaviour
 {
@@ -22,6 +23,8 @@ public class Configurations : MonoBehaviour
     m_spawn_move_scenario = transform.GetChild(3).gameObject.GetComponent<TMP_Dropdown>();
     m_mode = transform.GetChild(4).gameObject.GetComponent<TMP_Dropdown>();
     m_move_direction = transform.GetChild(5).gameObject.GetComponent<TMP_Dropdown>();
+    var edit_field_shape = transform.GetChild(6).gameObject.GetComponent<Button>();
+    edit_field_shape.onClick.AddListener(() => _InitEditFieldShape());
 
     m_width_input.value = m_game_field.width;
     m_width_input.on_value_change = () => _InitGameField();
@@ -63,5 +66,10 @@ public class Configurations : MonoBehaviour
       mode,
       move_direction
     );
+  }
+
+  private void _InitEditFieldShape()
+  {
+    transform.GetChild(8).GetChild(0).GetComponent<EditFieldShape>().Init(m_width_input.value, m_height_input.value);
   }
 }
