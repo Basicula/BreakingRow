@@ -1,5 +1,4 @@
-﻿using System.Collections;
-using UnityEngine;
+﻿using UnityEngine;
 using UnityEngine.EventSystems;
 using UnityEngine.UI;
 
@@ -96,10 +95,5 @@ public class EditFieldShape : MonoBehaviour, IPointerClickHandler, IDragHandler,
     var row_id = Mathf.FloorToInt(delta.y / m_grid_size);
     var column_id = Mathf.FloorToInt(delta.x / m_grid_size);
     return (row_id, column_id);
-  }
-
-  void Update()
-  {
-
   }
 }

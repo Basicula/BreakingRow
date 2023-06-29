@@ -3,21 +3,10 @@ using UnityEngine;
 
 public class GameField : MonoBehaviour
 {
-  public enum SpawnMoveScenario
-  {
-    MoveThenSpawn,
-    SpawnThenMove
-  }
+  [SerializeField] private FieldConfiguration m_field_configuration;
+  [SerializeField] private bool m_is_auto_play;
 
-  [SerializeReference] private int m_width;
-  [SerializeReference] private int m_height;
-  [SerializeReference] private int m_active_elements_count;
-  [SerializeReference] private FieldData.Mode m_field_mode;
-  [SerializeReference] private FieldData.MoveDirection m_field_move_direction;
-  [SerializeReference] private SpawnMoveScenario m_spawn_move_scenario;
   [SerializeReference] private GameObject m_game_element_prefab;
-  [SerializeReference] private bool m_is_auto_play;
-
   [SerializeReference] private GameInfo m_game_info;
   [SerializeReference] private GameObject m_abilities;
 
@@ -40,7 +29,6 @@ public class GameField : MonoBehaviour
   private List<(int, int)> m_highlighted_elements;
   private Vector2 m_mouse_down_position;
   private ((int, int), (int, int))? m_reverse_move;
-  private string m_save_file_path;
 
   public GameField()
   {
@@ -51,9 +39,6 @@ public class GameField : MonoBehaviour
 
   void Start()
   {
-    m_save_file_path = $"{Application.persistentDataPath}/{UnityEngine.SceneManagement.SceneManager.GetActiveScene().name}GameField.json";
-    _Load();
-
     m_input_handler = gameObject.transform.GetChild(0).GetChild(0).gameObject;
     var active_zone = m_input_handler.GetComponent<RectTransform>();
     m_max_active_zone_rect = active_zone.rect;
@@ -82,12 +67,12 @@ public class GameField : MonoBehaviour
     }
 
     bool scenario_result = false;
-    switch (m_spawn_move_scenario)
+    switch (m_field_configuration.spawn_move_scenario)
     {
-      case SpawnMoveScenario.MoveThenSpawn:
+      case FieldConfiguration.SpawnMoveScenario.MoveThenSpawn:
         scenario_result = _MoveThenSpawnElements();
         break;
-      case SpawnMoveScenario.SpawnThenMove:
+      case FieldConfiguration.SpawnMoveScenario.SpawnThenMove:
         scenario_result = _SpawnThenMoveElements();
         break;
       default:
@@ -101,7 +86,6 @@ public class GameField : MonoBehaviour
     if (m_is_auto_play)
       _AutoMove();
     m_field_data.Save();
-    _Save();
   }
 
   private bool _ProcessElementGroups()
@@ -189,8 +173,8 @@ public class GameField : MonoBehaviour
         }
         --offset;
         _InitElement(element_position.Item1, element_position.Item2, false);
-        var row_id = direction.Item1 == 0 ? 0 : direction.Item1 < 0 ? offset : m_height - 1 - offset;
-        var column_id = direction.Item2 == 0 ? 0 : direction.Item2 < 0 ? offset : m_width - 1 - offset;
+        var row_id = direction.Item1 == 0 ? 0 : direction.Item1 < 0 ? offset : m_field_configuration.height - 1 - offset;
+        var column_id = direction.Item2 == 0 ? 0 : direction.Item2 < 0 ? offset : m_field_configuration.width - 1 - offset;
         if (row_id == 0)
           row_id = element_position.Item1;
         if (column_id == 0)
@@ -213,40 +197,29 @@ public class GameField : MonoBehaviour
       var ability_game_object = m_abilities.transform.GetChild(ability_id).gameObject;
       ability_game_object.GetComponent<AbilityBase>().Reset();
     }
-    for (int row_id = 0; row_id < m_height; ++row_id)
-      for (int column_id = 0; column_id < m_width; ++column_id)
+    for (int row_id = 0; row_id < m_field_configuration.height; ++row_id)
+      for (int column_id = 0; column_id < m_field_configuration.width; ++column_id)
         this._InitElement(row_id, column_id);
   }
 
-  public void Init(
-    int i_width,
-    int i_height,
-    int i_active_elements_count,
-    SpawnMoveScenario i_spawn_move_scenario,
-    FieldData.Mode i_mode,
-    FieldData.MoveDirection i_move_direction
-  )
+  public void Init(FieldConfiguration i_field_configuration)
   {
-    bool is_init_needed = m_width != i_width || m_height != i_height || m_active_elements_count != i_active_elements_count;
+    bool is_init_needed = m_field_configuration.width != i_field_configuration.width ||
+      m_field_configuration.height != i_field_configuration.height ||
+      m_field_configuration.active_elements_count != i_field_configuration.active_elements_count;
 
     if (is_init_needed)
     {
       m_field_data.Reset();
       m_game_info.Reset();
       Destroy(transform.GetChild(1).gameObject);
-      for (int row_id = 0; row_id < m_height; ++row_id)
-        for (int column_id = 0; column_id < m_width; ++column_id)
+      for (int row_id = 0; row_id < m_field_configuration.height; ++row_id)
+        for (int column_id = 0; column_id < m_field_configuration.width; ++column_id)
           Destroy(m_field[row_id, column_id].gameObject);
     }
 
-    m_height = i_height;
-    m_width = i_width;
-    m_active_elements_count = i_active_elements_count;
-    m_spawn_move_scenario = i_spawn_move_scenario;
-    m_field_mode = i_mode;
-    m_field_move_direction = i_move_direction;
-    m_field_data.mode = m_field_mode;
-    m_field_data.move_direction = m_field_move_direction;
+    m_field_configuration = i_field_configuration;
+    m_field_data.field_configuration = i_field_configuration;
 
     if (is_init_needed)
       _Init();
@@ -254,7 +227,10 @@ public class GameField : MonoBehaviour
 
   private void _Init()
   {
-    m_grid_step = Mathf.Min(m_max_active_zone_rect.width / m_width, m_max_active_zone_rect.height / m_height);
+    m_field_data = new FieldData(m_field_configuration, UnityEngine.SceneManagement.SceneManager.GetActiveScene().name);
+    m_field_configuration = m_field_data.field_configuration;
+
+    m_grid_step = Mathf.Min(m_max_active_zone_rect.width / m_field_configuration.width, m_max_active_zone_rect.height / m_field_configuration.height);
     m_half_grid_step = m_grid_step / 2;
     m_element_offset = m_grid_step * 0.05f;
     m_element_size = m_grid_step - 2 * m_element_offset;
@@ -264,19 +240,11 @@ public class GameField : MonoBehaviour
     _InitCameraViewport();
 
     m_element_style_provider = new ElementStyleProvider(m_element_size);
-    m_field = new GameElement[m_height, m_width];
-    m_field_data = new FieldData(
-      m_width,
-      m_height,
-      m_field_mode,
-      m_active_elements_count,
-      m_field_move_direction,
-      UnityEngine.SceneManagement.SceneManager.GetActiveScene().name
-    );
+    m_field = new GameElement[m_field_configuration.height, m_field_configuration.width];
     m_game_info.moves_count = m_field_data.GetAllMoves().Count;
-    m_field_center = new Vector2(m_grid_step * m_width / 2 - m_max_active_zone_center.x, m_grid_step * m_height / 2 + m_max_active_zone_center.y);
-    for (int row_id = 0; row_id < m_height; ++row_id)
-      for (int column_id = 0; column_id < m_width; ++column_id)
+    m_field_center = new Vector2(m_grid_step * m_field_configuration.width / 2 - m_max_active_zone_center.x, m_grid_step * m_field_configuration.height / 2 + m_max_active_zone_center.y);
+    for (int row_id = 0; row_id < m_field_configuration.height; ++row_id)
+      for (int column_id = 0; column_id < m_field_configuration.width; ++column_id)
       {
         Vector2 position = this._GetElementPosition(row_id, column_id);
         m_field[row_id, column_id] = Instantiate(m_game_element_prefab, position, Quaternion.identity).GetComponent<GameElement>();
@@ -351,8 +319,8 @@ public class GameField : MonoBehaviour
         if (this._IsValidCell(main_element_position))
         {
           var target_value = m_field_data.At(main_element_position.Item1, main_element_position.Item2);
-          for (int row_id = 0; row_id < m_height; ++row_id)
-            for (int column_id = 0; column_id < m_width; ++column_id)
+          for (int row_id = 0; row_id < m_field_configuration.height; ++row_id)
+            for (int column_id = 0; column_id < m_field_configuration.width; ++column_id)
               if (m_field_data.At(row_id, column_id) == target_value)
                 elements_to_highlight.Add((row_id, column_id));
         }
@@ -401,8 +369,8 @@ public class GameField : MonoBehaviour
         break;
       case "RemoveElementsByValue":
         var value = m_field_data.At(main_element_position.Item1, main_element_position.Item2);
-        for (int row_id = 0; row_id < m_height; ++row_id)
-          for (int column_id = 0; column_id < m_width; ++column_id)
+        for (int row_id = 0; row_id < m_field_configuration.height; ++row_id)
+          for (int column_id = 0; column_id < m_field_configuration.width; ++column_id)
             if (m_field_data.At(row_id, column_id) == value)
               m_field[row_id, column_id].Destroy();
         var removed_count = m_field_data.RemoveValue(value);
@@ -424,8 +392,8 @@ public class GameField : MonoBehaviour
     {
       case "Shuffle":
         m_field_data.Shuffle();
-        for (int row_id = 0; row_id < m_height; ++row_id)
-          for (int column_id = 0; column_id < m_width; ++column_id)
+        for (int row_id = 0; row_id < m_field_configuration.height; ++row_id)
+          for (int column_id = 0; column_id < m_field_configuration.width; ++column_id)
           {
             m_field[row_id, column_id].Destroy();
             m_to_create.Add((row_id, column_id));
@@ -434,8 +402,8 @@ public class GameField : MonoBehaviour
       case "UpgradeGenerator":
         var small_value = m_field_data.values_interval[0];
         m_field_data.IncreaseValuesInterval();
-        for (int row_id = 0; row_id < m_height; ++row_id)
-          for (int column_id = 0; column_id < m_width; ++column_id)
+        for (int row_id = 0; row_id < m_field_configuration.height; ++row_id)
+          for (int column_id = 0; column_id < m_field_configuration.width; ++column_id)
             if (m_field_data.At(row_id, column_id) == small_value)
               m_field[row_id, column_id].Destroy();
         var removed_count = m_field_data.RemoveValue(small_value);
@@ -503,10 +471,10 @@ public class GameField : MonoBehaviour
     var rect_color = "rgba(200, 200, 200, 0.5)";
     var rect_stroke_color = "#000000";
     var rect_stroke_width = m_grid_step / 50;
-    for (int row_id = 0; row_id < m_height; ++row_id)
-      for (int column_id = 0; column_id < m_width; ++column_id)
+    for (int row_id = 0; row_id < m_field_configuration.height; ++row_id)
+      for (int column_id = 0; column_id < m_field_configuration.width; ++column_id)
         svg.Add(new SVGRect(new Vector2(column_id * m_grid_step, row_id * m_grid_step), rect_size, rect_color, rect_stroke_color, rect_stroke_width));
-    svg.Add(new SVGRect(new Vector2(0, 0), new Vector2(m_width * m_grid_step, m_height * m_grid_step), "none", rect_stroke_color, 2 * rect_stroke_width));
+    svg.Add(new SVGRect(new Vector2(0, 0), new Vector2(m_field_configuration.width * m_grid_step, m_field_configuration.height * m_grid_step), "none", rect_stroke_color, 2 * rect_stroke_width));
 
     using System.IO.StringReader textReader = new System.IO.StringReader(svg.GetXML());
     var sceneInfo = Unity.VectorGraphics.SVGParser.ImportSVG(textReader);
@@ -532,8 +500,8 @@ public class GameField : MonoBehaviour
     var input_handler_rect_transform = m_input_handler.GetComponent<RectTransform>();
     var rect = input_handler_rect_transform.rect;
     var anchor_delta = m_max_active_zone_anchor_max - m_max_active_zone_anchor_min;
-    var height_fraction = anchor_delta.y * (m_max_active_zone_rect.height - m_grid_step * m_height) / m_max_active_zone_rect.height / 2;
-    var width_fraction = anchor_delta.x * (m_max_active_zone_rect.width - m_grid_step * m_width) / m_max_active_zone_rect.width / 2;
+    var height_fraction = anchor_delta.y * (m_max_active_zone_rect.height - m_grid_step * m_field_configuration.height) / m_max_active_zone_rect.height / 2;
+    var width_fraction = anchor_delta.x * (m_max_active_zone_rect.width - m_grid_step * m_field_configuration.width) / m_max_active_zone_rect.width / 2;
     input_handler_rect_transform.anchorMin = m_max_active_zone_anchor_min + new Vector2(width_fraction, height_fraction);
     input_handler_rect_transform.anchorMax = m_max_active_zone_anchor_max - new Vector2(width_fraction, height_fraction);
 
@@ -548,8 +516,8 @@ public class GameField : MonoBehaviour
   private void _InitCameraViewport()
   {
     var active_zone = m_input_handler.GetComponent<RectTransform>();
-    Camera.main.orthographicSize = m_grid_step * m_height / 2;
-    Camera.main.aspect = (float)m_width / m_height;
+    Camera.main.orthographicSize = m_grid_step * m_field_configuration.height / 2;
+    Camera.main.aspect = (float)m_field_configuration.width / m_field_configuration.height;
     Camera.main.transform.position = new Vector3(
       m_input_handler.transform.localPosition.x,
       m_input_handler.transform.localPosition.y,
@@ -624,8 +592,8 @@ public class GameField : MonoBehaviour
 
   private bool _IsAvailable()
   {
-    for (int i = 0; i < m_height; ++i)
-      for (int j = 0; j < m_width; ++j)
+    for (int i = 0; i < m_field_configuration.height; ++i)
+      for (int j = 0; j < m_field_configuration.width; ++j)
         if (!m_field[i, j].IsAvailable())
           return false;
     return true;
@@ -633,7 +601,7 @@ public class GameField : MonoBehaviour
 
   private bool _IsValidCell(int i_row_id, int i_column_id)
   {
-    return i_row_id >= 0 && i_row_id < m_height && i_column_id >= 0 && i_column_id < m_width;
+    return i_row_id >= 0 && i_row_id < m_field_configuration.height && i_column_id >= 0 && i_column_id < m_field_configuration.width;
   }
 
   private bool _IsValidCell((int, int) i_position)
@@ -641,54 +609,8 @@ public class GameField : MonoBehaviour
     return _IsValidCell(i_position.Item1, i_position.Item2);
   }
 
-  public int width
+  public FieldConfiguration field_configuration
   {
-    get => m_width;
-  }
-
-  public int height
-  {
-    get => m_height;
-  }
-
-  public int active_elements_count
-  {
-    get => m_active_elements_count;
-  }
-
-  public SpawnMoveScenario spawn_move_scenario
-  {
-    get => m_spawn_move_scenario;
-  }
-
-  public FieldData.Mode mode
-  {
-    get => m_field_mode;
-  }
-
-  public FieldData.MoveDirection move_direction
-  {
-    get => m_field_move_direction;
-  }
-
-  private struct SerializableData
-  {
-    public string spawn_move_scenario;
-  }
-
-  private bool _Load()
-  {
-    var data = new SerializableData();
-    if (!SaveLoad.Load(ref data, m_save_file_path))
-      return false;
-    m_spawn_move_scenario = (SpawnMoveScenario)System.Enum.Parse(typeof(SpawnMoveScenario), data.spawn_move_scenario);
-    return true;
-  }
-
-  private void _Save()
-  {
-    var data = new SerializableData();
-    data.spawn_move_scenario = System.Enum.GetName(typeof(SpawnMoveScenario), m_spawn_move_scenario);
-    SaveLoad.Save(data, m_save_file_path);
+    get => m_field_configuration;
   }
 }
