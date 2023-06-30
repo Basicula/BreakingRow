@@ -13,6 +13,8 @@ public class FieldData
 
   private string m_save_file_path;
 
+  private static int m_empty_cell_value = -1;
+
   public FieldData(FieldConfiguration i_field_configuration, string i_custom_identificator = "")
   {
     m_field_configuration = i_field_configuration;
@@ -66,7 +68,7 @@ public class FieldData
         if (m_field[row_id, column_id] == value)
         {
           ++count;
-          m_field[row_id, column_id] = -1;
+          m_field[row_id, column_id] = m_empty_cell_value;
         }
     return count;
   }
@@ -86,7 +88,7 @@ public class FieldData
           ++removed_values[value];
         else
           removed_values[value] = 1;
-        m_field[row_id, column_id] = -1;
+        m_field[row_id, column_id] = m_empty_cell_value;
       }
     return removed_values;
   }
@@ -112,7 +114,7 @@ public class FieldData
   {
     for (int row_id = 0; row_id < m_field_configuration.height; ++row_id)
       for (int column_id = 0; column_id < m_field_configuration.width; ++column_id)
-        if (m_field[row_id, column_id] == -1)
+        if (m_field[row_id, column_id] == m_empty_cell_value)
           return true;
     return false;
   }
@@ -200,9 +202,9 @@ public class FieldData
         empty_element = (-1, -1);
       }
 
-      if (values[curr_element.Item1, curr_element.Item2] == -1 && empty_element == (-1, -1))
+      if (values[curr_element.Item1, curr_element.Item2] == m_empty_cell_value && empty_element == (-1, -1))
         empty_element = curr_element;
-      else if (values[curr_element.Item1, curr_element.Item2] != -1 && empty_element != (-1, -1))
+      else if (values[curr_element.Item1, curr_element.Item2] != m_empty_cell_value && empty_element != (-1, -1))
       {
         (values[curr_element.Item1, curr_element.Item2], values[empty_element.Item1, empty_element.Item2]) =
           (values[empty_element.Item1, empty_element.Item2], values[curr_element.Item1, curr_element.Item2]);
@@ -222,7 +224,7 @@ public class FieldData
     var created = new List<(int, int)>();
     for (int row_id = 0; row_id < m_field_configuration.height; ++row_id)
       for (int column_id = 0; column_id < m_field_configuration.width; ++column_id)
-        if (m_field[row_id, column_id] == -1)
+        if (m_field[row_id, column_id] == m_empty_cell_value)
         {
           m_field[row_id, column_id] = this._GetRandomValue();
           created.Add((row_id, column_id));
@@ -259,8 +261,8 @@ public class FieldData
     var moves_data = new List<MoveDetails>();
     Func<MoveDetails, bool> is_valid_move = (MoveDetails move) =>
     {
-      return m_field[move.first.Item1, move.first.Item2] != -1 &&
-        m_field[move.second.Item1, move.second.Item2] != -1;
+      return m_field[move.first.Item1, move.first.Item2] != m_empty_cell_value &&
+        m_field[move.second.Item1, move.second.Item2] != m_empty_cell_value;
     };
     Func<MoveDetails, bool> is_move_exists = (MoveDetails new_move) =>
     {
@@ -420,7 +422,7 @@ public class FieldData
       for (int column_id = 0; column_id < m_field_configuration.width; ++column_id)
       {
         int component_value = m_field[row_id, column_id];
-        if (component_value == -1)
+        if (component_value == m_empty_cell_value)
           continue;
         if (taken[row_id, column_id])
           continue;
@@ -449,7 +451,7 @@ public class FieldData
       var group = groups[group_id];
       group_details.Add(new GroupDetails(group, m_field[group[0].Item1, group[0].Item2]));
       foreach (var element in group)
-        m_field[element.Item1, element.Item2] = -1;
+        m_field[element.Item1, element.Item2] = m_empty_cell_value;
     }
     return group_details;
   }
@@ -480,7 +482,7 @@ public class FieldData
       }
       foreach (var element in group)
       {
-        var new_value = -1;
+        var new_value = m_empty_cell_value;
         if (values.Count > 0)
           new_value = values.Dequeue();
         m_field[element.Item1, element.Item2] = new_value;
