@@ -208,6 +208,20 @@ public class GameField : MonoBehaviour
       m_field_configuration.height != i_field_configuration.height ||
       m_field_configuration.active_elements_count != i_field_configuration.active_elements_count;
 
+    var old_cells = m_field_configuration.GetCells();
+    var new_cells = i_field_configuration.GetCells();
+    for (int row_id = 0; row_id < i_field_configuration.height; ++row_id)
+    {
+      if (is_init_needed)
+        break;
+      for (int column_id = 0; column_id < i_field_configuration.width; ++column_id)
+      {
+        if (is_init_needed)
+          break;
+        is_init_needed = new_cells[row_id, column_id] != old_cells[row_id, column_id];
+      }
+    }
+
     if (is_init_needed)
     {
       m_field_data.Reset();
@@ -550,6 +564,8 @@ public class GameField : MonoBehaviour
 
   private void _MakeMove((int, int) first, (int, int) second)
   {
+    if (!m_field_data.IsMoveAvailable(first, second))
+      return;
     m_field_data.SwapCells(first.Item1, first.Item2, second.Item1, second.Item2);
     (m_field[first.Item1, first.Item2], m_field[second.Item1, second.Item2]) =
       (m_field[second.Item1, second.Item2], m_field[first.Item1, first.Item2]);

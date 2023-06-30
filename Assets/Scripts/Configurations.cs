@@ -55,6 +55,7 @@ public class Configurations : MonoBehaviour
     var new_field_configuration = new FieldConfiguration();
     new_field_configuration.width = m_width_input.value;
     new_field_configuration.height = m_height_input.value;
+    new_field_configuration.InitCells();
     new_field_configuration.active_elements_count = m_active_elements_count_input.value;
     var spawn_move_scenario_option = m_spawn_move_scenario.options[m_spawn_move_scenario.value].text;
     new_field_configuration.spawn_move_scenario = System.Enum.Parse<FieldConfiguration.SpawnMoveScenario>(spawn_move_scenario_option);
@@ -67,6 +68,16 @@ public class Configurations : MonoBehaviour
 
   private void _InitEditFieldShape()
   {
-    transform.GetChild(8).GetChild(0).GetComponent<EditFieldShape>().Init(m_width_input.value, m_height_input.value);
+    var edit_field_shape = transform.GetChild(8).GetChild(0).GetComponent<EditFieldShape>();
+    edit_field_shape.Init(m_game_field.field_configuration);
+    transform.GetChild(8).GetChild(1).GetComponent<Button>().onClick.AddListener(() =>
+    {
+      var field_configuration = m_game_field.field_configuration.Clone();
+      var cells = edit_field_shape.GetCells();
+      for (int row_id = 0; row_id < field_configuration.height; ++row_id)
+        for (int column_id = 0; column_id < field_configuration.width; ++column_id)
+          field_configuration.SetCellType(row_id, column_id, cells[row_id, column_id]);
+      m_game_field.Init(field_configuration);
+    });
   }
 }

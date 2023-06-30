@@ -14,6 +14,7 @@ public class FieldData
   private string m_save_file_path;
 
   private static int m_empty_cell_value = -1;
+  private static int m_hole_cell_value = -2;
 
   public FieldData(FieldConfiguration i_field_configuration, string i_custom_identificator = "")
   {
@@ -119,6 +120,11 @@ public class FieldData
     return false;
   }
 
+  public bool IsMoveAvailable((int, int) i_from, (int, int) i_to)
+  {
+    return m_field[i_from.Item1, i_from.Item2] >= 0 && m_field[i_to.Item1, i_to.Item2] >= 0;
+  }
+
   public void MoveElements()
   {
     var changes = ElementsMoveChanges();
@@ -204,7 +210,7 @@ public class FieldData
 
       if (values[curr_element.Item1, curr_element.Item2] == m_empty_cell_value && empty_element == (-1, -1))
         empty_element = curr_element;
-      else if (values[curr_element.Item1, curr_element.Item2] != m_empty_cell_value && empty_element != (-1, -1))
+      else if (values[curr_element.Item1, curr_element.Item2] >= 0 && empty_element != (-1, -1))
       {
         (values[curr_element.Item1, curr_element.Item2], values[empty_element.Item1, empty_element.Item2]) =
           (values[empty_element.Item1, empty_element.Item2], values[curr_element.Item1, curr_element.Item2]);
@@ -395,6 +401,8 @@ public class FieldData
     while (to_check.Count > 0)
     {
       var current_element = to_check.Dequeue();
+      if (m_field[current_element.Item1, current_element.Item2] < 0)
+        continue;
       (int line_r, int line_l) = check_line(current_element.Item1, current_element.Item2, current_element.Item3);
       if (line_r - line_l > 3)
       {
@@ -421,9 +429,6 @@ public class FieldData
     {
       for (int column_id = 0; column_id < m_field_configuration.width; ++column_id)
       {
-        int component_value = m_field[row_id, column_id];
-        if (component_value == m_empty_cell_value)
-          continue;
         if (taken[row_id, column_id])
           continue;
         var group = this._CrossGroupAt(row_id, column_id);
@@ -527,6 +532,18 @@ public class FieldData
     m_field = new int[m_field_configuration.height, m_field_configuration.width];
     _InitIntervals();
     _InitArray(m_field, _GetRandomValue);
+    for (int row_id = 0; row_id < m_field_configuration.height; ++row_id)
+      for (int column_id = 0; column_id < m_field_configuration.width; ++column_id)
+        switch (m_field_configuration.GetCells()[row_id, column_id])
+        {
+          case FieldConfiguration.CellType.Hole:
+            m_field[row_id, column_id] = m_hole_cell_value;
+            break;
+          case FieldConfiguration.CellType.Element:
+            break;
+          default:
+            throw new NotImplementedException();
+        }
     while (true)
     {
       var removed_groups_sizes = _RemoveGroups();
@@ -548,6 +565,7 @@ public class FieldData
     public int height;
     public int active_elements_count;
     public int[] field;
+    public string[] cells;
     public int[] values_interval;
     public float[] values_probability_mask;
     public string mode;
@@ -564,9 +582,13 @@ public class FieldData
     m_field_configuration.height = data.height;
     m_field_configuration.active_elements_count = data.active_elements_count;
     m_field = new int[m_field_configuration.height, m_field_configuration.width];
+    m_field_configuration.InitCells();
     for (int row_id = 0; row_id < m_field_configuration.height; ++row_id)
       for (int column_id = 0; column_id < m_field_configuration.width; ++column_id)
+      {
         m_field[row_id, column_id] = data.field[row_id * m_field_configuration.width + column_id];
+        m_field_configuration.SetCellType(row_id, column_id, Enum.Parse<FieldConfiguration.CellType>(data.cells[row_id * m_field_configuration.width + column_id]));
+      }
     m_values_interval = data.values_interval;
     m_values_probability_interval = data.values_probability_mask;
     m_field_configuration.mode = Enum.Parse<FieldConfiguration.Mode>(data.mode);
@@ -582,6 +604,11 @@ public class FieldData
     data.height = m_field_configuration.height;
     data.active_elements_count = m_field_configuration.active_elements_count;
     data.field = m_field.Cast<int>().ToArray();
+    data.cells = new string[data.width * data.height];
+    var cells = m_field_configuration.GetCells();
+    for (int row_id = 0; row_id < m_field_configuration.height; ++row_id)
+      for (int column_id = 0; column_id < m_field_configuration.width; ++column_id)
+        data.cells[row_id * data.width + column_id] = Enum.GetName(typeof(FieldConfiguration.CellType), cells[row_id, column_id]);
     data.values_interval = m_values_interval;
     data.values_probability_mask = m_values_probability_interval;
     data.mode = Enum.GetName(typeof(FieldConfiguration.Mode), m_field_configuration.mode);
