@@ -513,6 +513,8 @@ public class GameField : MonoBehaviour
   private void _InitHoleOverlays()
   {
     var holes = m_field_data.GetHoles();
+    if (holes.Count == 0)
+      return;
     SVG svg = new SVG();
     svg.Add(new SVGRect(new Vector2(0, 0), new Vector2(m_field_configuration.width * m_grid_step, m_field_configuration.height * m_grid_step), "none", "none", 0));
     foreach (var hole in holes)
@@ -522,7 +524,7 @@ public class GameField : MonoBehaviour
       var rect_stroke_color = "none";
       var rect_stroke_width = 0;
       foreach (var (row_id, column_id) in hole.group)
-        svg.Add(new SVGRect(new Vector2(column_id * m_grid_step, row_id * m_grid_step), rect_size, rect_color, rect_stroke_color, rect_stroke_width));
+        svg.Add(new SVGRect(new Vector2(column_id * m_grid_step, (m_field_configuration.height - row_id - 1) * m_grid_step), rect_size, rect_color, rect_stroke_color, rect_stroke_width));
     }
     using System.IO.StringReader textReader = new System.IO.StringReader(svg.GetXML());
     var sceneInfo = Unity.VectorGraphics.SVGParser.ImportSVG(textReader);
