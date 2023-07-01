@@ -52,10 +52,12 @@ public class Configurations : MonoBehaviour
 
   private void _InitGameField()
   {
-    var new_field_configuration = new FieldConfiguration();
+    var new_field_configuration = m_game_field.field_configuration.Clone();
     new_field_configuration.width = m_width_input.value;
     new_field_configuration.height = m_height_input.value;
-    new_field_configuration.InitCells();
+    if (m_width_input.value != m_game_field.field_configuration.width ||
+      m_height_input.value != m_game_field.field_configuration.height)
+      new_field_configuration.InitCells();
     new_field_configuration.active_elements_count = m_active_elements_count_input.value;
     var spawn_move_scenario_option = m_spawn_move_scenario.options[m_spawn_move_scenario.value].text;
     new_field_configuration.spawn_move_scenario = System.Enum.Parse<FieldConfiguration.SpawnMoveScenario>(spawn_move_scenario_option);
