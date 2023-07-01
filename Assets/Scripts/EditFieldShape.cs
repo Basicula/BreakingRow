@@ -5,6 +5,11 @@ using UnityEngine.UI;
 
 public class EditFieldShape : MonoBehaviour, IPointerClickHandler, IDragHandler, IBeginDragHandler
 {
+  public enum ShapePreset
+  {
+    Circle
+  }
+
   private FieldConfiguration m_field_configuration;
 
   private GameObject[,] m_tiles;
@@ -55,6 +60,7 @@ public class EditFieldShape : MonoBehaviour, IPointerClickHandler, IDragHandler,
         m_tiles[row_id, column_id] = tile;
       }
   }
+
   public void Reset()
   {
     for (int row_id = 0; row_id < m_field_configuration.height; ++row_id)
@@ -103,6 +109,58 @@ public class EditFieldShape : MonoBehaviour, IPointerClickHandler, IDragHandler,
           cells[row_id, column_id] = FieldConfiguration.CellType.Hole;
       }
     return cells;
+  }
+
+  public void ApplyPreset(ShapePreset i_preset)
+  {
+    switch (i_preset)
+    {
+      case ShapePreset.Circle:
+        _CircleShape();
+        break;
+      default:
+        throw new NotImplementedException();
+    }
+    _UpdateTiles();
+  }
+
+  private void _CircleShape()
+  {
+    var radius = Mathf.Min(m_field_configuration.width, m_field_configuration.height) / 2.0f;
+    var sqr_radius = radius * radius;
+    for (int row_id = 0; row_id < m_field_configuration.height; ++row_id)
+      for (int column_id = 0; column_id < m_field_configuration.width; ++column_id)
+      {
+        var x = column_id - m_field_configuration.width / 2.0f + 0.5;
+        var y = row_id - m_field_configuration.height / 2.0f + 0.5;
+        FieldConfiguration.CellType cell_type;
+        if (x * x + y * y <= sqr_radius)
+          cell_type = FieldConfiguration.CellType.Element;
+        else
+          cell_type = FieldConfiguration.CellType.Hole;
+        m_field_configuration.SetCellType(row_id, column_id, cell_type);
+      }
+  }
+
+  private void _UpdateTiles()
+  {
+    var cells = m_field_configuration.GetCells();
+    for (int row_id = 0; row_id < m_field_configuration.height; ++row_id)
+      for (int column_id = 0; column_id < m_field_configuration.width; ++column_id)
+      {
+        var image = m_tiles[row_id, column_id].GetComponent<RawImage>();
+        switch (cells[row_id, column_id])
+        {
+          case FieldConfiguration.CellType.Hole:
+            image.color = Color.white;
+            break;
+          case FieldConfiguration.CellType.Element:
+            image.color = Color.black;
+            break;
+          default:
+            throw new NotImplementedException();
+        }
+      }
   }
 
   private void _ToggleTile((int, int) i_position)

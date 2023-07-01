@@ -69,7 +69,7 @@ public class Configurations : MonoBehaviour
   private void _InitEditFieldShape()
   {
     var edit_field_shape = transform.GetChild(8).GetChild(0).GetComponent<EditFieldShape>();
-    edit_field_shape.Init(m_game_field.field_configuration);
+    edit_field_shape.Init(m_game_field.field_configuration.Clone());
     transform.GetChild(8).GetChild(1).GetComponent<Button>().onClick.AddListener(() =>
     {
       var field_configuration = m_game_field.field_configuration.Clone();
@@ -78,6 +78,16 @@ public class Configurations : MonoBehaviour
         for (int column_id = 0; column_id < field_configuration.width; ++column_id)
           field_configuration.SetCellType(row_id, column_id, cells[row_id, column_id]);
       m_game_field.Init(field_configuration);
+    });
+
+    var shape_preset_selector = transform.GetChild(8).GetChild(3).gameObject;
+    var shape_preset_selector_dropdown = shape_preset_selector.GetComponent<TMP_Dropdown>();
+    _InitDropdown(ref shape_preset_selector_dropdown, EditFieldShape.ShapePreset.Circle);
+    shape_preset_selector_dropdown.onValueChanged.RemoveAllListeners();
+    transform.GetChild(8).GetChild(4).GetComponent<Button>().onClick.AddListener(() =>
+    {
+      var preset = shape_preset_selector_dropdown.options[shape_preset_selector_dropdown.value].text;
+      edit_field_shape.ApplyPreset(System.Enum.Parse<EditFieldShape.ShapePreset>(preset));
     });
   }
 }
