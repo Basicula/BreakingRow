@@ -106,6 +106,38 @@ public class FieldData
     }
   }
 
+  public List<GroupDetails> GetHoles()
+  {
+    var hole_groups = new List<GroupDetails>();
+    var visited = new bool[m_field_configuration.height, m_field_configuration.width];
+    _InitArray(visited, false);
+    for (int row_id = 0; row_id < m_field_configuration.height; ++row_id)
+      for (int column_id = 0; column_id < m_field_configuration.width; ++column_id)
+      {
+        if (m_field[row_id, column_id] != m_hole_cell_value || visited[row_id, column_id])
+          continue;
+        var group = new List<(int, int)>();
+        var to_check = new Queue<(int, int)>();
+        to_check.Enqueue((row_id, column_id));
+        while(to_check.Count > 0)
+        {
+          var (row, column) = to_check.Dequeue();
+          if (row < 0 || column < 0 || row >= m_field_configuration.height || column >= m_field_configuration.width)
+            continue;
+          if (m_field[row, column] != m_hole_cell_value || visited[row, column])
+            continue;
+          visited[row, column] = true;
+          to_check.Enqueue((row - 1, column));
+          to_check.Enqueue((row + 1, column));
+          to_check.Enqueue((row, column - 1));
+          to_check.Enqueue((row, column + 1));
+          group.Add((row, column));
+        }
+        hole_groups.Add(new GroupDetails(group, m_hole_cell_value));
+      }
+    return hole_groups;
+  }
+
   public bool HasGroups()
   {
     return this._GetCrossGroups().Count > 0;
@@ -267,8 +299,8 @@ public class FieldData
     var moves_data = new List<MoveDetails>();
     Func<MoveDetails, bool> is_valid_move = (MoveDetails move) =>
     {
-      return m_field[move.first.Item1, move.first.Item2] != m_empty_cell_value &&
-        m_field[move.second.Item1, move.second.Item2] != m_empty_cell_value;
+      return m_field[move.first.Item1, move.first.Item2] >= 0 &&
+        m_field[move.second.Item1, move.second.Item2] >= 0;
     };
     Func<MoveDetails, bool> is_move_exists = (MoveDetails new_move) =>
     {

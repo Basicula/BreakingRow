@@ -230,6 +230,7 @@ public class GameField : MonoBehaviour
       for (int row_id = 0; row_id < m_field_configuration.height; ++row_id)
         for (int column_id = 0; column_id < m_field_configuration.width; ++column_id)
           Destroy(m_field[row_id, column_id].gameObject);
+      Destroy(transform.GetChild(transform.childCount - 1).gameObject);
     }
 
     m_field_configuration = i_field_configuration;
@@ -265,6 +266,7 @@ public class GameField : MonoBehaviour
         m_field[row_id, column_id].transform.parent = transform;
         this._InitElement(row_id, column_id);
       }
+    _InitHoleOverlays();
   }
 
   private Vector2 _PointerEventPositionToWorldPosition(Vector2 i_event_position)
@@ -506,6 +508,38 @@ public class GameField : MonoBehaviour
     var sprite_renderer = background.AddComponent<SpriteRenderer>();
     sprite_renderer.sprite = sprite;
     sprite_renderer.sortingOrder = -1;
+  }
+
+  private void _InitHoleOverlays()
+  {
+    var holes = m_field_data.GetHoles();
+    SVG svg = new SVG();
+    svg.Add(new SVGRect(new Vector2(0, 0), new Vector2(m_field_configuration.width * m_grid_step, m_field_configuration.height * m_grid_step), "none", "none", 0));
+    foreach (var hole in holes)
+    {
+      var rect_size = new Vector2(m_grid_step, m_grid_step);
+      var rect_color = "rgba(56, 192, 231, 1.0)";
+      var rect_stroke_color = "none";
+      var rect_stroke_width = 0;
+      foreach (var (row_id, column_id) in hole.group)
+        svg.Add(new SVGRect(new Vector2(column_id * m_grid_step, row_id * m_grid_step), rect_size, rect_color, rect_stroke_color, rect_stroke_width));
+    }
+    using System.IO.StringReader textReader = new System.IO.StringReader(svg.GetXML());
+    var sceneInfo = Unity.VectorGraphics.SVGParser.ImportSVG(textReader);
+    var geometries = Unity.VectorGraphics.VectorUtils.TessellateScene(sceneInfo.Scene, new Unity.VectorGraphics.VectorUtils.TessellationOptions
+    {
+      StepDistance = m_grid_step,
+      SamplingStepSize = 1,
+      MaxCordDeviation = 0.0f,
+      MaxTanAngleDeviation = 0.0f
+    });
+    var sprite = Unity.VectorGraphics.VectorUtils.BuildSprite(geometries, 1, Unity.VectorGraphics.VectorUtils.Alignment.Center, Vector2.zero, 128, false);
+    GameObject hole_overlay = new GameObject();
+    hole_overlay.transform.parent = gameObject.transform;
+    hole_overlay.transform.localPosition = m_input_handler.transform.localPosition;
+    var sprite_renderer = hole_overlay.AddComponent<SpriteRenderer>();
+    sprite_renderer.sprite = sprite;
+    sprite_renderer.sortingOrder = 1;
   }
 
   private void _InitInputHandler()
