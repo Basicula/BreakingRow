@@ -13,8 +13,9 @@
   - [x] Sandbox - as much as possible customizable math 3 game
   - [ ] Different field shapes
     - [x] Classic rectangle
-    - [ ] With blockers inside
-    - [ ] Not rectangular shapes pressets
+    - [x] With blockers inside
+    - [x] Not rectangular shapes pressets
+      - [x] Circle
   - [ ] Different cell shape
     - [x] Square
     - [ ] Hexagon
@@ -28,7 +29,7 @@
     - [x] Bottom to top
     - [x] Left to right
   - [ ] Move with obstacles
-    - [ ] Move behind obstacle
+    - [x] Move behind obstacle
     - [ ] Bubble approach to empty cell
     - [ ] Obstacle as spawn point
 - [ ] Abilities
