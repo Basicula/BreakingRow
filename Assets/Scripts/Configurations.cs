@@ -1,6 +1,7 @@
 ﻿using UnityEngine;
 using TMPro;
 using System.Linq;
+using UnityEngine.UI;
 
 public class Configurations : MonoBehaviour
 {
@@ -22,19 +23,21 @@ public class Configurations : MonoBehaviour
     m_spawn_move_scenario = transform.GetChild(3).gameObject.GetComponent<TMP_Dropdown>();
     m_mode = transform.GetChild(4).gameObject.GetComponent<TMP_Dropdown>();
     m_move_direction = transform.GetChild(5).gameObject.GetComponent<TMP_Dropdown>();
+    var edit_field_shape = transform.GetChild(6).gameObject.GetComponent<Button>();
+    edit_field_shape.onClick.AddListener(() => _InitEditFieldShape());
 
-    m_width_input.value = m_game_field.width;
+    m_width_input.value = m_game_field.field_configuration.width;
     m_width_input.on_value_change = () => _InitGameField();
 
-    m_height_input.value = m_game_field.height;
+    m_height_input.value = m_game_field.field_configuration.height;
     m_height_input.on_value_change = () => _InitGameField();
 
-    m_active_elements_count_input.value = m_game_field.active_elements_count;
+    m_active_elements_count_input.value = m_game_field.field_configuration.active_elements_count;
     m_active_elements_count_input.on_value_change = () => _InitGameField();
 
-    _InitDropdown(ref m_spawn_move_scenario, m_game_field.spawn_move_scenario);
-    _InitDropdown(ref m_mode, m_game_field.mode);
-    _InitDropdown(ref m_move_direction, m_game_field.move_direction);
+    _InitDropdown(ref m_spawn_move_scenario, m_game_field.field_configuration.spawn_move_scenario);
+    _InitDropdown(ref m_mode, m_game_field.field_configuration.mode);
+    _InitDropdown(ref m_move_direction, m_game_field.field_configuration.move_direction);
   }
 
   private void _InitDropdown<ValueType>(ref TMP_Dropdown io_dropdown, ValueType i_value)
@@ -49,19 +52,44 @@ public class Configurations : MonoBehaviour
 
   private void _InitGameField()
   {
+    var new_field_configuration = m_game_field.field_configuration.Clone();
+    new_field_configuration.width = m_width_input.value;
+    new_field_configuration.height = m_height_input.value;
+    if (m_width_input.value != m_game_field.field_configuration.width ||
+      m_height_input.value != m_game_field.field_configuration.height)
+      new_field_configuration.InitCells();
+    new_field_configuration.active_elements_count = m_active_elements_count_input.value;
     var spawn_move_scenario_option = m_spawn_move_scenario.options[m_spawn_move_scenario.value].text;
-    var scenario = (GameField.SpawnMoveScenario)System.Enum.Parse(typeof(GameField.SpawnMoveScenario), spawn_move_scenario_option);
+    new_field_configuration.spawn_move_scenario = System.Enum.Parse<FieldConfiguration.SpawnMoveScenario>(spawn_move_scenario_option);
     var mode_option = m_mode.options[m_mode.value].text;
-    var mode = (FieldData.Mode)System.Enum.Parse(typeof(FieldData.Mode), mode_option);
+    new_field_configuration.mode = System.Enum.Parse<FieldConfiguration.Mode>(mode_option);
     var move_direction_option = m_move_direction.options[m_move_direction.value].text;
-    var move_direction = (FieldData.MoveDirection)System.Enum.Parse(typeof(FieldData.MoveDirection), move_direction_option);
-    m_game_field.Init(
-      m_width_input.value,
-      m_height_input.value,
-      m_active_elements_count_input.value,
-      scenario,
-      mode,
-      move_direction
-    );
+    new_field_configuration.move_direction = System.Enum.Parse<FieldConfiguration.MoveDirection>(move_direction_option);
+    m_game_field.Init(new_field_configuration);
+  }
+
+  private void _InitEditFieldShape()
+  {
+    var edit_field_shape = transform.GetChild(8).GetChild(0).GetComponent<EditFieldShape>();
+    edit_field_shape.Init(m_game_field.field_configuration.Clone());
+    transform.GetChild(8).GetChild(1).GetComponent<Button>().onClick.AddListener(() =>
+    {
+      var field_configuration = m_game_field.field_configuration.Clone();
+      var cells = edit_field_shape.GetCells();
+      for (int row_id = 0; row_id < field_configuration.height; ++row_id)
+        for (int column_id = 0; column_id < field_configuration.width; ++column_id)
+          field_configuration.SetCellType(row_id, column_id, cells[row_id, column_id]);
+      m_game_field.Init(field_configuration);
+    });
+
+    var shape_preset_selector = transform.GetChild(8).GetChild(3).gameObject;
+    var shape_preset_selector_dropdown = shape_preset_selector.GetComponent<TMP_Dropdown>();
+    _InitDropdown(ref shape_preset_selector_dropdown, EditFieldShape.ShapePreset.Circle);
+    shape_preset_selector_dropdown.onValueChanged.RemoveAllListeners();
+    transform.GetChild(8).GetChild(4).GetComponent<Button>().onClick.AddListener(() =>
+    {
+      var preset = shape_preset_selector_dropdown.options[shape_preset_selector_dropdown.value].text;
+      edit_field_shape.ApplyPreset(System.Enum.Parse<EditFieldShape.ShapePreset>(preset));
+    });
   }
 }

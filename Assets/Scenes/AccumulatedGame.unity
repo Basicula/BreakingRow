@@ -169,6 +169,26 @@ PrefabInstance:
       propertyPath: m_field_mode
       value: 1
       objectReference: {fileID: 0}
+    - target: {fileID: 3837003339136064394, guid: 18e6757995dbd434ca34e4eeb0fcf19e, type: 3}
+      propertyPath: m_field_configuration.mode
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 3837003339136064394, guid: 18e6757995dbd434ca34e4eeb0fcf19e, type: 3}
+      propertyPath: m_field_configuration.width
+      value: 8
+      objectReference: {fileID: 0}
+    - target: {fileID: 3837003339136064394, guid: 18e6757995dbd434ca34e4eeb0fcf19e, type: 3}
+      propertyPath: m_field_configuration.height
+      value: 8
+      objectReference: {fileID: 0}
+    - target: {fileID: 3837003339136064394, guid: 18e6757995dbd434ca34e4eeb0fcf19e, type: 3}
+      propertyPath: m_field_configuration.spawn_move_scenario
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 3837003339136064394, guid: 18e6757995dbd434ca34e4eeb0fcf19e, type: 3}
+      propertyPath: m_field_configuration.active_elements_count
+      value: 4
+      objectReference: {fileID: 0}
     - target: {fileID: 3837003339136064395, guid: 18e6757995dbd434ca34e4eeb0fcf19e, type: 3}
       propertyPath: m_RootOrder
       value: 2
