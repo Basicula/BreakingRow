@@ -13,8 +13,24 @@
   - [x] Sandbox - as much as possible customizable math 3 game
   - [ ] Different field shapes
     - [x] Classic rectangle
-    - [ ] With blockers/emptiness inside
-    - [ ] Not rectangular shapes
+    - [ ] With blockers inside
+    - [ ] Not rectangular shapes pressets
+  - [ ] Different cell shape
+    - [x] Square
+    - [ ] Hexagon
+    - [ ] Octagon (seems feasible only for spherical field) ?
+  - [x] Spawn and move scenarios
+    - [x] Move then spawn inplace
+    - [x] Spawn outside then move all
+  - [x] Move directions
+    - [x] Top to bottom
+    - [x] Right to left
+    - [x] Bottom to top
+    - [x] Left to right
+  - [ ] Move with obstacles
+    - [ ] Move behind obstacle
+    - [ ] Bubble approach to empty cell
+    - [ ] Obstacle as spawn point
 - [ ] Abilities
   - [x] Movable abilities
     - [x] Hammer - Remove one selected element
