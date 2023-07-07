@@ -20,22 +20,6 @@ PrefabInstance:
       value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 5692712427419031816, guid: 71b4b00f51c386a43b15cafa13c8446e, type: 3}
-      propertyPath: m_AnchorMax.x
-      value: 0.97800004
-      objectReference: {fileID: 0}
-    - target: {fileID: 5692712427419031816, guid: 71b4b00f51c386a43b15cafa13c8446e, type: 3}
-      propertyPath: m_AnchorMax.y
-      value: 0.91842526
-      objectReference: {fileID: 0}
-    - target: {fileID: 5692712427419031816, guid: 71b4b00f51c386a43b15cafa13c8446e, type: 3}
-      propertyPath: m_AnchorMin.x
-      value: 0.84677196
-      objectReference: {fileID: 0}
-    - target: {fileID: 5692712427419031816, guid: 71b4b00f51c386a43b15cafa13c8446e, type: 3}
-      propertyPath: m_AnchorMin.y
-      value: 0.09212649
-      objectReference: {fileID: 0}
-    - target: {fileID: 5692712427419031816, guid: 71b4b00f51c386a43b15cafa13c8446e, type: 3}
       propertyPath: m_SizeDelta.x
       value: 0
       objectReference: {fileID: 0}
@@ -93,7 +77,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 5692712427419031817, guid: 71b4b00f51c386a43b15cafa13c8446e, type: 3}
       propertyPath: m_Name
-      value: MovableAbility1
+      value: MovableAbility
       objectReference: {fileID: 0}
     m_RemovedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: 71b4b00f51c386a43b15cafa13c8446e, type: 3}
