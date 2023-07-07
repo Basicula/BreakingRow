@@ -39,7 +39,7 @@ public class GameField : MonoBehaviour
 
   void Start()
   {
-    m_input_handler = gameObject.transform.GetChild(0).GetChild(0).gameObject;
+    m_input_handler = transform.GetChild(0).GetChild(0).GetChild(0).gameObject;
     var active_zone = m_input_handler.GetComponent<RectTransform>();
     m_max_active_zone_rect = active_zone.rect;
     m_max_active_zone_anchor_min = active_zone.anchorMin;
