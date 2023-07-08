@@ -28,7 +28,7 @@ public class FieldData
 
     //for (int row_id = 0; row_id < m_field_configuration.height; ++row_id)
     //  for (int column_id = 0; column_id < m_field_configuration.width; ++column_id)
-    //    m_field[row_id, column_id] = row_id * width + column_id;
+    //    m_field[row_id, column_id] = row_id * m_field_configuration.width + column_id;
   }
 
   public int At(int row_id, int column_id)
