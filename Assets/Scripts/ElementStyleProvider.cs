@@ -27,6 +27,11 @@ public class ElementStyleProvider
       "#3DFF53", "#FF4828", "#0008FF", "#14FFF3", "#FF05FA",
       "#FFFB28", "#FF6D0A", "#CB0032", "#00990A", "#990054"
     };
+    // m_colors = new string[10]
+    // {
+    //   "#111111", "#222222", "#333333", "#444444", "#555555",
+    //   "#666666", "#777777", "#888888", "#999999", "#aaaaaa"
+    // };
     m_sprite_cache = new Dictionary<int, ElementProps>();
 
     var shape_provider = new ShapeProvider(size, m_line_width);
