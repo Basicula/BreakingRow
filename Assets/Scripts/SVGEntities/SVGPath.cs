@@ -3,9 +3,8 @@ using UnityEngine;
 
 public class SVGPath : SVGEntity
 {
-  public float stroke_width;
   public string fill_color;
-  public string stroke_color;
+  public SVGStrokeProps stroke_props;
   private List<string> m_commands;
   private bool m_is_closed;
 
@@ -44,6 +43,6 @@ public class SVGPath : SVGEntity
     System.Globalization.CultureInfo.CurrentCulture = System.Globalization.CultureInfo.InvariantCulture;
     string path = string.Join(" ", m_commands);
     var closure = m_is_closed ? " z" : "";
-    return $"<path d=\"{path}{closure}\" fill=\"{fill_color}\" stroke-width=\"{stroke_width}\" stroke=\"{stroke_color}\"/>";
+    return $"<path d=\"{path}{closure}\" fill=\"{fill_color}\" {stroke_props.GetXML()}/>";
   }
 }

@@ -128,8 +128,7 @@ public class ElementStyleProvider
     }
     SVGPath path = m_paths[value % m_paths.Count];
     path.fill_color = m_colors[value % m_colors.Length];
-    path.stroke_color = "#000000";
-    path.stroke_width = m_line_width;
+    path.stroke_props = new SVGStrokeProps("#000000", m_line_width);
     svg.Add(path);
     const string svg_header = "<?xml version=\"1.0\" encoding=\"utf - 8\"?>";
     string svg_string = svg_header + svg.GetXML();
