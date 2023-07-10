@@ -516,7 +516,7 @@ public class GameField : MonoBehaviour
     if (holes.Count == 0)
       return;
     SVG svg = new SVG();
-    svg.Add(new SVGRect( new Vector2(0, 0), new Vector2(m_field_configuration.width * m_grid_step, m_field_configuration.height * m_grid_step), "none", new SVGStrokeProps("#000000", 1)));
+    svg.Add(new SVGRect(new Vector2(0, 0), new Vector2(m_field_configuration.width * m_grid_step, m_field_configuration.height * m_grid_step), "none", new SVGStrokeProps("#000000", 1)));
     var size = new Vector2(m_grid_step, m_grid_step);
     var color = "rgba(56, 192, 231, 1.0)";
     var no_stroke = new SVGStrokeProps("none");

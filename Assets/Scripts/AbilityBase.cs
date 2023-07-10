@@ -47,9 +47,9 @@ abstract public class AbilityBase : MonoBehaviour
   private void Start()
   {
     m_button = gameObject.GetComponent<Button>();
-    m_price_text = transform.GetChild(2).gameObject.GetComponent<TMP_Text>();
-    m_cooldown_overlay = transform.GetChild(3).gameObject.GetComponent<Image>();
-    m_cooldown_timer = transform.GetChild(4).gameObject.GetComponent<TMP_Text>();
+    m_price_text = transform.GetChild(0).GetChild(2).gameObject.GetComponent<TMP_Text>();
+    m_cooldown_overlay = transform.GetChild(0).GetChild(3).gameObject.GetComponent<Image>();
+    m_cooldown_timer = transform.GetChild(0).GetChild(4).gameObject.GetComponent<TMP_Text>();
     this._Init();
 
     m_save_file_path = Application.persistentDataPath + $"/{SceneManager.GetActiveScene().name}{gameObject.name}Ability.json";
