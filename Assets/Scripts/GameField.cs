@@ -21,8 +21,10 @@ public class GameField : MonoBehaviour
   private ElementStyleProvider m_element_style_provider;
   private float m_grid_step;
   private float m_half_grid_step;
-  private float m_element_offset;
   private float m_element_size;
+  private float m_element_offset;
+  private float m_inner_grid_stroke_width;
+  private float m_outer_grid_stroke_width;
   private Vector2 m_field_center;
   private List<(int, int)> m_to_create;
   private List<(int, int)> m_selected_elements;
@@ -227,10 +229,10 @@ public class GameField : MonoBehaviour
       m_field_data.Reset();
       m_game_info.Reset();
       Destroy(transform.GetChild(1).gameObject);
+      Destroy(transform.GetChild(2).gameObject);
       for (int row_id = 0; row_id < m_field_configuration.height; ++row_id)
         for (int column_id = 0; column_id < m_field_configuration.width; ++column_id)
           Destroy(m_field[row_id, column_id].gameObject);
-      Destroy(transform.GetChild(transform.childCount - 1).gameObject);
     }
 
     m_field_configuration = i_field_configuration;
@@ -249,8 +251,11 @@ public class GameField : MonoBehaviour
     m_half_grid_step = m_grid_step / 2;
     m_element_offset = m_grid_step * 0.05f;
     m_element_size = m_grid_step - 2 * m_element_offset;
+    m_inner_grid_stroke_width = m_element_offset / 4;
+    m_outer_grid_stroke_width = m_element_offset;
 
     _InitBackgroundGrid();
+    _InitHoleOverlays();
     _InitInputHandler();
     _InitCameraViewport();
 
@@ -266,7 +271,6 @@ public class GameField : MonoBehaviour
         m_field[row_id, column_id].transform.parent = transform;
         this._InitElement(row_id, column_id);
       }
-    _InitHoleOverlays();
   }
 
   private Vector2 _PointerEventPositionToWorldPosition(Vector2 i_event_position)
@@ -485,11 +489,11 @@ public class GameField : MonoBehaviour
     SVG svg = new SVG();
     var rect_size = new Vector2(m_grid_step, m_grid_step);
     var rect_color = "rgba(200, 200, 200, 0.5)";
-    var rect_stroke_props = new SVGStrokeProps("#000000", m_element_offset / 4);
+    var rect_stroke_props = new SVGStrokeProps("#000000", m_inner_grid_stroke_width);
     for (int row_id = 0; row_id < m_field_configuration.height; ++row_id)
       for (int column_id = 0; column_id < m_field_configuration.width; ++column_id)
         svg.Add(new SVGRect(new Vector2(column_id * m_grid_step, row_id * m_grid_step), rect_size, rect_color, rect_stroke_props));
-    rect_stroke_props.stroke_width *= 2;
+    rect_stroke_props.stroke_width = m_outer_grid_stroke_width;
     svg.Add(new SVGRect(new Vector2(0, 0), new Vector2(m_field_configuration.width * m_grid_step, m_field_configuration.height * m_grid_step), "none", rect_stroke_props));
 
     using System.IO.StringReader textReader = new System.IO.StringReader(svg.GetXML());
@@ -517,12 +521,75 @@ public class GameField : MonoBehaviour
       return;
     SVG svg = new SVG();
     svg.Add(new SVGRect(new Vector2(0, 0), new Vector2(m_field_configuration.width * m_grid_step, m_field_configuration.height * m_grid_step), "none", new SVGStrokeProps("#000000", 1)));
-    var size = new Vector2(m_grid_step, m_grid_step);
     var color = "rgba(56, 192, 231, 1.0)";
-    var no_stroke = new SVGStrokeProps("none");
+    var offset_value = m_outer_grid_stroke_width / 2;
+    var hole_stroke = new SVGStrokeProps("#000000", m_outer_grid_stroke_width);
     foreach (var hole in holes)
+    {
+      var hole_edges = new List<((int, int), (int, int))>();
       foreach (var (row_id, column_id) in hole.group)
-        svg.Add(new SVGRect(new Vector2(column_id * m_grid_step, (m_field_configuration.height - row_id - 1) * m_grid_step), size, color, no_stroke));
+      {
+        hole_edges.Add(((row_id, column_id), (row_id, column_id + 1)));
+        hole_edges.Add(((row_id, column_id + 1), (row_id + 1, column_id + 1)));
+        hole_edges.Add(((row_id + 1, column_id + 1), (row_id + 1, column_id)));
+        hole_edges.Add(((row_id + 1, column_id), (row_id, column_id)));
+      }
+      for (int i = 0; i < hole_edges.Count; ++i)
+        for (int j = i + 1; j < hole_edges.Count; ++j)
+          if (hole_edges[i].Item1 == hole_edges[j].Item2 && hole_edges[i].Item2 == hole_edges[j].Item1)
+          {
+            hole_edges.RemoveAt(j);
+            hole_edges.RemoveAt(i);
+            --i;
+            break;
+          }
+      var path_points = new List<(int, int)>();
+      path_points.Add(hole_edges[0].Item1);
+      path_points.Add(hole_edges[0].Item2);
+      hole_edges.RemoveAt(0);
+      int edge_id = 0;
+      while (hole_edges.Count > 0)
+      {
+        if (path_points[path_points.Count - 1] == hole_edges[edge_id].Item1)
+        {
+          path_points.Add(hole_edges[edge_id].Item2);
+          hole_edges.RemoveAt(edge_id);
+          edge_id = 0;
+        }
+        else
+          ++edge_id;
+      }
+      // Remove last point as it's same as first one
+      path_points.RemoveAt(path_points.Count - 1);
+      var offset_path_points = new List<Vector2>(path_points.Count);
+      foreach (var (row_id, column_id) in path_points)
+        offset_path_points.Add(new Vector2(column_id * m_grid_step, (m_field_configuration.height - row_id) * m_grid_step));
+      var prev_offset_direction = new Vector2(0, 0);
+      for (int point_id = 1; point_id <= path_points.Count; ++point_id)
+      {
+        var curr_point_id = point_id == path_points.Count ? 0 : point_id;
+        var edge_direction = offset_path_points[curr_point_id] - offset_path_points[point_id - 1];
+        var offset_direction = new Vector2(edge_direction.y, -edge_direction.x);
+        offset_direction.Normalize();
+        offset_direction *= offset_value;
+        if (Vector2.Dot(prev_offset_direction, offset_direction) < 0.1f)
+        {
+          offset_path_points[curr_point_id] = offset_path_points[curr_point_id] + offset_direction;
+          offset_path_points[point_id - 1] = offset_path_points[point_id - 1] + offset_direction;
+        }
+        else
+          offset_path_points[curr_point_id] = offset_path_points[curr_point_id] + offset_direction;
+        prev_offset_direction = offset_direction;
+      }
+      var path = new SVGPath();
+      path.fill_color = color;
+      path.stroke_props = hole_stroke;
+      path.MoveTo(offset_path_points[0]);
+      for (int point_id = 1; point_id < path_points.Count; ++point_id)
+        path.LineTo(offset_path_points[point_id]);
+      path.Close();
+      svg.Add(path);
+    }
     using System.IO.StringReader textReader = new System.IO.StringReader(svg.GetXML());
     var sceneInfo = Unity.VectorGraphics.SVGParser.ImportSVG(textReader);
     var geometries = Unity.VectorGraphics.VectorUtils.TessellateScene(sceneInfo.Scene, new Unity.VectorGraphics.VectorUtils.TessellationOptions
@@ -563,7 +630,7 @@ public class GameField : MonoBehaviour
   private void _InitCameraViewport()
   {
     var active_zone = m_input_handler.GetComponent<RectTransform>();
-    Camera.main.orthographicSize = m_grid_step * m_field_configuration.height / 2;
+    Camera.main.orthographicSize = m_grid_step * m_field_configuration.height / 2 + m_outer_grid_stroke_width / 2;
     Camera.main.aspect = (float)m_field_configuration.width / m_field_configuration.height;
     Camera.main.transform.position = new Vector3(
       m_input_handler.transform.localPosition.x,
