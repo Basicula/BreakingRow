@@ -6,12 +6,10 @@ public class SVGPath : SVGEntity
   public string fill_color;
   public SVGStrokeProps stroke_props;
   private List<string> m_commands;
-  private bool m_is_closed;
 
   public SVGPath()
   {
     m_commands = new List<string>();
-    m_is_closed = false;
   }
 
   public void MoveTo(Vector2 point)
@@ -35,14 +33,13 @@ public class SVGPath : SVGEntity
 
   public void Close()
   {
-    m_is_closed = true;
+    m_commands.Add("z");
   }
 
   public override string GetXML()
   {
     System.Globalization.CultureInfo.CurrentCulture = System.Globalization.CultureInfo.InvariantCulture;
     string path = string.Join(" ", m_commands);
-    var closure = m_is_closed ? " z" : "";
-    return $"<path d=\"{path}{closure}\" fill=\"{fill_color}\" {stroke_props.GetXML()}/>";
+    return $"<path d=\"{path}\" fill=\"{fill_color}\" {stroke_props.GetXML()}/>";
   }
 }
