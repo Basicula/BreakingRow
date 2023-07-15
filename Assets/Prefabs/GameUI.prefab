@@ -570,7 +570,7 @@ MonoBehaviour:
   m_faceColor:
     serializedVersion: 2
     rgba: 4294967295
-  m_fontSize: 64.15
+  m_fontSize: 68.7
   m_fontSizeBase: 8
   m_fontWeight: 400
   m_enableAutoSizing: 1
@@ -814,7 +814,7 @@ MonoBehaviour:
   m_faceColor:
     serializedVersion: 2
     rgba: 4294967295
-  m_fontSize: 64.15
+  m_fontSize: 68.7
   m_fontSizeBase: 6
   m_fontWeight: 400
   m_enableAutoSizing: 1
@@ -949,7 +949,7 @@ MonoBehaviour:
   m_faceColor:
     serializedVersion: 2
     rgba: 4294967295
-  m_fontSize: 64.15
+  m_fontSize: 68.7
   m_fontSizeBase: 8
   m_fontWeight: 400
   m_enableAutoSizing: 1
@@ -1084,7 +1084,7 @@ MonoBehaviour:
   m_faceColor:
     serializedVersion: 2
     rgba: 4294967295
-  m_fontSize: 40.35
+  m_fontSize: 52.65
   m_fontSizeBase: 8
   m_fontWeight: 400
   m_enableAutoSizing: 1
@@ -1297,7 +1297,7 @@ MonoBehaviour:
   m_faceColor:
     serializedVersion: 2
     rgba: 4294967295
-  m_fontSize: 22.3
+  m_fontSize: 29.1
   m_fontSizeBase: 6
   m_fontWeight: 400
   m_enableAutoSizing: 1
@@ -1528,7 +1528,7 @@ MonoBehaviour:
   m_faceColor:
     serializedVersion: 2
     rgba: 4294967295
-  m_fontSize: 18.6
+  m_fontSize: 24.25
   m_fontSizeBase: 8
   m_fontWeight: 400
   m_enableAutoSizing: 1
@@ -1627,7 +1627,7 @@ Canvas:
   m_OverrideSorting: 0
   m_OverridePixelPerfect: 0
   m_SortingBucketNormalizedSize: 0
-  m_AdditionalShaderChannelsFlag: 25
+  m_AdditionalShaderChannelsFlag: 27
   m_SortingLayerID: 0
   m_SortingOrder: 1
   m_TargetDisplay: 0
@@ -3653,7 +3653,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 6859065091583991703, guid: 23ab7c32a70754d45a25d8fa76565df8, type: 3}
       propertyPath: m_fontSize
-      value: 17.25
+      value: 22.55
       objectReference: {fileID: 0}
     - target: {fileID: 6859065092103360936, guid: 23ab7c32a70754d45a25d8fa76565df8, type: 3}
       propertyPath: m_Name
@@ -3745,7 +3745,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 6859065092801491736, guid: 23ab7c32a70754d45a25d8fa76565df8, type: 3}
       propertyPath: m_fontSize
-      value: 28.4
+      value: 37.05
       objectReference: {fileID: 0}
     m_RemovedComponents:
     - {fileID: 6402436878349863481, guid: 23ab7c32a70754d45a25d8fa76565df8, type: 3}
@@ -3800,7 +3800,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 3509983384777046836, guid: 829d973a09b0d7640bb88bc037ec3d4d, type: 3}
       propertyPath: m_fontSize
-      value: 17.25
+      value: 22.55
       objectReference: {fileID: 0}
     - target: {fileID: 3509983384777046837, guid: 829d973a09b0d7640bb88bc037ec3d4d, type: 3}
       propertyPath: m_AnchoredPosition.y
@@ -3896,7 +3896,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 3509983385994598331, guid: 829d973a09b0d7640bb88bc037ec3d4d, type: 3}
       propertyPath: m_fontSize
-      value: 28.4
+      value: 37.05
       objectReference: {fileID: 0}
     - target: {fileID: 3990112844210925210, guid: 829d973a09b0d7640bb88bc037ec3d4d, type: 3}
       propertyPath: m_AspectMode
@@ -4089,7 +4089,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 6859065091583991703, guid: 23ab7c32a70754d45a25d8fa76565df8, type: 3}
       propertyPath: m_fontSize
-      value: 17.25
+      value: 22.55
       objectReference: {fileID: 0}
     - target: {fileID: 6859065092103360936, guid: 23ab7c32a70754d45a25d8fa76565df8, type: 3}
       propertyPath: m_Name
@@ -4181,7 +4181,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 6859065092801491736, guid: 23ab7c32a70754d45a25d8fa76565df8, type: 3}
       propertyPath: m_fontSize
-      value: 28.4
+      value: 37.05
       objectReference: {fileID: 0}
     m_RemovedComponents:
     - {fileID: 6402436878349863481, guid: 23ab7c32a70754d45a25d8fa76565df8, type: 3}
@@ -4232,7 +4232,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 3509983384777046836, guid: 829d973a09b0d7640bb88bc037ec3d4d, type: 3}
       propertyPath: m_fontSize
-      value: 8.8
+      value: 11.5
       objectReference: {fileID: 0}
     - target: {fileID: 3509983385296024842, guid: 829d973a09b0d7640bb88bc037ec3d4d, type: 3}
       propertyPath: m_Pivot.x
@@ -4328,7 +4328,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 3509983385994598331, guid: 829d973a09b0d7640bb88bc037ec3d4d, type: 3}
       propertyPath: m_fontSize
-      value: 28.4
+      value: 37.05
       objectReference: {fileID: 0}
     - target: {fileID: 3990112844210925210, guid: 829d973a09b0d7640bb88bc037ec3d4d, type: 3}
       propertyPath: m_AspectMode
@@ -4415,7 +4415,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 6859065091583991703, guid: 23ab7c32a70754d45a25d8fa76565df8, type: 3}
       propertyPath: m_fontSize
-      value: 12.1
+      value: 15.8
       objectReference: {fileID: 0}
     - target: {fileID: 6859065092103360936, guid: 23ab7c32a70754d45a25d8fa76565df8, type: 3}
       propertyPath: m_Name
@@ -4507,7 +4507,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 6859065092801491736, guid: 23ab7c32a70754d45a25d8fa76565df8, type: 3}
       propertyPath: m_fontSize
-      value: 28.4
+      value: 37.05
       objectReference: {fileID: 0}
     m_RemovedComponents:
     - {fileID: 6402436878349863481, guid: 23ab7c32a70754d45a25d8fa76565df8, type: 3}
@@ -4558,7 +4558,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 3509983384777046836, guid: 829d973a09b0d7640bb88bc037ec3d4d, type: 3}
       propertyPath: m_fontSize
-      value: 13.35
+      value: 17.45
       objectReference: {fileID: 0}
     - target: {fileID: 3509983384777046837, guid: 829d973a09b0d7640bb88bc037ec3d4d, type: 3}
       propertyPath: m_AnchoredPosition.y
@@ -4658,7 +4658,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 3509983385994598331, guid: 829d973a09b0d7640bb88bc037ec3d4d, type: 3}
       propertyPath: m_fontSize
-      value: 28.4
+      value: 37.05
       objectReference: {fileID: 0}
     - target: {fileID: 3990112844210925210, guid: 829d973a09b0d7640bb88bc037ec3d4d, type: 3}
       propertyPath: m_AspectMode
