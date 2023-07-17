@@ -56,11 +56,11 @@ public class GameModeSelection : MonoBehaviour, IPointerDownHandler, IPointerUpH
     foreach (var game_mode_info in m_game_mode_infos)
     {
       var game_mode_info_instance = Instantiate(m_game_mode_info_prefab, transform);
-      game_mode_info_instance.transform.GetChild(0).GetComponent<TMP_Text>().text = game_mode_info.name;
-      game_mode_info_instance.transform.GetChild(1).GetComponent<TMP_Text>().text = game_mode_info.description;
+      game_mode_info_instance.transform.GetChild(0).GetChild(0).GetComponent<TMP_Text>().text = game_mode_info.name;
+      game_mode_info_instance.transform.GetChild(1).GetChild(0).GetComponent<TMP_Text>().text = game_mode_info.description;
       var rect_transform = game_mode_info_instance.GetComponent<RectTransform>();
-      rect_transform.anchorMin = new Vector2(0.1f, 0.2f);
-      rect_transform.anchorMax = new Vector2(0.9f, 0.95f);
+      rect_transform.anchorMin = new Vector2(0.15f, 0.25f);
+      rect_transform.anchorMax = new Vector2(0.85f, 0.9f);
     }
 
     StartCoroutine(_ChangeCurrentMode(0));
@@ -98,7 +98,7 @@ public class GameModeSelection : MonoBehaviour, IPointerDownHandler, IPointerUpH
       to_id += m_game_mode_infos.Count;
     if (to_id > m_game_mode_infos.Count - 1 - anchor_id)
       to_id -= m_game_mode_infos.Count;
-    var to_offset = to_id * Screen.width;
+    var to_offset = to_id * Screen.width / 1.5f;
     var offset = from_offset;
 
     var from_scale = rect_transform.localScale.x;
