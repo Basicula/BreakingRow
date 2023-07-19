@@ -130,6 +130,8 @@ public class GameModeSelection : MonoBehaviour, IPointerDownHandler, IPointerUpH
   {
     var swipe_end = eventData.position;
     var delta = swipe_end - m_swipe_start;
+    if (Mathf.Abs(delta.x) < Screen.width / 10)
+      return;
     StartCoroutine(_ChangeCurrentMode(Mathf.RoundToInt(-Mathf.Sign(delta.x))));
   }
 }
