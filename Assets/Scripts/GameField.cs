@@ -499,16 +499,7 @@ public class GameField : MonoBehaviour
       for (int column_id = 0; column_id < m_field_configuration.width; ++column_id)
         svg.Add(new SVGRect(new Vector2(column_id * m_grid_step, row_id * m_grid_step), rect_size, rect_color, rect_stroke_props));
 
-    using System.IO.StringReader textReader = new System.IO.StringReader(svg.GetXML());
-    var sceneInfo = SVGParser.ImportSVG(textReader);
-    var geometries = VectorUtils.TessellateScene(sceneInfo.Scene, new VectorUtils.TessellationOptions
-    {
-      StepDistance = m_grid_step,
-      SamplingStepSize = 1,
-      MaxCordDeviation = 0.0f,
-      MaxTanAngleDeviation = 0.0f
-    });
-    var sprite = VectorUtils.BuildSprite(geometries, 1, VectorUtils.Alignment.Center, Vector2.zero, 128, false);
+    var sprite = SVG.BuildSprite(svg, m_grid_step);
     GameObject background = new GameObject();
     background.transform.parent = gameObject.transform;
     background.transform.localPosition = m_input_handler.transform.localPosition;
@@ -668,18 +659,8 @@ public class GameField : MonoBehaviour
       fill_svg.Add(fill_path);
       stroke_svg.Add(stroke_path);
     }
-    string svg_text = fill_svg.GetXML();
-    var textReader = new System.IO.StringReader(svg_text);
-    var sceneInfo = SVGParser.ImportSVG(textReader);
-    var geometries = VectorUtils.TessellateScene(sceneInfo.Scene, new VectorUtils.TessellationOptions
-    {
-      StepDistance = m_grid_step,
-      SamplingStepSize = 1,
-      MaxCordDeviation = 0.0f,
-      MaxTanAngleDeviation = 0.0f
-    });
-    var sprite = VectorUtils.BuildSprite(geometries, 1, VectorUtils.Alignment.Center, Vector2.zero, 128, false);
 
+    var sprite = SVG.BuildSprite(fill_svg, m_grid_step);
     GameObject holes_fill = transform.GetChild(1).gameObject;
     holes_fill.transform.localPosition = m_input_handler.transform.localPosition;
     var holes_fill_mask = holes_fill.GetComponent<SpriteMask>();
@@ -692,17 +673,7 @@ public class GameField : MonoBehaviour
     var field_background_image = transform.GetChild(1).GetChild(1).gameObject;
     field_background_image.transform.localScale = new Vector3(x_scale, y_scale, 1);
 
-    svg_text = stroke_svg.GetXML();
-    textReader = new System.IO.StringReader(svg_text);
-    sceneInfo = SVGParser.ImportSVG(textReader);
-    geometries = VectorUtils.TessellateScene(sceneInfo.Scene, new VectorUtils.TessellationOptions
-    {
-      StepDistance = m_grid_step,
-      SamplingStepSize = 1,
-      MaxCordDeviation = 0.0f,
-      MaxTanAngleDeviation = 0.0f
-    });
-    var stroke_sprite = VectorUtils.BuildSprite(geometries, 1, VectorUtils.Alignment.Center, Vector2.zero, 128, false);
+    var stroke_sprite = SVG.BuildSprite(stroke_svg, m_grid_step);
     GameObject holes_stroke = new GameObject();
     holes_stroke.transform.SetParent(transform);
     holes_stroke.transform.localPosition = m_input_handler.transform.localPosition;
