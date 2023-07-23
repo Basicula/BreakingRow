@@ -87,6 +87,7 @@ abstract public class AbilityBase : MonoBehaviour
   public void Reset()
   {
     m_current_price = m_starting_price;
+    m_cooldown_start_time = -2 * m_cooldown_time;
     this._Update();
   }
 
