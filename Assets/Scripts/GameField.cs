@@ -1,5 +1,4 @@
 using System.Collections.Generic;
-using Unity.VectorGraphics;
 using UnityEngine;
 
 public class GameField : MonoBehaviour
@@ -218,17 +217,9 @@ public class GameField : MonoBehaviour
 
     var old_cells = m_field_configuration.GetCells();
     var new_cells = i_field_configuration.GetCells();
-    for (int row_id = 0; row_id < i_field_configuration.height; ++row_id)
-    {
-      if (is_init_needed)
-        break;
-      for (int column_id = 0; column_id < i_field_configuration.width; ++column_id)
-      {
-        if (is_init_needed)
-          break;
+    for (int row_id = 0; row_id < i_field_configuration.height && !is_init_needed; ++row_id)
+      for (int column_id = 0; column_id < i_field_configuration.width && !is_init_needed; ++column_id)
         is_init_needed = new_cells[row_id, column_id] != old_cells[row_id, column_id];
-      }
-    }
 
     if (is_init_needed)
     {
@@ -508,6 +499,41 @@ public class GameField : MonoBehaviour
     sprite_renderer.sortingOrder = -1;
   }
 
+  private List<FieldData.GroupDetails> _GetHoles()
+  {
+    var holes = m_field_data.GetHoles();
+    var outer_hole = new FieldData.GroupDetails();
+    outer_hole.group = new List<(int, int)>();
+    for (int row_id = 0; row_id <= m_field_configuration.height + 1; ++row_id)
+      for (int column_id = 0; column_id <= m_field_configuration.width + 1; ++column_id)
+      {
+        if (row_id > 0 && row_id <= m_field_configuration.height &&
+          column_id > 0 && column_id <= m_field_configuration.width)
+          continue;
+        outer_hole.group.Add((row_id, column_id));
+      }
+    for (int hole_id = 0; hole_id < holes.Count; ++hole_id)
+    {
+      bool is_outer = false;
+      for (int element_id = 0; element_id < holes[hole_id].group.Count; ++element_id)
+      {
+        var (row_id, column_id) = holes[hole_id].group[element_id];
+        holes[hole_id].group[element_id] = (row_id + 1, column_id + 1);
+        is_outer = is_outer || (row_id == 0 || row_id == m_field_configuration.height - 1 ||
+          column_id == 0 || column_id == m_field_configuration.width - 1);
+      }
+      if (is_outer)
+      {
+        for (int element_id = 0; element_id < holes[hole_id].group.Count; ++element_id)
+          outer_hole.group.Add(holes[hole_id].group[element_id]);
+        holes.RemoveAt(hole_id);
+        --hole_id;
+      }
+    }
+    holes.Add(outer_hole);
+    return holes;
+  }
+
   private List<List<(int, int)>> _GetHolePaths(List<(int, int)> i_hole)
   {
     var hole_edges = new List<((int, int), (int, int))>();
@@ -554,37 +580,7 @@ public class GameField : MonoBehaviour
 
   private void _InitHoleOverlays()
   {
-    var holes = m_field_data.GetHoles();
-    var outer_hole = new FieldData.GroupDetails();
-    outer_hole.group = new List<(int, int)>();
-    for (int row_id = 0; row_id <= m_field_configuration.height + 1; ++row_id)
-      for (int column_id = 0; column_id <= m_field_configuration.width + 1; ++column_id)
-      {
-        if (row_id > 0 && row_id <= m_field_configuration.height &&
-          column_id > 0 && column_id <= m_field_configuration.width)
-          continue;
-        outer_hole.group.Add((row_id, column_id));
-      }
-    for (int hole_id = 0; hole_id < holes.Count; ++hole_id)
-    {
-      bool is_outer = false;
-      for (int element_id = 0; element_id < holes[hole_id].group.Count; ++element_id)
-      {
-        var (row_id, column_id) = holes[hole_id].group[element_id];
-        holes[hole_id].group[element_id] = (row_id + 1, column_id + 1);
-        is_outer = is_outer || (row_id == 0 || row_id == m_field_configuration.height - 1 ||
-          column_id == 0 || column_id == m_field_configuration.width - 1);
-      }
-      if (is_outer)
-      {
-        for (int element_id = 0; element_id < holes[hole_id].group.Count; ++element_id)
-          outer_hole.group.Add(holes[hole_id].group[element_id]);
-        holes.RemoveAt(hole_id);
-        --hole_id;
-      }
-    }
-    holes.Add(outer_hole);
-
+    var holes = _GetHoles();
     SVG stroke_svg = new SVG();
     SVG fill_svg = new SVG();
     var fill_color = "rgba(20, 20, 20, 0.5)";
@@ -665,12 +661,13 @@ public class GameField : MonoBehaviour
     holes_fill.transform.localPosition = m_input_handler.transform.localPosition;
     var holes_fill_mask = holes_fill.GetComponent<SpriteMask>();
     holes_fill_mask.sprite = sprite;
+
     var holes_background_image = transform.GetChild(1).GetChild(0).gameObject;
+    var field_background_image = transform.GetChild(1).GetChild(1).gameObject;
     var background_image_size = holes_background_image.GetComponent<SpriteRenderer>().sprite.rect.size;
     var x_scale = (Screen.width + 2 * m_outer_grid_stroke_width) / background_image_size.x;
     var y_scale = (Screen.height + 2 * m_outer_grid_stroke_width) / background_image_size.x;
     holes_background_image.transform.localScale = new Vector3(x_scale, y_scale, 1);
-    var field_background_image = transform.GetChild(1).GetChild(1).gameObject;
     field_background_image.transform.localScale = new Vector3(x_scale, y_scale, 1);
 
     var stroke_sprite = SVG.BuildSprite(stroke_svg, m_grid_step);

@@ -3,9 +3,7 @@
   public string stroke_color;
   public float stroke_width;
 
-  public SVGStrokeProps(
-    string i_stroke_color = "#000000",
-    float i_stroke_width = 1)
+  public SVGStrokeProps(string i_stroke_color = "#000000", float i_stroke_width = 1)
   {
     stroke_color = i_stroke_color;
     stroke_width = i_stroke_width;

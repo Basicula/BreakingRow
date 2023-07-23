@@ -1,7 +1,5 @@
-using System.IO;
 using System.Collections.Generic;
 using UnityEngine;
-using Unity.VectorGraphics;
 
 public class ElementStyleProvider
 {
