@@ -52,7 +52,7 @@ public class GameInfo : MonoBehaviour
     set
     {
       m_moves_count = value;
-      this._Update();
+      _Update();
     }
   }
 

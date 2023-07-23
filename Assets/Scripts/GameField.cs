@@ -131,7 +131,7 @@ public class GameField : MonoBehaviour
     {
       var created_elements = m_field_data.SpawnNewValues();
       foreach (var element_position in created_elements)
-        this._InitElement(element_position.Item1, element_position.Item2);
+        _InitElement(element_position.Item1, element_position.Item2);
       return true;
     }
     return false;
@@ -195,7 +195,7 @@ public class GameField : MonoBehaviour
     Reset();
     for (int row_id = 0; row_id < m_field_configuration.height; ++row_id)
       for (int column_id = 0; column_id < m_field_configuration.width; ++column_id)
-        this._InitElement(row_id, column_id);
+        _InitElement(row_id, column_id);
   }
 
   public void Reset()
@@ -262,10 +262,10 @@ public class GameField : MonoBehaviour
     for (int row_id = 0; row_id < m_field_configuration.height; ++row_id)
       for (int column_id = 0; column_id < m_field_configuration.width; ++column_id)
       {
-        Vector2 position = this._GetElementPosition(row_id, column_id);
+        Vector2 position = _GetElementPosition(row_id, column_id);
         m_field[row_id, column_id] = Instantiate(m_game_element_prefab, position, Quaternion.identity).GetComponent<GameElement>();
         m_field[row_id, column_id].transform.parent = transform;
-        this._InitElement(row_id, column_id);
+        _InitElement(row_id, column_id);
       }
   }
 
@@ -277,47 +277,47 @@ public class GameField : MonoBehaviour
 
   private void _HandlePointerDown(Vector2 i_event_position)
   {
-    if (!this._IsAvailable())
+    if (!_IsAvailable())
       return;
-    m_mouse_down_position = this._PointerEventPositionToWorldPosition(i_event_position);
-    var element_position = this._GetElementPosition(m_mouse_down_position);
-    if (!this._IsValidCell(element_position))
+    m_mouse_down_position = _PointerEventPositionToWorldPosition(i_event_position);
+    var element_position = _GetElementPosition(m_mouse_down_position);
+    if (!_IsValidCell(element_position))
     {
       Debug.LogError($"Bad element position on pointer down: {element_position} with event position {i_event_position}");
       return;
     }
-    this._SelectElement(element_position);
-    this._ProcessSelectedElements();
+    _SelectElement(element_position);
+    _ProcessSelectedElements();
   }
 
   private void _HandlePointerUp(Vector2 i_event_position)
   {
     if (m_selected_elements.Count != 1)
       return;
-    var mouse_up_position = this._PointerEventPositionToWorldPosition(i_event_position);
+    var mouse_up_position = _PointerEventPositionToWorldPosition(i_event_position);
     var delta = mouse_up_position - m_mouse_down_position;
     if (delta.magnitude / m_grid_step < 0.5)
       return;
     delta.Normalize();
-    var element_position = this._GetElementPosition(m_mouse_down_position + delta * m_grid_step);
-    if (!this._IsValidCell(element_position))
+    var element_position = _GetElementPosition(m_mouse_down_position + delta * m_grid_step);
+    if (!_IsValidCell(element_position))
     {
       Debug.LogError($"Bad element position on pointer up: {element_position} with event position {i_event_position}");
       return;
     }
-    this._SelectElement(element_position);
-    this._ProcessSelectedElements();
+    _SelectElement(element_position);
+    _ProcessSelectedElements();
   }
 
   private void _HandleAbilityMove(string i_ability_name, Vector2 i_event_position)
   {
-    if (!this._IsAvailable())
+    if (!_IsAvailable())
       return;
     var elements_to_highlight = new List<(int, int)>();
-    var main_element_position = this._GetElementPosition(Camera.main.ScreenToWorldPoint(i_event_position));
-    if (!this._IsValidCell(main_element_position))
+    var main_element_position = _GetElementPosition(Camera.main.ScreenToWorldPoint(i_event_position));
+    if (!_IsValidCell(main_element_position))
     {
-      this._ClearHighlighting();
+      _ClearHighlighting();
       return;
     }
     switch (i_ability_name)
@@ -328,11 +328,11 @@ public class GameField : MonoBehaviour
       case "Bomb":
         for (int row_id = main_element_position.Item1 - 1; row_id <= main_element_position.Item1 + 1; ++row_id)
           for (int column_id = main_element_position.Item2 - 1; column_id <= main_element_position.Item2 + 1; ++column_id)
-            if (this._IsValidCell(row_id, column_id))
+            if (_IsValidCell(row_id, column_id))
               elements_to_highlight.Add((row_id, column_id));
         break;
       case "RemoveElementsByValue":
-        if (this._IsValidCell(main_element_position))
+        if (_IsValidCell(main_element_position))
         {
           var target_value = m_field_data.At(main_element_position.Item1, main_element_position.Item2);
           for (int row_id = 0; row_id < m_field_configuration.height; ++row_id)
@@ -355,10 +355,10 @@ public class GameField : MonoBehaviour
 
   private void _HandleAbility(string i_ability_name, AbilityBase i_ability, Vector2 i_applied_position)
   {
-    if (!this._IsAvailable())
+    if (!_IsAvailable())
       return;
-    var main_element_position = this._GetElementPosition(Camera.main.ScreenToWorldPoint(i_applied_position));
-    if (!this._IsValidCell(main_element_position))
+    var main_element_position = _GetElementPosition(Camera.main.ScreenToWorldPoint(i_applied_position));
+    if (!_IsValidCell(main_element_position))
       return;
     m_game_info.SpentScore(i_ability.price);
     i_ability.NextPrice();
@@ -378,7 +378,7 @@ public class GameField : MonoBehaviour
           zone_to_remove.Item2.Item1, zone_to_remove.Item2.Item2);
         for (int row_id = zone_to_remove.Item1.Item1; row_id <= zone_to_remove.Item2.Item1; ++row_id)
           for (int column_id = zone_to_remove.Item1.Item2; column_id <= zone_to_remove.Item2.Item2; ++column_id)
-            if (this._IsValidCell(row_id, column_id))
+            if (_IsValidCell(row_id, column_id))
               m_field[row_id, column_id].Destroy();
         foreach (var element_info in removed_zone_info)
           m_game_info.UpdateScore(element_info.Key, element_info.Value);
@@ -395,12 +395,12 @@ public class GameField : MonoBehaviour
       default:
         return;
     }
-    this._ClearHighlighting();
+    _ClearHighlighting();
   }
 
   public void HandleStaticAbility(string i_name, StaticAbility i_ability)
   {
-    if (!this._IsAvailable())
+    if (!_IsAvailable())
       return;
     m_game_info.SpentScore(i_ability.price);
     i_ability.NextPrice();
@@ -428,9 +428,9 @@ public class GameField : MonoBehaviour
       case "Search":
         var moves = m_field_data.GetAllMoves();
         var move = moves[UnityEngine.Random.Range(0, moves.Count)];
-        this._ClearHighlighting();
-        this._HighlightElement(move.first);
-        this._HighlightElement(move.second);
+        _ClearHighlighting();
+        _HighlightElement(move.first);
+        _HighlightElement(move.second);
         Invoke("_ClearHighlighting", 1);
         break;
       default:
@@ -476,7 +476,7 @@ public class GameField : MonoBehaviour
         m_field[position.Item1, position.Item2].UpdateSelection(false);
       m_selected_elements.Clear();
       if (distance == 1)
-        this._MakeMove(first, second);
+        _MakeMove(first, second);
     }
   }
 
@@ -692,10 +692,10 @@ public class GameField : MonoBehaviour
 
     // Init input handler callbacks
     var input_handler_component = m_input_handler.GetComponent<GameFieldInputHandler>();
-    input_handler_component.on_input_down = this._HandlePointerDown;
-    input_handler_component.on_input_up = this._HandlePointerUp;
-    input_handler_component.on_ability_move = this._HandleAbilityMove;
-    input_handler_component.on_ability_apply = this._HandleAbility;
+    input_handler_component.on_input_down = _HandlePointerDown;
+    input_handler_component.on_input_up = _HandlePointerUp;
+    input_handler_component.on_ability_move = _HandleAbilityMove;
+    input_handler_component.on_ability_apply = _HandleAbility;
   }
 
   private void _InitCameraViewport()

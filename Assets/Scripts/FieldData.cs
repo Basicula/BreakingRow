@@ -140,7 +140,7 @@ public class FieldData
 
   public bool HasGroups()
   {
-    return this._GetCrossGroups().Count > 0;
+    return _GetCrossGroups().Count > 0;
   }
 
   public bool HasEmptyCells()
@@ -264,7 +264,7 @@ public class FieldData
       for (int column_id = 0; column_id < m_field_configuration.width; ++column_id)
         if (m_field[row_id, column_id] == m_empty_cell_value)
         {
-          m_field[row_id, column_id] = this._GetRandomValue();
+          m_field[row_id, column_id] = _GetRandomValue();
           created.Add((row_id, column_id));
         }
     return created;
@@ -327,8 +327,8 @@ public class FieldData
           if (!is_valid_move(new_move))
             continue;
           SwapCells(row_id, column_id, neighbor_row_id, neighbor_column_id);
-          var first_cross_group = this._CrossGroupAt(row_id, column_id);
-          var second_cross_group = this._CrossGroupAt(neighbor_row_id, neighbor_column_id);
+          var first_cross_group = _CrossGroupAt(row_id, column_id);
+          var second_cross_group = _CrossGroupAt(neighbor_row_id, neighbor_column_id);
           if (first_cross_group.Count > 0 || second_cross_group.Count > 0)
           {
             new_move.strike = Math.Max(first_cross_group.Count, second_cross_group.Count);
@@ -343,8 +343,8 @@ public class FieldData
   public int CheckMove((int, int) first, (int, int) second)
   {
     SwapCells(first.Item1, first.Item2, second.Item1, second.Item2);
-    var first_cross_group = this._CrossGroupAt(first.Item1, first.Item2);
-    var second_cross_group = this._CrossGroupAt(second.Item1, second.Item2);
+    var first_cross_group = _CrossGroupAt(first.Item1, first.Item2);
+    var second_cross_group = _CrossGroupAt(second.Item1, second.Item2);
     SwapCells(first.Item1, first.Item2, second.Item1, second.Item2);
     return Convert.ToInt32(first_cross_group.Count > 0) + Convert.ToInt32(second_cross_group.Count > 0);
   }
@@ -463,7 +463,7 @@ public class FieldData
       {
         if (taken[row_id, column_id])
           continue;
-        var group = this._CrossGroupAt(row_id, column_id);
+        var group = _CrossGroupAt(row_id, column_id);
         if (group.Count == 0)
           continue;
         foreach (var element in group)
