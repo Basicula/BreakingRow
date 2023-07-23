@@ -21,7 +21,7 @@ public class GameModeSelection : MonoBehaviour, IPointerDownHandler, IPointerUpH
 
   void Start()
   {
-    m_current_game_mode_id = 0;
+    m_current_game_mode_id = 1;
 
     m_game_mode_infos = new List<GameModeInfo>();
     m_game_mode_infos.Add(new GameModeInfo
@@ -59,8 +59,8 @@ public class GameModeSelection : MonoBehaviour, IPointerDownHandler, IPointerUpH
       game_mode_info_instance.transform.GetChild(0).GetChild(0).GetComponent<TMP_Text>().text = game_mode_info.name;
       game_mode_info_instance.transform.GetChild(1).GetChild(0).GetComponent<TMP_Text>().text = game_mode_info.description;
       var rect_transform = game_mode_info_instance.GetComponent<RectTransform>();
-      rect_transform.anchorMin = new Vector2(0.15f, 0.25f);
-      rect_transform.anchorMax = new Vector2(0.85f, 0.9f);
+      rect_transform.anchorMin = new Vector2(0.15f, 0.15f);
+      rect_transform.anchorMax = new Vector2(0.85f, 0.95f);
     }
 
     StartCoroutine(_ChangeCurrentMode(0));
