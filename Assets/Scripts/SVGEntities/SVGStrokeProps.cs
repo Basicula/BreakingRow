@@ -11,6 +11,7 @@
 
   public string GetXML()
   {
+    System.Globalization.CultureInfo.CurrentCulture = System.Globalization.CultureInfo.InvariantCulture;
     if (stroke_width == 0 || stroke_color == "none")
       return "";
     return $"stroke-width=\"{stroke_width}\" stroke=\"{stroke_color}\" ";
