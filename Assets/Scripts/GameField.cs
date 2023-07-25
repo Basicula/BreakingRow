@@ -496,7 +496,7 @@ public class GameField : MonoBehaviour
     background.transform.localPosition = m_input_handler.transform.localPosition;
     var sprite_renderer = background.AddComponent<SpriteRenderer>();
     sprite_renderer.sprite = sprite;
-    sprite_renderer.sortingOrder = -1;
+    sprite_renderer.sortingOrder = 0;
   }
 
   private List<FieldData.GroupDetails> _GetHoles()
@@ -676,7 +676,7 @@ public class GameField : MonoBehaviour
     holes_stroke.transform.localPosition = m_input_handler.transform.localPosition;
     var sprite_renderer = holes_stroke.AddComponent<SpriteRenderer>();
     sprite_renderer.sprite = stroke_sprite;
-    sprite_renderer.sortingOrder = 1;
+    sprite_renderer.sortingOrder = 2;
   }
 
   private void _InitInputHandler()
