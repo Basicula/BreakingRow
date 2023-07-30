@@ -496,7 +496,7 @@ public class GameField : MonoBehaviour
     background.transform.localPosition = m_input_handler.transform.localPosition;
     var sprite_renderer = background.AddComponent<SpriteRenderer>();
     sprite_renderer.sprite = sprite;
-    sprite_renderer.sortingOrder = 0;
+    sprite_renderer.sortingOrder = -1;
   }
 
   private List<FieldData.GroupDetails> _GetHoles()
