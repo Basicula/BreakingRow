@@ -1,7 +1,5 @@
-using System.IO;
 using System.Collections.Generic;
 using UnityEngine;
-using Unity.VectorGraphics;
 
 public class ElementStyleProvider
 {
@@ -27,6 +25,11 @@ public class ElementStyleProvider
       "#3DFF53", "#FF4828", "#0008FF", "#14FFF3", "#FF05FA",
       "#FFFB28", "#FF6D0A", "#CB0032", "#00990A", "#990054"
     };
+    // m_colors = new string[10]
+    // {
+    //   "#111111", "#222222", "#333333", "#444444", "#555555",
+    //   "#666666", "#777777", "#888888", "#999999", "#aaaaaa"
+    // };
     m_sprite_cache = new Dictionary<int, ElementProps>();
 
     var shape_provider = new ShapeProvider(size, m_line_width);
@@ -123,39 +126,31 @@ public class ElementStyleProvider
     }
     SVGPath path = m_paths[value % m_paths.Count];
     path.fill_color = m_colors[value % m_colors.Length];
-    path.stroke_color = "#000000";
-    path.stroke_width = m_line_width;
+    path.stroke_props = new SVGStrokeProps("#000000", m_line_width);
     svg.Add(path);
-    const string svg_header = "<?xml version=\"1.0\" encoding=\"utf - 8\"?>";
-    string svg_string = svg_header + svg.GetXML();
-    using StringReader textReader = new StringReader(svg_string);
-    var sceneInfo = SVGParser.ImportSVG(textReader);
-    var geometries = VectorUtils.TessellateScene(sceneInfo.Scene, new VectorUtils.TessellationOptions
-    {
-      StepDistance = m_size / 100,
-      SamplingStepSize = m_size / 100,
-      MaxCordDeviation = 0.0f,
-      MaxTanAngleDeviation = 0.0f
-    });
 
     var element_props = new ElementProps();
-
-    if (value > 20)
-    {
-      char[] exponents = new char[10] { '⁰', '¹', '²', '³', '⁴', '⁵', '⁶', '⁷', '⁸', '⁹' };
-      string exponent = "";
-      while (value > 0)
-      {
-        exponent = exponents[value % 10] + exponent;
-        value /= 10;
-      }
-      element_props.number = $"2{exponent}";
-    }
-    else
-      element_props.number = Mathf.FloorToInt(Mathf.Pow(2, value)).ToString();
-    element_props.sprite = VectorUtils.BuildSprite(geometries, 1, VectorUtils.Alignment.Center, Vector2.zero, 128, false);
+    _FillElementNumberText(ref element_props, value);
+    element_props.sprite = SVG.BuildSprite(svg, m_size / 100, m_size / 100);
     element_props.text_zone_size = m_size * 0.5f;
     m_sprite_cache[value] = element_props;
     return m_sprite_cache[value];
+  }
+
+  private void _FillElementNumberText(ref ElementProps io_element_props, int i_value)
+  {
+    if (i_value > 20)
+    {
+      char[] exponents = new char[10] { '⁰', '¹', '²', '³', '⁴', '⁵', '⁶', '⁷', '⁸', '⁹' };
+      string exponent = "";
+      while (i_value > 0)
+      {
+        exponent = exponents[i_value % 10] + exponent;
+        i_value /= 10;
+      }
+      io_element_props.number = $"2{exponent}";
+    }
+    else
+      io_element_props.number = Mathf.FloorToInt(Mathf.Pow(2, i_value)).ToString();
   }
 }

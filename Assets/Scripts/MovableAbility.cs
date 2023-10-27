@@ -30,8 +30,8 @@ public class MovableAbility : AbilityBase, IDragHandler, IBeginDragHandler, IEnd
 
   protected override void _Init()
   {
-    m_image_transform = transform.GetChild(0).gameObject.GetComponent<RectTransform>();
-    m_canvas_group = transform.GetChild(0).gameObject.GetComponent<CanvasGroup>();
+    m_image_transform = transform.GetChild(0).GetChild(0).gameObject.GetComponent<RectTransform>();
+    m_canvas_group = transform.GetChild(0).GetChild(0).gameObject.GetComponent<CanvasGroup>();
     m_original_image_position = m_image_transform.anchoredPosition;
   }
 }

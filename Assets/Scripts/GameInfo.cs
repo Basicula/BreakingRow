@@ -7,11 +7,11 @@ public class GameInfo : MonoBehaviour
 {
   [SerializeReference] private TMP_Text score_text;
   [SerializeReference] private TMP_Text moves_count_text;
-  [SerializeReference] private TMP_Text highest_score_text;
+  [SerializeReference] private TMP_Text best_score_text;
 
   private int m_score;
   private int m_moves_count;
-  private int m_highest_score;
+  private int m_best_score;
 
   private string m_save_file_path;
   private readonly Dictionary<int, int> m_score_bonuses = new() { { 3, 1 }, { 4, 2 }, { 5, 5 }, { 6, 5 }, { 7, 10 } };
@@ -20,7 +20,7 @@ public class GameInfo : MonoBehaviour
   {
     m_score = 0;
     m_moves_count = 0;
-    m_highest_score = 0;
+    m_best_score = 0;
     m_save_file_path = Application.persistentDataPath + $"/{SceneManager.GetActiveScene().name}GameInfo.json";
     _Load();
     _Update();
@@ -34,8 +34,8 @@ public class GameInfo : MonoBehaviour
     else if (i_count > 2)
       bonus_multiplier = m_score_bonuses[i_count];
     m_score += Mathf.FloorToInt(Mathf.Pow(2, i_value)) * i_count * bonus_multiplier;
-    if (m_score > m_highest_score)
-      m_highest_score = m_score;
+    if (m_score > m_best_score)
+      m_best_score = m_score;
     _Update();
     _Save();
   }
@@ -52,7 +52,7 @@ public class GameInfo : MonoBehaviour
     set
     {
       m_moves_count = value;
-      this._Update();
+      _Update();
     }
   }
 
@@ -73,13 +73,13 @@ public class GameInfo : MonoBehaviour
   {
     score_text.text = m_score.ToString();
     moves_count_text.text = m_moves_count.ToString();
-    highest_score_text.text = m_highest_score.ToString();
+    best_score_text.text = m_best_score.ToString();
   }
 
   private struct SerializableData
   {
     public int score;
-    public int highest_score;
+    public int best_score;
   }
 
   private void _Load()
@@ -88,14 +88,14 @@ public class GameInfo : MonoBehaviour
     if (!SaveLoad.Load(ref data, m_save_file_path))
       return;
     m_score = data.score;
-    m_highest_score = data.highest_score;
+    m_best_score = data.best_score;
   }
 
   private void _Save()
   {
     var data = new SerializableData();
     data.score = m_score;
-    data.highest_score = m_highest_score;
+    data.best_score = m_best_score;
     SaveLoad.Save(data, m_save_file_path);
   }
 }

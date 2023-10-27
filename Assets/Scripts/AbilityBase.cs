@@ -39,7 +39,7 @@ abstract public class AbilityBase : MonoBehaviour
         break;
     }
     _StartCooldown(Time.time);
-    this._Update();
+    _Update();
   }
 
   abstract protected void _Init();
@@ -47,10 +47,10 @@ abstract public class AbilityBase : MonoBehaviour
   private void Start()
   {
     m_button = gameObject.GetComponent<Button>();
-    m_price_text = transform.GetChild(2).gameObject.GetComponent<TMP_Text>();
-    m_cooldown_overlay = transform.GetChild(3).gameObject.GetComponent<Image>();
-    m_cooldown_timer = transform.GetChild(4).gameObject.GetComponent<TMP_Text>();
-    this._Init();
+    m_price_text = transform.GetChild(0).GetChild(2).gameObject.GetComponent<TMP_Text>();
+    m_cooldown_overlay = transform.GetChild(0).GetChild(3).gameObject.GetComponent<Image>();
+    m_cooldown_timer = transform.GetChild(0).GetChild(4).gameObject.GetComponent<TMP_Text>();
+    _Init();
 
     m_save_file_path = Application.persistentDataPath + $"/{SceneManager.GetActiveScene().name}{gameObject.name}Ability.json";
 
@@ -61,7 +61,7 @@ abstract public class AbilityBase : MonoBehaviour
     }
     else
       m_cooldown_start_time = Time.time - m_cooldown_time;
-    this._Update();
+    _Update();
   }
 
   private void Update()
@@ -87,7 +87,8 @@ abstract public class AbilityBase : MonoBehaviour
   public void Reset()
   {
     m_current_price = m_starting_price;
-    this._Update();
+    m_cooldown_start_time = -2 * m_cooldown_time;
+    _Update();
   }
 
   public int price
@@ -97,7 +98,7 @@ abstract public class AbilityBase : MonoBehaviour
   private void _Update()
   {
     m_price_text.text = m_current_price.ToString();
-    this._Save();
+    _Save();
   }
 
   private void _StartCooldown(float i_custom_start)
