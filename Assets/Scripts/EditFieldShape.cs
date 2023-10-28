@@ -40,17 +40,7 @@ public class EditFieldShape : MonoBehaviour, IPointerClickHandler, IDragHandler,
       {
         var tile = new GameObject();
         var image = tile.AddComponent<RawImage>();
-        switch (cells[row_id, column_id])
-        {
-          case FieldConfiguration.CellType.Hole:
-            image.color = Color.white;
-            break;
-          case FieldConfiguration.CellType.Element:
-            image.color = Color.black;
-            break;
-          default:
-            throw new NotImplementedException();
-        }
+        image.color = cells[row_id, column_id] ? Color.black : Color.white;
         tile.transform.SetParent(transform);
         var tile_transform = tile.GetComponent<RectTransform>();
         tile_transform.sizeDelta = new Vector2(tile_size, tile_size);
@@ -96,17 +86,17 @@ public class EditFieldShape : MonoBehaviour, IPointerClickHandler, IDragHandler,
     _ToggleTile(tile_position);
   }
 
-  public FieldConfiguration.CellType[,] GetCells()
+  public bool[,] GetCells()
   {
-    var cells = new FieldConfiguration.CellType[m_field_configuration.height, m_field_configuration.width];
+    var cells = new bool[m_field_configuration.height, m_field_configuration.width];
     for (int row_id = 0; row_id < m_field_configuration.height; ++row_id)
       for (int column_id = 0; column_id < m_field_configuration.width; ++column_id)
       {
         var color = m_tiles[row_id, column_id].GetComponent<RawImage>().color;
         if (color == Color.black)
-          cells[row_id, column_id] = FieldConfiguration.CellType.Element;
+          cells[row_id, column_id] = true;
         else if (color == Color.white)
-          cells[row_id, column_id] = FieldConfiguration.CellType.Hole;
+          cells[row_id, column_id] = false;
       }
     return cells;
   }
@@ -133,12 +123,8 @@ public class EditFieldShape : MonoBehaviour, IPointerClickHandler, IDragHandler,
       {
         var x = column_id - m_field_configuration.width / 2.0f + 0.5;
         var y = row_id - m_field_configuration.height / 2.0f + 0.5;
-        FieldConfiguration.CellType cell_type;
-        if (x * x + y * y <= sqr_radius)
-          cell_type = FieldConfiguration.CellType.Element;
-        else
-          cell_type = FieldConfiguration.CellType.Hole;
-        m_field_configuration.SetCellType(row_id, column_id, cell_type);
+        bool is_exists_element = x * x + y * y <= sqr_radius;
+        m_field_configuration.ElementAt(row_id, column_id, is_exists_element);
       }
   }
 
@@ -149,17 +135,7 @@ public class EditFieldShape : MonoBehaviour, IPointerClickHandler, IDragHandler,
       for (int column_id = 0; column_id < m_field_configuration.width; ++column_id)
       {
         var image = m_tiles[row_id, column_id].GetComponent<RawImage>();
-        switch (cells[row_id, column_id])
-        {
-          case FieldConfiguration.CellType.Hole:
-            image.color = Color.white;
-            break;
-          case FieldConfiguration.CellType.Element:
-            image.color = Color.black;
-            break;
-          default:
-            throw new NotImplementedException();
-        }
+        image.color = cells[row_id, column_id] ? Color.black : Color.white;
       }
   }
 

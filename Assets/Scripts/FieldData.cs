@@ -119,7 +119,7 @@ public class FieldData
         var group = new List<(int, int)>();
         var to_check = new Queue<(int, int)>();
         to_check.Enqueue((row_id, column_id));
-        while(to_check.Count > 0)
+        while (to_check.Count > 0)
         {
           var (row, column) = to_check.Dequeue();
           if (row < 0 || column < 0 || row >= m_field_configuration.height || column >= m_field_configuration.width)
@@ -566,16 +566,8 @@ public class FieldData
     _InitArray(m_field, _GetRandomValue);
     for (int row_id = 0; row_id < m_field_configuration.height; ++row_id)
       for (int column_id = 0; column_id < m_field_configuration.width; ++column_id)
-        switch (m_field_configuration.GetCells()[row_id, column_id])
-        {
-          case FieldConfiguration.CellType.Hole:
-            m_field[row_id, column_id] = m_hole_cell_value;
-            break;
-          case FieldConfiguration.CellType.Element:
-            break;
-          default:
-            throw new NotImplementedException();
-        }
+        if (!m_field_configuration.GetCells()[row_id, column_id])
+          m_field[row_id, column_id] = m_hole_cell_value;
     while (true)
     {
       var removed_groups_sizes = _RemoveGroups();
@@ -597,7 +589,7 @@ public class FieldData
     public int height;
     public int active_elements_count;
     public int[] field;
-    public string[] cells;
+    public bool[] cells;
     public int[] values_interval;
     public float[] values_probability_mask;
     public string mode;
@@ -618,8 +610,10 @@ public class FieldData
     for (int row_id = 0; row_id < m_field_configuration.height; ++row_id)
       for (int column_id = 0; column_id < m_field_configuration.width; ++column_id)
       {
-        m_field[row_id, column_id] = data.field[row_id * m_field_configuration.width + column_id];
-        m_field_configuration.SetCellType(row_id, column_id, Enum.Parse<FieldConfiguration.CellType>(data.cells[row_id * m_field_configuration.width + column_id]));
+        bool element_present = data.cells[row_id * m_field_configuration.width + column_id];
+        m_field_configuration.ElementAt(row_id, column_id, element_present);
+        if (element_present)
+          m_field[row_id, column_id] = data.field[row_id * m_field_configuration.width + column_id];
       }
     m_values_interval = data.values_interval;
     m_values_probability_interval = data.values_probability_mask;
@@ -636,11 +630,11 @@ public class FieldData
     data.height = m_field_configuration.height;
     data.active_elements_count = m_field_configuration.active_elements_count;
     data.field = m_field.Cast<int>().ToArray();
-    data.cells = new string[data.width * data.height];
+    data.cells = new bool[data.width * data.height];
     var cells = m_field_configuration.GetCells();
     for (int row_id = 0; row_id < m_field_configuration.height; ++row_id)
       for (int column_id = 0; column_id < m_field_configuration.width; ++column_id)
-        data.cells[row_id * data.width + column_id] = Enum.GetName(typeof(FieldConfiguration.CellType), cells[row_id, column_id]);
+        data.cells[row_id * data.width + column_id] = cells[row_id, column_id];
     data.values_interval = m_values_interval;
     data.values_probability_mask = m_values_probability_interval;
     data.mode = Enum.GetName(typeof(FieldConfiguration.Mode), m_field_configuration.mode);

@@ -24,12 +24,6 @@ public class FieldConfiguration
     SpawnThenMove
   }
 
-  public enum CellType
-  {
-    Hole,
-    Element
-  }
-
   [SerializeField] public int width;
   [SerializeField] public int height;
   [SerializeField] public int active_elements_count;
@@ -38,9 +32,9 @@ public class FieldConfiguration
   [SerializeField] public MoveDirection move_direction;
   [SerializeField] public SpawnMoveScenario spawn_move_scenario;
 
-  private CellType[,] m_cells;
+  private bool[,] m_cells;
 
-  public CellType[,] GetCells()
+  public bool[,] GetCells()
   {
     if (m_cells is null)
       InitCells();
@@ -49,17 +43,17 @@ public class FieldConfiguration
     return m_cells;
   }
 
-  public void InitCells(CellType i_type = CellType.Element)
+  public void InitCells()
   {
-    m_cells = new CellType[height, width];
+    m_cells = new bool[height, width];
     for (int row_id = 0; row_id < height; ++row_id)
       for (int column_id = 0; column_id < width; ++column_id)
-        m_cells[row_id, column_id] = i_type;
+        m_cells[row_id, column_id] = true;
   }
 
-  public void SetCellType(int i_row, int i_column, CellType i_type)
+  public void ElementAt(int i_row, int i_column, bool i_exists)
   {
-    m_cells[i_row, i_column] = i_type;
+    m_cells[i_row, i_column] = i_exists;
   }
 
   public FieldConfiguration Clone()
@@ -71,7 +65,7 @@ public class FieldConfiguration
     clone.mode = mode;
     clone.spawn_move_scenario = spawn_move_scenario;
     clone.move_direction = move_direction;
-    clone.m_cells = (CellType[,])m_cells.Clone();
+    clone.m_cells = (bool[,])m_cells.Clone();
     return clone;
   }
 }
