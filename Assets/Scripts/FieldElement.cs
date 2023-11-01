@@ -1,4 +1,6 @@
-[System.Serializable]
+using System;
+
+[Serializable]
 public class FieldElement
 {
   public int value;
@@ -56,5 +58,22 @@ public class FieldElement
       bool.Parse(attributes[5]),
       int.Parse(attributes[6])
     );
+  }
+
+  public override bool Equals(object obj)
+  {
+    return obj is FieldElement element &&
+           id == element.id &&
+           value == element.value &&
+           interactable == element.interactable &&
+           movable == element.movable &&
+           destracable == element.destracable &&
+           combinable == element.combinable &&
+           destroyable == element.destroyable;
+  }
+
+  public override int GetHashCode()
+  {
+    return HashCode.Combine(value, id, interactable, movable, destracable, combinable, destroyable);
   }
 }
