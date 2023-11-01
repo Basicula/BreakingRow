@@ -61,7 +61,7 @@ public class Configurations : MonoBehaviour
     new_field_configuration.height = m_height_input.value;
     if (m_width_input.value != m_game_field.field_configuration.width ||
       m_height_input.value != m_game_field.field_configuration.height)
-      new_field_configuration.InitCells();
+      new_field_configuration.InitCellsConfiguration();
     new_field_configuration.active_elements_count = m_active_elements_count_input.value;
     var spawn_move_scenario_option = m_spawn_move_scenario.options[m_spawn_move_scenario.value].text;
     new_field_configuration.spawn_move_scenario = System.Enum.Parse<FieldConfiguration.SpawnMoveScenario>(spawn_move_scenario_option);
