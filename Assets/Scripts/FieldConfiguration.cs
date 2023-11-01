@@ -48,7 +48,7 @@ public class FieldConfiguration
     m_cells_configuration = new int[height, width];
     for (int row_id = 0; row_id < height; ++row_id)
       for (int column_id = 0; column_id < width; ++column_id)
-        m_cells_configuration[row_id, column_id] = FieldElementsFactory.common_element_id;
+        m_cells_configuration[row_id, column_id] = FieldElementsFactory.common_element_class_id;
   }
 
   public void ElementAt(int i_row, int i_column, int i_element_id)

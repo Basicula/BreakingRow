@@ -21,8 +21,8 @@ public class EditFieldShape : MonoBehaviour, IPointerClickHandler, IDragHandler,
   private bool[,] m_drag_visited_tiles;
 
   private readonly Dictionary<int, Color> m_tile_color_by_element_id = new Dictionary<int, Color> {
-    { FieldElementsFactory.common_element_id, Color.black },
-    { FieldElementsFactory.hole_element_id, Color.white },
+    { FieldElementsFactory.common_element_class_id, Color.black },
+    { FieldElementsFactory.hole_element_class_id, Color.white },
   };
 
   public void Init(FieldConfiguration i_field_configuration)
@@ -127,7 +127,7 @@ public class EditFieldShape : MonoBehaviour, IPointerClickHandler, IDragHandler,
       {
         var x = column_id - m_field_configuration.width / 2.0f + 0.5;
         var y = row_id - m_field_configuration.height / 2.0f + 0.5;
-        int element_id = x * x + y * y <= sqr_radius ? FieldElementsFactory.common_element_id : FieldElementsFactory.hole_element_id;
+        int element_id = x * x + y * y <= sqr_radius ? FieldElementsFactory.common_element_class_id : FieldElementsFactory.hole_element_class_id;
         m_field_configuration.ElementAt(row_id, column_id, element_id);
       }
   }

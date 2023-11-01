@@ -569,9 +569,9 @@ public class FieldData
       {
         int element_id = cells_configuration[row_id, column_id];
         int value = FieldElementsFactory.undefined_value;
-        if (element_id == FieldElementsFactory.common_element_id)
+        if (element_id == FieldElementsFactory.common_element_class_id)
           value = _GetRandomValue();
-        m_field[row_id, column_id] = FieldElementsFactory.CreateElementById(element_id, value);
+        m_field[row_id, column_id] = FieldElementsFactory.CreateElementByClassId(element_id, value);
       }
     while (true)
     {
@@ -616,7 +616,7 @@ public class FieldData
       for (int column_id = 0; column_id < m_field_configuration.width; ++column_id)
       {
         m_field[row_id, column_id] = FieldElement.FromString(data.field[row_id * m_field_configuration.width + column_id]);
-        m_field_configuration.ElementAt(row_id, column_id, m_field[row_id, column_id].id);
+        m_field_configuration.ElementAt(row_id, column_id, m_field[row_id, column_id].class_id);
       }
     m_values_interval = data.values_interval;
     m_values_probability_interval = data.values_probability_mask;

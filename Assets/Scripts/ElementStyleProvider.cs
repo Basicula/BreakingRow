@@ -114,9 +114,9 @@ public class ElementStyleProvider
 
   public ElementProps Get(FieldElement i_element)
   {
-    switch(i_element.id)
+    switch(i_element.class_id)
     {
-      case FieldElementsFactory.common_element_id:
+      case FieldElementsFactory.common_element_class_id:
         return _GetPropsForCommonElement(i_element);
       default:
         throw new System.NotImplementedException();

@@ -4,7 +4,7 @@ using System;
 public class FieldElement
 {
   public int value;
-  public readonly int id;
+  public readonly int class_id;
   public readonly bool interactable; // If it can be moved by user, i.e. swap with other element that is also interactable
   public readonly bool movable; // If it can be moved by "gravity"
   public readonly bool destracable; // If it can be damaged via nearby elements combination
@@ -12,7 +12,7 @@ public class FieldElement
   public readonly bool destroyable; // If it can be damaged via special abilities
 
   public FieldElement(
-    int i_id,
+    int i_class_id,
     bool i_interactable,
     bool i_movable,
     bool i_destracable,
@@ -20,7 +20,7 @@ public class FieldElement
     bool i_destroyable,
     int i_value = FieldElementsFactory.undefined_value)
   {
-    id = i_id;
+    class_id = i_class_id;
     interactable = i_interactable;
     movable = i_movable;
     destracable = i_destracable;
@@ -31,7 +31,7 @@ public class FieldElement
 
   public static bool operator ==(FieldElement i_first, FieldElement i_second)
   {
-    return i_first.id == i_second.id &&
+    return i_first.class_id == i_second.class_id &&
       i_first.value == i_second.value &&
       i_first.interactable == i_second.interactable &&
       i_first.movable == i_second.movable &&
@@ -43,7 +43,7 @@ public class FieldElement
 
   public override string ToString()
   {
-    return $"{id},{interactable},{movable},{destracable},{combinable},{destroyable},{value}";
+    return $"{class_id},{interactable},{movable},{destracable},{combinable},{destroyable},{value}";
   }
 
   public static FieldElement FromString(string i_string)
@@ -60,10 +60,10 @@ public class FieldElement
     );
   }
 
-  public override bool Equals(object obj)
+  public override bool Equals(object i_obj)
   {
-    return obj is FieldElement element &&
-           id == element.id &&
+    return i_obj is FieldElement element &&
+           class_id == element.class_id &&
            value == element.value &&
            interactable == element.interactable &&
            movable == element.movable &&
@@ -74,6 +74,6 @@ public class FieldElement
 
   public override int GetHashCode()
   {
-    return HashCode.Combine(value, id, interactable, movable, destracable, combinable, destroyable);
+    return HashCode.Combine(value, class_id, interactable, movable, destracable, combinable, destroyable);
   }
 }
