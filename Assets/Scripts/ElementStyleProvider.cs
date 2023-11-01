@@ -12,7 +12,7 @@ public class ElementStyleProvider
 
   private string[] m_colors;
   private List<SVGPath> m_paths;
-  private Dictionary<int, ElementProps> m_sprite_cache;
+  private Dictionary<int, ElementProps> m_common_elements_sprite_cache;
   private float m_size;
   private float m_line_width;
 
@@ -30,7 +30,7 @@ public class ElementStyleProvider
     //   "#111111", "#222222", "#333333", "#444444", "#555555",
     //   "#666666", "#777777", "#888888", "#999999", "#aaaaaa"
     // };
-    m_sprite_cache = new Dictionary<int, ElementProps>();
+    m_common_elements_sprite_cache = new Dictionary<int, ElementProps>();
 
     var shape_provider = new ShapeProvider(size, m_line_width);
 
@@ -112,10 +112,22 @@ public class ElementStyleProvider
     };
   }
 
-  public ElementProps Get(int value)
+  public ElementProps Get(FieldElement i_element)
   {
-    if (m_sprite_cache.ContainsKey(value))
-      return m_sprite_cache[value];
+    switch(i_element.id)
+    {
+      case FieldElementsFactory.common_element_id:
+        return _GetPropsForCommonElement(i_element);
+      default:
+        throw new System.NotImplementedException();
+    }
+  }
+
+  private ElementProps _GetPropsForCommonElement(FieldElement i_element)
+  {
+    int value = i_element.value;
+    if (m_common_elements_sprite_cache.ContainsKey(value))
+      return m_common_elements_sprite_cache[value];
     SVG svg = new SVG();
     {
       // Unity ignores this information but leave it as it's needed for correct SVG
@@ -133,8 +145,8 @@ public class ElementStyleProvider
     _FillElementNumberText(ref element_props, value);
     element_props.sprite = SVG.BuildSprite(svg, m_size / 100, m_size / 100);
     element_props.text_zone_size = m_size * 0.5f;
-    m_sprite_cache[value] = element_props;
-    return m_sprite_cache[value];
+    m_common_elements_sprite_cache[value] = element_props;
+    return m_common_elements_sprite_cache[value];
   }
 
   private void _FillElementNumberText(ref ElementProps io_element_props, int i_value)
