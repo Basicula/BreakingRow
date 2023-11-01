@@ -11,7 +11,7 @@
 
   public static void Save<Data>(Data i_data, string i_path)
   {
-    var json = UnityEngine.JsonUtility.ToJson(i_data);
+    var json = UnityEngine.JsonUtility.ToJson(i_data, true);
     System.IO.File.WriteAllText(i_path, json);
   }
 
