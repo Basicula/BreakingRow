@@ -1,5 +1,4 @@
 using System.Collections.Generic;
-using System.Drawing;
 using UnityEngine;
 
 public class ElementStyleProvider
@@ -41,8 +40,10 @@ public class ElementStyleProvider
         return _GetPropsForCommonElement(i_element);
       case FieldElementsFactory.interactable_item_element_class_id:
         return _GetPropsForInteractableElement(i_element);
+      case FieldElementsFactory.hole_element_class_id:
+        return _GetPropsForHoleElement(i_element);
       default:
-        throw new System.NotImplementedException();
+        throw new System.NotImplementedException($"Element class id={i_element.class_id} hasn't implemented style props");
     }
   }
 
@@ -96,6 +97,11 @@ public class ElementStyleProvider
     element_props.text_zone_size = m_size * 0.5f;
     m_interactable_element_style_library.sprite_cache[value] = element_props;
     return m_interactable_element_style_library.sprite_cache[value];
+  }
+
+  private ElementProps _GetPropsForHoleElement(FieldElement i_element)
+  {
+    return new ElementProps();
   }
 
   private void _InitLibraries()
