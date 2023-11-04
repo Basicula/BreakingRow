@@ -626,9 +626,6 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   m_game_field: {fileID: 242188453}
-  m_shape_preset_selector: {fileID: 627700994}
-  m_field_element_selector: {fileID: 976662108}
-  m_shape_preset_apply: {fileID: 1734477224}
   m_field_shape_apply: {fileID: 2082707853}
 --- !u!1 &332941642
 GameObject:
@@ -2129,7 +2126,7 @@ MonoBehaviour:
   m_faceColor:
     serializedVersion: 2
     rgba: 4294967295
-  m_fontSize: 141.65
+  m_fontSize: 70.8
   m_fontSizeBase: 24
   m_fontWeight: 400
   m_enableAutoSizing: 1
@@ -2267,6 +2264,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: a5e6fa8eb2914b74b853f7dbe7880879, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  m_shape_preset_selector: {fileID: 627700994}
+  m_field_element_selector: {fileID: 976662108}
+  m_shape_preset_apply: {fileID: 1734477224}
 --- !u!1 &1254798544
 GameObject:
   m_ObjectHideFlags: 0

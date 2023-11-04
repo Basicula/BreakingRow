@@ -567,7 +567,7 @@ public class FieldData
     for (int row_id = 0; row_id < m_field_configuration.height; ++row_id)
       for (int column_id = 0; column_id < m_field_configuration.width; ++column_id)
       {
-        var element_type = (FieldElement.Type)cells_configuration[row_id, column_id];
+        var element_type = cells_configuration[row_id, column_id];
         int value = FieldElementsFactory.undefined_value;
         if (element_type == FieldElement.Type.Common)
           value = _GetRandomValue();

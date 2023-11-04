@@ -6,9 +6,6 @@ using UnityEngine.UI;
 public class Configurations : MonoBehaviour
 {
   [SerializeReference] private GameField m_game_field;
-  [SerializeReference] private TMP_Dropdown m_shape_preset_selector;
-  [SerializeReference] private TMP_Dropdown m_field_element_selector;
-  [SerializeReference] private Button m_shape_preset_apply;
   [SerializeReference] private Button m_field_shape_apply;
 
   private IntegerInput m_width_input;
@@ -86,20 +83,6 @@ public class Configurations : MonoBehaviour
         for (int column_id = 0; column_id < field_configuration.width; ++column_id)
           field_configuration.ElementAt(row_id, column_id, cells[row_id, column_id]);
       m_game_field.Init(field_configuration);
-    });
-
-    _InitDropdown(ref m_shape_preset_selector, EditFieldShape.ShapePreset.Circle);
-    m_shape_preset_apply.onClick.AddListener(() =>
-    {
-      var preset = m_shape_preset_selector.options[m_shape_preset_selector.value].text;
-      edit_field_shape.ApplyPreset(System.Enum.Parse<EditFieldShape.ShapePreset>(preset));
-    });
-
-    _InitDropdown(ref m_field_element_selector, edit_field_shape.element_type);
-    m_field_element_selector.onValueChanged.AddListener((option_id) =>
-    {
-      var field_element = m_field_element_selector.options[option_id].text;
-      edit_field_shape.element_type = System.Enum.Parse<FieldElement.Type>(field_element);
     });
   }
 }

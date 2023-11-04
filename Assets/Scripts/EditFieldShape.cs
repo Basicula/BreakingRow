@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using TMPro;
 using UnityEngine;
 using UnityEngine.EventSystems;
 using UnityEngine.UI;
@@ -12,6 +13,10 @@ public class EditFieldShape : MonoBehaviour, IPointerClickHandler, IDragHandler,
     Circle,
     Random
   }
+
+  [SerializeReference] private TMP_Dropdown m_shape_preset_selector;
+  [SerializeReference] private TMP_Dropdown m_field_element_selector;
+  [SerializeReference] private Button m_shape_preset_apply;
 
   private FieldConfiguration m_field_configuration;
 
@@ -57,7 +62,7 @@ public class EditFieldShape : MonoBehaviour, IPointerClickHandler, IDragHandler,
       {
         var tile = new GameObject();
         var image = tile.AddComponent<RawImage>();
-        image.color = m_tile_color_by_element_id[(FieldElement.Type)cells[row_id, column_id]];
+        image.color = m_tile_color_by_element_id[cells[row_id, column_id]];
         tile.transform.SetParent(transform);
         var tile_transform = tile.GetComponent<RectTransform>();
         tile_transform.sizeDelta = new Vector2(tile_size, tile_size);
@@ -68,10 +73,30 @@ public class EditFieldShape : MonoBehaviour, IPointerClickHandler, IDragHandler,
       }
   }
 
-  public FieldElement.Type element_type
+  public void Start()
   {
-    get { return m_current_element_type; }
-    set { m_current_element_type = value; }
+    var options = Enum.GetNames(typeof(ShapePreset)).ToList();
+    m_shape_preset_selector.ClearOptions();
+    m_shape_preset_selector.AddOptions(options);
+    var current_option_name = Enum.GetName(typeof(ShapePreset), ShapePreset.Circle);
+    m_shape_preset_selector.SetValueWithoutNotify(options.IndexOf(current_option_name));
+    m_shape_preset_apply.onClick.AddListener(() =>
+    {
+      var preset = m_shape_preset_selector.options[m_shape_preset_selector.value].text;
+      _ApplyPreset(Enum.Parse<ShapePreset>(preset));
+    });
+
+    options = Enum.GetNames(typeof(FieldElement.Type)).ToList();
+    options.Remove(Enum.GetName(typeof(FieldElement.Type), FieldElement.Type.Empty));
+    m_field_element_selector.ClearOptions();
+    m_field_element_selector.AddOptions(options);
+    current_option_name = Enum.GetName(typeof(FieldElement.Type), m_current_element_type);
+    m_shape_preset_selector.SetValueWithoutNotify(options.IndexOf(current_option_name));
+    m_field_element_selector.onValueChanged.AddListener((option_id) =>
+    {
+      var field_element = m_field_element_selector.options[option_id].text;
+      m_current_element_type = Enum.Parse<FieldElement.Type>(field_element);
+    });
   }
 
   public void Reset()
@@ -121,7 +146,7 @@ public class EditFieldShape : MonoBehaviour, IPointerClickHandler, IDragHandler,
     return cells;
   }
 
-  public void ApplyPreset(ShapePreset i_preset)
+  private void _ApplyPreset(ShapePreset i_preset)
   {
     switch (i_preset)
     {
@@ -153,13 +178,11 @@ public class EditFieldShape : MonoBehaviour, IPointerClickHandler, IDragHandler,
 
   private void _RandomPreset()
   {
+    var keys = m_tile_color_by_element_id.Keys.ToArray();
+    System.Random random = new System.Random();
     for (int row_id = 0; row_id < m_field_configuration.height; ++row_id)
       for (int column_id = 0; column_id < m_field_configuration.width; ++column_id)
-      {
-        var values = Enum.GetValues(typeof(FieldElement.Type));
-        System.Random random = new System.Random();
-        m_field_configuration.ElementAt(row_id, column_id, (FieldElement.Type)values.GetValue(random.Next(values.Length)));
-      }
+        m_field_configuration.ElementAt(row_id, column_id, keys[random.Next(keys.Length)]);
   }
 
   private void _UpdateTiles()
