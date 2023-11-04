@@ -9,7 +9,8 @@ public class EditFieldShape : MonoBehaviour, IPointerClickHandler, IDragHandler,
 {
   public enum ShapePreset
   {
-    Circle
+    Circle,
+    Random
   }
 
   public enum FieldElementType
@@ -133,6 +134,9 @@ public class EditFieldShape : MonoBehaviour, IPointerClickHandler, IDragHandler,
       case ShapePreset.Circle:
         _CircleShape();
         break;
+      case ShapePreset.Random:
+        _RandomPreset();
+        break;
       default:
         throw new NotImplementedException();
     }
@@ -150,6 +154,17 @@ public class EditFieldShape : MonoBehaviour, IPointerClickHandler, IDragHandler,
         var y = row_id - m_field_configuration.height / 2.0f + 0.5;
         int element_id = x * x + y * y <= sqr_radius ? FieldElementsFactory.common_element_class_id : FieldElementsFactory.hole_element_class_id;
         m_field_configuration.ElementAt(row_id, column_id, element_id);
+      }
+  }
+
+  private void _RandomPreset()
+  {
+    for (int row_id = 0; row_id < m_field_configuration.height; ++row_id)
+      for (int column_id = 0; column_id < m_field_configuration.width; ++column_id)
+      {
+        var values = Enum.GetValues(typeof(FieldElementType));
+        System.Random random = new System.Random();
+        m_field_configuration.ElementAt(row_id, column_id, (int)values.GetValue(random.Next(values.Length)));
       }
   }
 
