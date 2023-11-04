@@ -34,16 +34,16 @@ public class ElementStyleProvider
 
   public ElementProps Get(FieldElement i_element)
   {
-    switch (i_element.class_id)
+    switch (i_element.type)
     {
-      case FieldElementsFactory.common_element_class_id:
+      case FieldElement.Type.Common:
         return _GetPropsForCommonElement(i_element);
-      case FieldElementsFactory.interactable_item_element_class_id:
+      case FieldElement.Type.InteractableDestractable:
         return _GetPropsForInteractableElement(i_element);
-      case FieldElementsFactory.hole_element_class_id:
+      case FieldElement.Type.Hole:
         return _GetPropsForHoleElement(i_element);
       default:
-        throw new System.NotImplementedException($"Element class id={i_element.class_id} hasn't implemented style props");
+        throw new System.NotImplementedException($"Element class id={i_element.type} hasn't implemented style props");
     }
   }
 

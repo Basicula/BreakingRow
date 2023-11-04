@@ -99,7 +99,7 @@ public class Configurations : MonoBehaviour
     m_field_element_selector.onValueChanged.AddListener((option_id) =>
     {
       var field_element = m_field_element_selector.options[option_id].text;
-      edit_field_shape.element_type = System.Enum.Parse<EditFieldShape.FieldElementType>(field_element);
+      edit_field_shape.element_type = System.Enum.Parse<FieldElement.Type>(field_element);
     });
   }
 }

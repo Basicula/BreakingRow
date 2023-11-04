@@ -13,32 +13,26 @@ public class EditFieldShape : MonoBehaviour, IPointerClickHandler, IDragHandler,
     Random
   }
 
-  public enum FieldElementType
-  {
-    Element = FieldElementsFactory.common_element_class_id,
-    Hole = FieldElementsFactory.hole_element_class_id,
-    Interactable = FieldElementsFactory.interactable_item_element_class_id
-  }
-
   private FieldConfiguration m_field_configuration;
 
   private GameObject[,] m_tiles;
-  private FieldElementType m_current_element_type;
+  private FieldElement.Type m_current_element_type;
 
   private float m_grid_size;
   private Vector2 m_field_offset;
   private bool[,] m_drag_visited_tiles;
 
-  private readonly Dictionary<FieldElementType, Color> m_tile_color_by_element_id;
+  private readonly Dictionary<FieldElement.Type, Color> m_tile_color_by_element_id;
 
   public EditFieldShape()
   {
-    m_tile_color_by_element_id = new Dictionary<FieldElementType, Color> {
-      { FieldElementType.Element, Color.black },
-      { FieldElementType.Hole, Color.white },
-      { FieldElementType.Interactable, Color.blue },
+    m_tile_color_by_element_id = new Dictionary<FieldElement.Type, Color> {
+      { FieldElement.Type.Common, Color.black },
+      { FieldElement.Type.Hole, Color.white },
+      { FieldElement.Type.InteractableDestractable, Color.blue },
+      { FieldElement.Type.ImmobileDestractable, Color.yellow },
     };
-    m_current_element_type = FieldElementType.Element;
+    m_current_element_type = FieldElement.Type.Common;
   }
 
   public void Init(FieldConfiguration i_field_configuration)
@@ -63,7 +57,7 @@ public class EditFieldShape : MonoBehaviour, IPointerClickHandler, IDragHandler,
       {
         var tile = new GameObject();
         var image = tile.AddComponent<RawImage>();
-        image.color = m_tile_color_by_element_id[(FieldElementType)cells[row_id, column_id]];
+        image.color = m_tile_color_by_element_id[(FieldElement.Type)cells[row_id, column_id]];
         tile.transform.SetParent(transform);
         var tile_transform = tile.GetComponent<RectTransform>();
         tile_transform.sizeDelta = new Vector2(tile_size, tile_size);
@@ -74,7 +68,7 @@ public class EditFieldShape : MonoBehaviour, IPointerClickHandler, IDragHandler,
       }
   }
 
-  public FieldElementType element_type
+  public FieldElement.Type element_type
   {
     get { return m_current_element_type; }
     set { m_current_element_type = value; }
@@ -115,14 +109,14 @@ public class EditFieldShape : MonoBehaviour, IPointerClickHandler, IDragHandler,
     _ToggleTile(tile_position);
   }
 
-  public int[,] GetCells()
+  public FieldElement.Type[,] GetCells()
   {
-    var cells = new int[m_field_configuration.height, m_field_configuration.width];
+    var cells = new FieldElement.Type[m_field_configuration.height, m_field_configuration.width];
     for (int row_id = 0; row_id < m_field_configuration.height; ++row_id)
       for (int column_id = 0; column_id < m_field_configuration.width; ++column_id)
       {
         var color = m_tiles[row_id, column_id].GetComponent<RawImage>().color;
-        cells[row_id, column_id] = (int)m_tile_color_by_element_id.FirstOrDefault(pair => pair.Value == color).Key;
+        cells[row_id, column_id] = m_tile_color_by_element_id.FirstOrDefault(pair => pair.Value == color).Key;
       }
     return cells;
   }
@@ -152,8 +146,8 @@ public class EditFieldShape : MonoBehaviour, IPointerClickHandler, IDragHandler,
       {
         var x = column_id - m_field_configuration.width / 2.0f + 0.5;
         var y = row_id - m_field_configuration.height / 2.0f + 0.5;
-        int element_id = x * x + y * y <= sqr_radius ? FieldElementsFactory.common_element_class_id : FieldElementsFactory.hole_element_class_id;
-        m_field_configuration.ElementAt(row_id, column_id, element_id);
+        var element_type = x * x + y * y <= sqr_radius ? FieldElement.Type.Common : FieldElement.Type.Hole;
+        m_field_configuration.ElementAt(row_id, column_id, element_type);
       }
   }
 
@@ -162,9 +156,9 @@ public class EditFieldShape : MonoBehaviour, IPointerClickHandler, IDragHandler,
     for (int row_id = 0; row_id < m_field_configuration.height; ++row_id)
       for (int column_id = 0; column_id < m_field_configuration.width; ++column_id)
       {
-        var values = Enum.GetValues(typeof(FieldElementType));
+        var values = Enum.GetValues(typeof(FieldElement.Type));
         System.Random random = new System.Random();
-        m_field_configuration.ElementAt(row_id, column_id, (int)values.GetValue(random.Next(values.Length)));
+        m_field_configuration.ElementAt(row_id, column_id, (FieldElement.Type)values.GetValue(random.Next(values.Length)));
       }
   }
 
@@ -175,7 +169,7 @@ public class EditFieldShape : MonoBehaviour, IPointerClickHandler, IDragHandler,
       for (int column_id = 0; column_id < m_field_configuration.width; ++column_id)
       {
         var image = m_tiles[row_id, column_id].GetComponent<RawImage>();
-        image.color = m_tile_color_by_element_id[(FieldElementType)cells[row_id, column_id]];
+        image.color = m_tile_color_by_element_id[(FieldElement.Type)cells[row_id, column_id]];
       }
   }
 

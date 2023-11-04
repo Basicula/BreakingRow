@@ -32,9 +32,9 @@ public class FieldConfiguration
   [SerializeField] public MoveDirection move_direction;
   [SerializeField] public SpawnMoveScenario spawn_move_scenario;
 
-  private int[,] m_cells_configuration;
+  private FieldElement.Type[,] m_cells_configuration;
 
-  public int[,] GetCellsConfiguration()
+  public FieldElement.Type[,] GetCellsConfiguration()
   {
     if (m_cells_configuration is null)
       InitCellsConfiguration();
@@ -45,15 +45,15 @@ public class FieldConfiguration
 
   public void InitCellsConfiguration()
   {
-    m_cells_configuration = new int[height, width];
+    m_cells_configuration = new FieldElement.Type[height, width];
     for (int row_id = 0; row_id < height; ++row_id)
       for (int column_id = 0; column_id < width; ++column_id)
-        m_cells_configuration[row_id, column_id] = FieldElementsFactory.common_element_class_id;
+        m_cells_configuration[row_id, column_id] = FieldElement.Type.Common;
   }
 
-  public void ElementAt(int i_row, int i_column, int i_element_id)
+  public void ElementAt(int i_row, int i_column, FieldElement.Type i_type)
   {
-    m_cells_configuration[i_row, i_column] = i_element_id;
+    m_cells_configuration[i_row, i_column] = i_type;
   }
 
   public FieldConfiguration Clone()
@@ -65,7 +65,7 @@ public class FieldConfiguration
     clone.mode = mode;
     clone.spawn_move_scenario = spawn_move_scenario;
     clone.move_direction = move_direction;
-    clone.m_cells_configuration = (int[,])m_cells_configuration.Clone();
+    clone.m_cells_configuration = (FieldElement.Type[,])m_cells_configuration.Clone();
     return clone;
   }
 }

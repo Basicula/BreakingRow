@@ -13,8 +13,8 @@ public class FieldData
 
   private string m_save_file_path;
 
-  private static readonly FieldElement m_hole_element = FieldElementsFactory.CreateHoleElement();
-  private static readonly FieldElement m_empty_element = FieldElementsFactory.CreateEmptyElement();
+  private static readonly FieldElement m_hole_element = FieldElementsFactory.CreateElement(FieldElement.Type.Hole);
+  private static readonly FieldElement m_empty_element = FieldElementsFactory.CreateElement(FieldElement.Type.Empty);
 
   public FieldData(FieldConfiguration i_field_configuration, string i_custom_identificator = "")
   {
@@ -266,7 +266,7 @@ public class FieldData
       for (int column_id = 0; column_id < m_field_configuration.width; ++column_id)
         if (m_field[row_id, column_id] == m_empty_element)
         {
-          m_field[row_id, column_id] = FieldElementsFactory.CreateCommonElement(_GetRandomValue());
+          m_field[row_id, column_id] = FieldElementsFactory.CreateElement(FieldElement.Type.Common, _GetRandomValue());
           created.Add((row_id, column_id));
         }
     return created;
@@ -567,11 +567,11 @@ public class FieldData
     for (int row_id = 0; row_id < m_field_configuration.height; ++row_id)
       for (int column_id = 0; column_id < m_field_configuration.width; ++column_id)
       {
-        int element_id = cells_configuration[row_id, column_id];
+        var element_type = (FieldElement.Type)cells_configuration[row_id, column_id];
         int value = FieldElementsFactory.undefined_value;
-        if (element_id == FieldElementsFactory.common_element_class_id)
+        if (element_type == FieldElement.Type.Common)
           value = _GetRandomValue();
-        m_field[row_id, column_id] = FieldElementsFactory.CreateElementByClassId(element_id, value);
+        m_field[row_id, column_id] = FieldElementsFactory.CreateElement(element_type, value);
       }
     while (true)
     {
@@ -594,7 +594,6 @@ public class FieldData
     public int height;
     public int active_elements_count;
     public string[] field;
-    public int[] cells_configuration;
     public int[] values_interval;
     public float[] values_probability_mask;
     public string mode;
@@ -616,7 +615,7 @@ public class FieldData
       for (int column_id = 0; column_id < m_field_configuration.width; ++column_id)
       {
         m_field[row_id, column_id] = FieldElement.FromString(data.field[row_id * m_field_configuration.width + column_id]);
-        m_field_configuration.ElementAt(row_id, column_id, m_field[row_id, column_id].class_id);
+        m_field_configuration.ElementAt(row_id, column_id, m_field[row_id, column_id].type);
       }
     m_values_interval = data.values_interval;
     m_values_probability_interval = data.values_probability_mask;
@@ -633,13 +632,10 @@ public class FieldData
     data.height = m_field_configuration.height;
     data.active_elements_count = m_field_configuration.active_elements_count;
     data.field = new string[data.width * data.height];
-    data.cells_configuration = new int[data.width * data.height];
-    var cells = m_field_configuration.GetCellsConfiguration();
     for (int row_id = 0; row_id < m_field_configuration.height; ++row_id)
       for (int column_id = 0; column_id < m_field_configuration.width; ++column_id)
       {
         int flat_id = row_id * data.width + column_id;
-        data.cells_configuration[flat_id] = cells[row_id, column_id];
         data.field[flat_id] = m_field[row_id, column_id].ToString();
       }
     data.values_interval = m_values_interval;
