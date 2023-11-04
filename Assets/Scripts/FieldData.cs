@@ -28,7 +28,7 @@ public class FieldData
 
     //for (int row_id = 0; row_id < m_field_configuration.height; ++row_id)
     //  for (int column_id = 0; column_id < m_field_configuration.width; ++column_id)
-    //    m_field[row_id, column_id] = row_id * m_field_configuration.width + column_id;
+    //    m_field[row_id, column_id] = FieldElementsFactory.CreateCommonElement(row_id * m_field_configuration.width + column_id);
   }
 
   public FieldElement At(int row_id, int column_id)
@@ -156,7 +156,7 @@ public class FieldData
   {
     FieldElement from = m_field[i_from.Item1, i_from.Item2];
     FieldElement to = m_field[i_to.Item1, i_to.Item2];
-    return from.interactable && to.interactable && from.value >= 0 && to.value >= 0;
+    return from.interactable && to.interactable;
   }
 
   public void MoveElements()
@@ -244,7 +244,7 @@ public class FieldData
 
       if (values[curr_element.Item1, curr_element.Item2] == m_empty_element && empty_element == (-1, -1))
         empty_element = curr_element;
-      else if (values[curr_element.Item1, curr_element.Item2].value >= 0 && empty_element != (-1, -1))
+      else if (values[curr_element.Item1, curr_element.Item2].movable && empty_element != (-1, -1))
       {
         (values[curr_element.Item1, curr_element.Item2], values[empty_element.Item1, empty_element.Item2]) =
           (values[empty_element.Item1, empty_element.Item2], values[curr_element.Item1, curr_element.Item2]);

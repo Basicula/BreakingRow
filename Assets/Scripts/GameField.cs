@@ -762,10 +762,7 @@ public class GameField : MonoBehaviour
   private void _InitElement(int row_id, int column_id, bool i_with_animation = true)
   {
     var element = m_field_data.At(row_id, column_id);
-    if (element.class_id == FieldElementsFactory.common_element_class_id)
-      m_field[row_id, column_id].Create(m_element_style_provider.Get(element), i_with_animation);
-    else
-      m_field[row_id, column_id].Destroy();
+    m_field[row_id, column_id].Create(m_element_style_provider.Get(element), i_with_animation);
     m_field[row_id, column_id].transform.GetChild(2).GetComponent<SpriteRenderer>().size = new Vector2(m_element_size, m_element_size);
     m_field[row_id, column_id].transform.GetChild(3).GetComponent<SpriteRenderer>().size = new Vector2(m_grid_step, m_grid_step);
   }
