@@ -7,7 +7,9 @@ public class Configurations : MonoBehaviour
 {
   [SerializeReference] private GameField m_game_field;
   [SerializeReference] private TMP_Dropdown m_shape_preset_selector;
+  [SerializeReference] private TMP_Dropdown m_field_element_selector;
   [SerializeReference] private Button m_shape_preset_apply;
+  [SerializeReference] private Button m_field_shape_apply;
 
   private IntegerInput m_width_input;
   private IntegerInput m_height_input;
@@ -76,7 +78,7 @@ public class Configurations : MonoBehaviour
   {
     var edit_field_shape = transform.GetChild(8).GetChild(0).GetComponent<EditFieldShape>();
     edit_field_shape.Init(m_game_field.field_configuration.Clone());
-    transform.GetChild(8).GetChild(1).GetComponent<Button>().onClick.AddListener(() =>
+    m_field_shape_apply.onClick.AddListener(() =>
     {
       var field_configuration = m_game_field.field_configuration.Clone();
       var cells = edit_field_shape.GetCells();
@@ -91,6 +93,13 @@ public class Configurations : MonoBehaviour
     {
       var preset = m_shape_preset_selector.options[m_shape_preset_selector.value].text;
       edit_field_shape.ApplyPreset(System.Enum.Parse<EditFieldShape.ShapePreset>(preset));
+    });
+
+    _InitDropdown(ref m_field_element_selector, edit_field_shape.element_type);
+    m_field_element_selector.onValueChanged.AddListener((option_id) =>
+    {
+      var field_element = m_field_element_selector.options[option_id].text;
+      edit_field_shape.element_type = System.Enum.Parse<EditFieldShape.FieldElementType>(field_element);
     });
   }
 }

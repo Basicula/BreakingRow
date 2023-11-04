@@ -12,18 +12,33 @@ public class EditFieldShape : MonoBehaviour, IPointerClickHandler, IDragHandler,
     Circle
   }
 
+  public enum FieldElementType
+  {
+    Element = FieldElementsFactory.common_element_class_id,
+    Hole = FieldElementsFactory.hole_element_class_id,
+    Interactable = FieldElementsFactory.interactable_item_element_class_id
+  }
+
   private FieldConfiguration m_field_configuration;
 
   private GameObject[,] m_tiles;
+  private FieldElementType m_current_element_type;
 
   private float m_grid_size;
   private Vector2 m_field_offset;
   private bool[,] m_drag_visited_tiles;
 
-  private readonly Dictionary<int, Color> m_tile_color_by_element_id = new Dictionary<int, Color> {
-    { FieldElementsFactory.common_element_class_id, Color.black },
-    { FieldElementsFactory.hole_element_class_id, Color.white },
-  };
+  private readonly Dictionary<FieldElementType, Color> m_tile_color_by_element_id;
+
+  public EditFieldShape()
+  {
+    m_tile_color_by_element_id = new Dictionary<FieldElementType, Color> {
+      { FieldElementType.Element, Color.black },
+      { FieldElementType.Hole, Color.white },
+      { FieldElementType.Interactable, Color.blue },
+    };
+    m_current_element_type = FieldElementType.Element;
+  }
 
   public void Init(FieldConfiguration i_field_configuration)
   {
@@ -47,7 +62,7 @@ public class EditFieldShape : MonoBehaviour, IPointerClickHandler, IDragHandler,
       {
         var tile = new GameObject();
         var image = tile.AddComponent<RawImage>();
-        image.color = m_tile_color_by_element_id[cells[row_id, column_id]];
+        image.color = m_tile_color_by_element_id[(FieldElementType)cells[row_id, column_id]];
         tile.transform.SetParent(transform);
         var tile_transform = tile.GetComponent<RectTransform>();
         tile_transform.sizeDelta = new Vector2(tile_size, tile_size);
@@ -56,6 +71,12 @@ public class EditFieldShape : MonoBehaviour, IPointerClickHandler, IDragHandler,
         tile_transform.anchorMax = new Vector2(0, 0);
         m_tiles[row_id, column_id] = tile;
       }
+  }
+
+  public FieldElementType element_type
+  {
+    get { return m_current_element_type; }
+    set { m_current_element_type = value; }
   }
 
   public void Reset()
@@ -100,7 +121,7 @@ public class EditFieldShape : MonoBehaviour, IPointerClickHandler, IDragHandler,
       for (int column_id = 0; column_id < m_field_configuration.width; ++column_id)
       {
         var color = m_tiles[row_id, column_id].GetComponent<RawImage>().color;
-        cells[row_id, column_id] = m_tile_color_by_element_id.FirstOrDefault(pair => pair.Value == color).Key;
+        cells[row_id, column_id] = (int)m_tile_color_by_element_id.FirstOrDefault(pair => pair.Value == color).Key;
       }
     return cells;
   }
@@ -139,7 +160,7 @@ public class EditFieldShape : MonoBehaviour, IPointerClickHandler, IDragHandler,
       for (int column_id = 0; column_id < m_field_configuration.width; ++column_id)
       {
         var image = m_tiles[row_id, column_id].GetComponent<RawImage>();
-        image.color = m_tile_color_by_element_id[cells[row_id, column_id]];
+        image.color = m_tile_color_by_element_id[(FieldElementType)cells[row_id, column_id]];
       }
   }
 
@@ -147,10 +168,7 @@ public class EditFieldShape : MonoBehaviour, IPointerClickHandler, IDragHandler,
   {
     var tile = m_tiles[i_position.Item1, i_position.Item2];
     var tile_image = tile.GetComponent<RawImage>();
-    if (tile_image.color == Color.black)
-      tile_image.color = Color.white;
-    else
-      tile_image.color = Color.black;
+    tile_image.color = m_tile_color_by_element_id[m_current_element_type];
   }
 
   private (int, int) _GetTilePosition(Vector2 i_position)
