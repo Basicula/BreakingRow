@@ -11,6 +11,8 @@ public class FieldData
   private int[] m_values_interval;
   private float[] m_values_probability_interval;
 
+  private List<(int, int)> m_should_stay_empty;
+
   private string m_save_file_path;
 
   private static readonly FieldElement m_hole_element = FieldElementsFactory.CreateElement(FieldElement.Type.Hole);
@@ -18,6 +20,7 @@ public class FieldData
 
   public FieldData(FieldConfiguration i_field_configuration, string i_custom_identificator = "")
   {
+    m_should_stay_empty = new List<(int, int)>();
     m_field_configuration = i_field_configuration;
     if (i_custom_identificator.Length == 0)
       m_save_file_path = $"{Application.persistentDataPath}/{m_field_configuration.mode}FieldData({m_field_configuration.width}, {m_field_configuration.height}).json";
@@ -94,18 +97,6 @@ public class FieldData
     return removed_values;
   }
 
-  public struct GroupDetails
-  {
-    public List<(int, int)> group;
-    public int value;
-
-    public GroupDetails(List<(int, int)> group, int value)
-    {
-      this.group = group;
-      this.value = value;
-    }
-  }
-
   public List<List<(int, int)>> GetHoles()
   {
     var hole_groups = new List<List<(int, int)>>();
@@ -147,7 +138,7 @@ public class FieldData
   {
     for (int row_id = 0; row_id < m_field_configuration.height; ++row_id)
       for (int column_id = 0; column_id < m_field_configuration.width; ++column_id)
-        if (m_field[row_id, column_id] == m_empty_element)
+        if (m_field[row_id, column_id] == m_empty_element && !m_should_stay_empty.Contains((row_id, column_id)))
           return true;
     return false;
   }
@@ -213,6 +204,7 @@ public class FieldData
         throw new NotImplementedException();
     }
 
+    m_should_stay_empty.Clear();
     var curr_element = start_element;
     var empty_element = (-1, -1);
     while (curr_element != end_element)
@@ -242,14 +234,31 @@ public class FieldData
         empty_element = (-1, -1);
       }
 
-      if (values[curr_element.Item1, curr_element.Item2] == m_empty_element && empty_element == (-1, -1))
-        empty_element = curr_element;
+      if (values[curr_element.Item1, curr_element.Item2] == m_empty_element)
+      {
+        if (empty_element == (-1, -1))
+          empty_element = curr_element;
+      }
       else if (values[curr_element.Item1, curr_element.Item2].movable && empty_element != (-1, -1))
       {
         (values[curr_element.Item1, curr_element.Item2], values[empty_element.Item1, empty_element.Item2]) =
           (values[empty_element.Item1, empty_element.Item2], values[curr_element.Item1, curr_element.Item2]);
         changes.Add((curr_element, empty_element));
         curr_element = empty_element;
+        empty_element = (-1, -1);
+      }
+      else if (!values[curr_element.Item1, curr_element.Item2].movable)
+      {
+        if (empty_element != (-1, -1))
+        {
+          var stay_empty_element = empty_element;
+          while (stay_empty_element != curr_element)
+          {
+            m_should_stay_empty.Add(stay_empty_element);
+            stay_empty_element.Item1 += direction.Item1;
+            stay_empty_element.Item2 += direction.Item2;
+          }
+        }
         empty_element = (-1, -1);
       }
 
@@ -264,7 +273,7 @@ public class FieldData
     var created = new List<(int, int)>();
     for (int row_id = 0; row_id < m_field_configuration.height; ++row_id)
       for (int column_id = 0; column_id < m_field_configuration.width; ++column_id)
-        if (m_field[row_id, column_id] == m_empty_element)
+        if (m_field[row_id, column_id] == m_empty_element && !m_should_stay_empty.Contains((row_id, column_id)))
         {
           m_field[row_id, column_id] = FieldElementsFactory.CreateElement(FieldElement.Type.Common, _GetRandomValue());
           created.Add((row_id, column_id));
@@ -380,16 +389,9 @@ public class FieldData
         array[i, j] = default_value;
   }
 
-  private static void _InitArray<T>(T[,] array, Func<T> default_value_generator)
-  {
-    for (int i = 0; i < array.GetLength(0); ++i)
-      for (int j = 0; j < array.GetLength(1); ++j)
-        array[i, j] = default_value_generator();
-  }
-
   private List<(int, int)> _CrossGroupAt(int row_id, int column_id)
   {
-    int target_value = m_field[row_id, column_id].value;
+    var target_element = m_field[row_id, column_id];
 
     Func<int, int, int, bool, (int, int)> get_coordinates = (int row_id, int column_id, int range_index, bool check_row) =>
     {
@@ -405,13 +407,13 @@ public class FieldData
       while (true)
       {
         var right_coordinates = get_coordinates(row_id, column_id, r, check_row);
-        if (r < max_r && At(right_coordinates.Item1, right_coordinates.Item2).value == target_value)
+        if (r < max_r && At(right_coordinates.Item1, right_coordinates.Item2) == target_element)
         {
           ++r;
           continue;
         }
         var left_coordinates = get_coordinates(row_id, column_id, l, check_row);
-        if (l >= 0 && At(left_coordinates.Item1, left_coordinates.Item2).value == target_value)
+        if (l >= 0 && At(left_coordinates.Item1, left_coordinates.Item2) == target_element)
         {
           --l;
           continue;
@@ -430,7 +432,7 @@ public class FieldData
     while (to_check.Count > 0)
     {
       var current_element = to_check.Dequeue();
-      if (m_field[current_element.Item1, current_element.Item2].value < 0)
+      if (!m_field[current_element.Item1, current_element.Item2].combinable)
         continue;
       (int line_r, int line_l) = check_line(current_element.Item1, current_element.Item2, current_element.Item3);
       if (line_r - line_l > 3)
@@ -469,6 +471,18 @@ public class FieldData
       }
     }
     return groups;
+  }
+
+  public struct GroupDetails
+  {
+    public List<(int, int)> group;
+    public int value;
+
+    public GroupDetails(List<(int, int)> group, int value)
+    {
+      this.group = group;
+      this.value = value;
+    }
   }
 
   private List<GroupDetails> _RemoveGroups(int count = -1)
@@ -528,24 +542,6 @@ public class FieldData
     return group_details;
   }
 
-  private void _InitIntervals()
-  {
-    m_values_interval = Enumerable.Range(0, m_field_configuration.active_elements_count).ToArray();
-    m_values_probability_interval = new float[m_field_configuration.active_elements_count];
-    var mean = 0;
-    var deviation = m_field_configuration.active_elements_count / 2;
-
-    Func<float, float> normal_distribution = (x) =>
-      Mathf.Exp(-Mathf.Pow((x - mean) / deviation, 2) / 2) / (deviation * Mathf.Sqrt(2 * Mathf.PI));
-
-    for (int x = 0; x < m_field_configuration.active_elements_count; ++x)
-    {
-      m_values_probability_interval[x] = normal_distribution(x);
-      if (x > 0)
-        m_values_probability_interval[x] += normal_distribution(-x);
-    }
-  }
-
   public List<GroupDetails> ProcessGroups()
   {
     switch (m_field_configuration.mode)
@@ -579,6 +575,24 @@ public class FieldData
       if (removed_groups_sizes.Count == 0)
         break;
       SpawnNewValues();
+    }
+  }
+
+  private void _InitIntervals()
+  {
+    m_values_interval = Enumerable.Range(0, m_field_configuration.active_elements_count).ToArray();
+    m_values_probability_interval = new float[m_field_configuration.active_elements_count];
+    var mean = 0;
+    var deviation = m_field_configuration.active_elements_count / 2;
+
+    Func<float, float> normal_distribution = (x) =>
+      Mathf.Exp(-Mathf.Pow((x - mean) / deviation, 2) / 2) / (deviation * Mathf.Sqrt(2 * Mathf.PI));
+
+    for (int x = 0; x < m_field_configuration.active_elements_count; ++x)
+    {
+      m_values_probability_interval[x] = normal_distribution(x);
+      if (x > 0)
+        m_values_probability_interval[x] += normal_distribution(-x);
     }
   }
 

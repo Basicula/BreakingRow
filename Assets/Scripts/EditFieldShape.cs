@@ -33,6 +33,7 @@ public class EditFieldShape : MonoBehaviour, IPointerClickHandler, IDragHandler,
   {
     m_tile_color_by_element_id = new Dictionary<FieldElement.Type, Color> {
       { FieldElement.Type.Common, Color.black },
+      { FieldElement.Type.Empty, Color.black },
       { FieldElement.Type.Hole, Color.white },
       { FieldElement.Type.InteractableDestractable, Color.blue },
       { FieldElement.Type.ImmobileDestractable, Color.yellow },

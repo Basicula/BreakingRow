@@ -77,7 +77,7 @@ public class ElementStyleProvider
 
   public ElementProps Get(FieldElement i_element)
   {
-    if (i_element.type == FieldElement.Type.Hole)
+    if (i_element.type == FieldElement.Type.Hole || i_element.type == FieldElement.Type.Empty)
       return new ElementProps();
     if (!m_element_style_library.ContainsKey(i_element.type))
       throw new System.NotImplementedException($"Element class id={i_element.type} hasn't implemented style props");
