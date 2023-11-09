@@ -247,7 +247,7 @@ public class FieldData
         curr_element = empty_element;
         empty_element = (-1, -1);
       }
-      else if (!values[curr_element.Item1, curr_element.Item2].movable)
+      else if (!values[curr_element.Item1, curr_element.Item2].movable && values[curr_element.Item1, curr_element.Item2] != m_hole_element)
       {
         if (empty_element != (-1, -1))
         {
@@ -283,12 +283,17 @@ public class FieldData
 
   public void SwapCells(int row1, int column1, int row2, int column2)
   {
-    if (row1 < 0 || row1 >= m_field_configuration.height || column1 < 0 || column1 >= m_field_configuration.width ||
-      row2 < 0 || row2 >= m_field_configuration.height || column2 < 0 || column2 >= m_field_configuration.width)
+    if (!_IsValidElementPosition(row1, column1) || !_IsValidElementPosition(row2, column2))
       return;
 
     (m_field[row1, column1], m_field[row2, column2]) =
       (m_field[row2, column2], m_field[row1, column1]);
+  }
+
+  private bool _IsValidElementPosition(int i_row, int i_column)
+  {
+    return i_row >= 0 && i_column >= 0 &&
+      i_row < m_field_configuration.height && i_column < m_field_configuration.width;
   }
 
   public struct MoveDetails
@@ -544,14 +549,45 @@ public class FieldData
 
   public List<GroupDetails> ProcessGroups()
   {
+    List<GroupDetails> group_details;
     switch (m_field_configuration.mode)
     {
       case FieldConfiguration.Mode.Classic:
-        return _RemoveGroups();
+        group_details = _RemoveGroups();
+        break;
       case FieldConfiguration.Mode.Accumulated:
-        return _AccumulateGroups();
+        group_details = _AccumulateGroups();
+        break;
       default:
         throw new NotImplementedException();
+    }
+    _ProcessDestructibleElements(group_details);
+    return group_details;
+  }
+
+  private void _ProcessDestructibleElements(List<GroupDetails> i_nearby_combinations)
+  {
+    var affected_destractable_elements = new HashSet<(int, int)>();
+    var neighbor_offsets = new (int, int)[] { (1, 0), (0, 1), (-1, 0), (0, -1) };
+    foreach (var group in i_nearby_combinations)
+      foreach (var element_position in group.group)
+        foreach (var neighbor_offset in neighbor_offsets)
+        {
+          var neighbor_position = (element_position.Item1 + neighbor_offset.Item1, element_position.Item2 + neighbor_offset.Item2);
+          if (!_IsValidElementPosition(neighbor_position.Item1, neighbor_position.Item2))
+            continue;
+          if (!At(neighbor_position.Item1, neighbor_position.Item2).destructible)
+            continue;
+          affected_destractable_elements.Add(neighbor_position);
+        }
+    foreach (var (row, column) in affected_destractable_elements)
+    {
+      int old_value = m_field[row, column].value;
+      int value = old_value - 1;
+      if (value < 0)
+        m_field[row, column] = m_empty_element;
+      else
+        m_field[row, column].value = value;
     }
   }
 
@@ -565,7 +601,8 @@ public class FieldData
       {
         var element_type = cells_configuration[row_id, column_id];
         int value = FieldElementsFactory.undefined_value;
-        if (element_type == FieldElement.Type.Common)
+        //if (element_type == FieldElement.Type.Common)
+        if (element_type != FieldElement.Type.Hole)
           value = _GetRandomValue();
         m_field[row_id, column_id] = FieldElementsFactory.CreateElement(element_type, value);
       }
