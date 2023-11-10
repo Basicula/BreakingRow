@@ -705,10 +705,6 @@ public class GameField : MonoBehaviour
     var active_zone = m_input_handler.GetComponent<RectTransform>();
     Camera.main.orthographicSize = Screen.height / 2.0f + m_outer_grid_stroke_width;
     Camera.main.aspect = (float)Screen.width / Screen.height;
-    Camera.main.transform.position = new Vector3(
-      m_input_handler.transform.localPosition.x,
-      m_input_handler.transform.localPosition.y,
-      Camera.main.transform.position.z);
   }
 
   private void _AutoMove()
