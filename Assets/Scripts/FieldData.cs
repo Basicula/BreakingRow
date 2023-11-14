@@ -18,14 +18,11 @@ public class FieldData
   private static readonly FieldElement m_hole_element = FieldElementsFactory.CreateElement(FieldElement.Type.Hole);
   private static readonly FieldElement m_empty_element = FieldElementsFactory.CreateElement(FieldElement.Type.Empty);
 
-  public FieldData(FieldConfiguration i_field_configuration, string i_custom_identificator = "")
+  public FieldData(FieldConfiguration i_field_configuration, string i_name)
   {
     m_should_stay_empty = new List<(int, int)>();
     m_field_configuration = i_field_configuration;
-    if (i_custom_identificator.Length == 0)
-      m_save_file_path = $"{Application.persistentDataPath}/{m_field_configuration.mode}FieldData({m_field_configuration.width}, {m_field_configuration.height}).json";
-    else
-      m_save_file_path = $"{Application.persistentDataPath}/{i_custom_identificator}FieldData.json";
+    m_save_file_path = $"{Application.persistentDataPath}/{i_name}FieldData.json";
     if (!_Load())
       _Init();
 
