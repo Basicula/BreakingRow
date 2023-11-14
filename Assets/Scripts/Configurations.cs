@@ -12,7 +12,7 @@ public class Configurations : MonoBehaviour
   private IntegerInput m_height_input;
   private IntegerInput m_active_elements_count_input;
 
-  private TMP_Dropdown m_spawn_move_scenario;
+  private TMP_Dropdown m_fill_strategy;
   private TMP_Dropdown m_mode;
   private TMP_Dropdown m_move_direction;
 
@@ -21,7 +21,7 @@ public class Configurations : MonoBehaviour
     m_width_input = transform.GetChild(0).gameObject.GetComponent<IntegerInput>();
     m_height_input = transform.GetChild(1).gameObject.GetComponent<IntegerInput>();
     m_active_elements_count_input = transform.GetChild(2).gameObject.GetComponent<IntegerInput>();
-    m_spawn_move_scenario = transform.GetChild(3).gameObject.GetComponent<TMP_Dropdown>();
+    m_fill_strategy = transform.GetChild(3).gameObject.GetComponent<TMP_Dropdown>();
     m_mode = transform.GetChild(4).gameObject.GetComponent<TMP_Dropdown>();
     m_move_direction = transform.GetChild(5).gameObject.GetComponent<TMP_Dropdown>();
     var edit_field_shape = transform.GetChild(6).gameObject.GetComponent<Button>();
@@ -36,8 +36,8 @@ public class Configurations : MonoBehaviour
     m_active_elements_count_input.value = m_game_field.field_configuration.active_elements_count;
     m_active_elements_count_input.on_value_change = () => _InitGameField();
 
-    _InitDropdown(ref m_spawn_move_scenario, m_game_field.field_configuration.spawn_move_scenario);
-    m_spawn_move_scenario.onValueChanged.AddListener((option_id) => _InitGameField());
+    _InitDropdown(ref m_fill_strategy, m_game_field.field_configuration.fill_strategy);
+    m_fill_strategy.onValueChanged.AddListener((option_id) => _InitGameField());
     _InitDropdown(ref m_mode, m_game_field.field_configuration.mode);
     m_mode.onValueChanged.AddListener((option_id) => _InitGameField());
     _InitDropdown(ref m_move_direction, m_game_field.field_configuration.move_direction);
@@ -62,8 +62,8 @@ public class Configurations : MonoBehaviour
       m_height_input.value != m_game_field.field_configuration.height)
       new_field_configuration.InitCellsConfiguration();
     new_field_configuration.active_elements_count = m_active_elements_count_input.value;
-    var spawn_move_scenario_option = m_spawn_move_scenario.options[m_spawn_move_scenario.value].text;
-    new_field_configuration.spawn_move_scenario = System.Enum.Parse<FieldConfiguration.SpawnMoveScenario>(spawn_move_scenario_option);
+    var fill_strategy_option = m_fill_strategy.options[m_fill_strategy.value].text;
+    new_field_configuration.fill_strategy = System.Enum.Parse<FieldConfiguration.FillStrategy>(fill_strategy_option);
     var mode_option = m_mode.options[m_mode.value].text;
     new_field_configuration.mode = System.Enum.Parse<FieldConfiguration.Mode>(mode_option);
     var move_direction_option = m_move_direction.options[m_move_direction.value].text;

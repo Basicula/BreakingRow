@@ -646,7 +646,7 @@ public class FieldData
     public float[] values_probability_mask;
     public string mode;
     public string move_direction;
-    public string spawn_move_scenario;
+    public string fill_strategy;
   }
 
   private bool _Load()
@@ -669,7 +669,7 @@ public class FieldData
     m_values_probability_interval = data.values_probability_mask;
     m_field_configuration.mode = Enum.Parse<FieldConfiguration.Mode>(data.mode);
     m_field_configuration.move_direction = Enum.Parse<FieldConfiguration.MoveDirection>(data.move_direction);
-    m_field_configuration.spawn_move_scenario = Enum.Parse<FieldConfiguration.SpawnMoveScenario>(data.spawn_move_scenario);
+    m_field_configuration.fill_strategy = Enum.Parse<FieldConfiguration.FillStrategy>(data.fill_strategy);
     return true;
   }
 
@@ -690,7 +690,7 @@ public class FieldData
     data.values_probability_mask = m_values_probability_interval;
     data.mode = Enum.GetName(typeof(FieldConfiguration.Mode), m_field_configuration.mode);
     data.move_direction = Enum.GetName(typeof(FieldConfiguration.MoveDirection), m_field_configuration.move_direction);
-    data.spawn_move_scenario = Enum.GetName(typeof(FieldConfiguration.SpawnMoveScenario), m_field_configuration.spawn_move_scenario);
+    data.fill_strategy = Enum.GetName(typeof(FieldConfiguration.FillStrategy), m_field_configuration.fill_strategy);
     SaveLoad.Save(data, m_save_file_path);
   }
 }

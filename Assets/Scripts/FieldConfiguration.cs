@@ -18,7 +18,7 @@ public class FieldConfiguration
     LeftToRight
   }
 
-  public enum SpawnMoveScenario
+  public enum FillStrategy
   {
     MoveThenSpawn,
     SpawnThenMove
@@ -30,7 +30,7 @@ public class FieldConfiguration
 
   [SerializeField] public Mode mode;
   [SerializeField] public MoveDirection move_direction;
-  [SerializeField] public SpawnMoveScenario spawn_move_scenario;
+  [SerializeField] public FillStrategy fill_strategy;
 
   private FieldElement.Type[,] m_cells_configuration;
 
@@ -63,7 +63,7 @@ public class FieldConfiguration
     clone.height = height;
     clone.active_elements_count = active_elements_count;
     clone.mode = mode;
-    clone.spawn_move_scenario = spawn_move_scenario;
+    clone.fill_strategy = fill_strategy;
     clone.move_direction = move_direction;
     clone.m_cells_configuration = (FieldElement.Type[,])m_cells_configuration.Clone();
     return clone;

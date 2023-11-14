@@ -69,12 +69,12 @@ public class GameField : MonoBehaviour
     }
 
     bool scenario_result = false;
-    switch (m_field_configuration.spawn_move_scenario)
+    switch (m_field_configuration.fill_strategy)
     {
-      case FieldConfiguration.SpawnMoveScenario.MoveThenSpawn:
+      case FieldConfiguration.FillStrategy.MoveThenSpawn:
         scenario_result = _MoveThenSpawnElements();
         break;
-      case FieldConfiguration.SpawnMoveScenario.SpawnThenMove:
+      case FieldConfiguration.FillStrategy.SpawnThenMove:
         scenario_result = _SpawnThenMoveElements();
         break;
       default:
