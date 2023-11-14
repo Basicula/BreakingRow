@@ -24,11 +24,12 @@ public class SVGPath : SVGEntity
     m_commands.Add($"L {point[0]} {point[1]}");
   }
 
-  public void ArcTo(float rounding_radius, bool arc_direction, Vector2 point)
+  public void ArcTo(float rounding_radius, bool large_arc, bool arc_direction, Vector2 point)
   {
     System.Globalization.CultureInfo.CurrentCulture = System.Globalization.CultureInfo.InvariantCulture;
-    int arc_direction_value = arc_direction ? 0 : 1;
-    m_commands.Add($"A {rounding_radius} {rounding_radius} 0 0 {arc_direction_value} {point[0]} {point[1]}");
+    int sweep_flag_value = arc_direction ? 0 : 1;
+    int large_arc_flag_value = large_arc ? 1 : 0;
+    m_commands.Add($"A {rounding_radius} {rounding_radius} 0 {large_arc_flag_value} {sweep_flag_value} {point[0]} {point[1]}");
   }
 
   public void Close()

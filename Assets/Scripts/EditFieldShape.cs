@@ -1,4 +1,7 @@
 ﻿using System;
+using System.Collections.Generic;
+using System.Linq;
+using TMPro;
 using UnityEngine;
 using UnityEngine.EventSystems;
 using UnityEngine.UI;
@@ -7,16 +10,36 @@ public class EditFieldShape : MonoBehaviour, IPointerClickHandler, IDragHandler,
 {
   public enum ShapePreset
   {
-    Circle
+    Circle,
+    Random
   }
+
+  [SerializeReference] private TMP_Dropdown m_shape_preset_selector;
+  [SerializeReference] private TMP_Dropdown m_field_element_selector;
+  [SerializeReference] private Button m_shape_preset_apply;
 
   private FieldConfiguration m_field_configuration;
 
   private GameObject[,] m_tiles;
+  private FieldElement.Type m_current_element_type;
 
   private float m_grid_size;
   private Vector2 m_field_offset;
   private bool[,] m_drag_visited_tiles;
+
+  private readonly Dictionary<FieldElement.Type, Color> m_tile_color_by_element_id;
+
+  public EditFieldShape()
+  {
+    m_tile_color_by_element_id = new Dictionary<FieldElement.Type, Color> {
+      { FieldElement.Type.Common, Color.black },
+      { FieldElement.Type.Empty, Color.black },
+      { FieldElement.Type.Hole, Color.white },
+      { FieldElement.Type.InteractableDestractable, Color.blue },
+      { FieldElement.Type.ImmobileDestractable, Color.yellow },
+    };
+    m_current_element_type = FieldElement.Type.Common;
+  }
 
   public void Init(FieldConfiguration i_field_configuration)
   {
@@ -34,23 +57,13 @@ public class EditFieldShape : MonoBehaviour, IPointerClickHandler, IDragHandler,
     var padding = m_grid_size / 10;
     var tile_size = m_grid_size - padding / 2;
     var total_height = m_grid_size * m_field_configuration.height;
-    var cells = m_field_configuration.GetCells();
+    var cells = m_field_configuration.GetCellsConfiguration();
     for (int row_id = 0; row_id < m_field_configuration.height; ++row_id)
       for (int column_id = 0; column_id < m_field_configuration.width; ++column_id)
       {
         var tile = new GameObject();
         var image = tile.AddComponent<RawImage>();
-        switch (cells[row_id, column_id])
-        {
-          case FieldConfiguration.CellType.Hole:
-            image.color = Color.white;
-            break;
-          case FieldConfiguration.CellType.Element:
-            image.color = Color.black;
-            break;
-          default:
-            throw new NotImplementedException();
-        }
+        image.color = m_tile_color_by_element_id[cells[row_id, column_id]];
         tile.transform.SetParent(transform);
         var tile_transform = tile.GetComponent<RectTransform>();
         tile_transform.sizeDelta = new Vector2(tile_size, tile_size);
@@ -59,6 +72,32 @@ public class EditFieldShape : MonoBehaviour, IPointerClickHandler, IDragHandler,
         tile_transform.anchorMax = new Vector2(0, 0);
         m_tiles[row_id, column_id] = tile;
       }
+  }
+
+  public void Start()
+  {
+    var options = Enum.GetNames(typeof(ShapePreset)).ToList();
+    m_shape_preset_selector.ClearOptions();
+    m_shape_preset_selector.AddOptions(options);
+    var current_option_name = Enum.GetName(typeof(ShapePreset), ShapePreset.Circle);
+    m_shape_preset_selector.SetValueWithoutNotify(options.IndexOf(current_option_name));
+    m_shape_preset_apply.onClick.AddListener(() =>
+    {
+      var preset = m_shape_preset_selector.options[m_shape_preset_selector.value].text;
+      _ApplyPreset(Enum.Parse<ShapePreset>(preset));
+    });
+
+    options = Enum.GetNames(typeof(FieldElement.Type)).ToList();
+    options.Remove(Enum.GetName(typeof(FieldElement.Type), FieldElement.Type.Empty));
+    m_field_element_selector.ClearOptions();
+    m_field_element_selector.AddOptions(options);
+    current_option_name = Enum.GetName(typeof(FieldElement.Type), m_current_element_type);
+    m_shape_preset_selector.SetValueWithoutNotify(options.IndexOf(current_option_name));
+    m_field_element_selector.onValueChanged.AddListener((option_id) =>
+    {
+      var field_element = m_field_element_selector.options[option_id].text;
+      m_current_element_type = Enum.Parse<FieldElement.Type>(field_element);
+    });
   }
 
   public void Reset()
@@ -96,27 +135,27 @@ public class EditFieldShape : MonoBehaviour, IPointerClickHandler, IDragHandler,
     _ToggleTile(tile_position);
   }
 
-  public FieldConfiguration.CellType[,] GetCells()
+  public FieldElement.Type[,] GetCells()
   {
-    var cells = new FieldConfiguration.CellType[m_field_configuration.height, m_field_configuration.width];
+    var cells = new FieldElement.Type[m_field_configuration.height, m_field_configuration.width];
     for (int row_id = 0; row_id < m_field_configuration.height; ++row_id)
       for (int column_id = 0; column_id < m_field_configuration.width; ++column_id)
       {
         var color = m_tiles[row_id, column_id].GetComponent<RawImage>().color;
-        if (color == Color.black)
-          cells[row_id, column_id] = FieldConfiguration.CellType.Element;
-        else if (color == Color.white)
-          cells[row_id, column_id] = FieldConfiguration.CellType.Hole;
+        cells[row_id, column_id] = m_tile_color_by_element_id.FirstOrDefault(pair => pair.Value == color).Key;
       }
     return cells;
   }
 
-  public void ApplyPreset(ShapePreset i_preset)
+  private void _ApplyPreset(ShapePreset i_preset)
   {
     switch (i_preset)
     {
       case ShapePreset.Circle:
         _CircleShape();
+        break;
+      case ShapePreset.Random:
+        _RandomPreset();
         break;
       default:
         throw new NotImplementedException();
@@ -133,33 +172,28 @@ public class EditFieldShape : MonoBehaviour, IPointerClickHandler, IDragHandler,
       {
         var x = column_id - m_field_configuration.width / 2.0f + 0.5;
         var y = row_id - m_field_configuration.height / 2.0f + 0.5;
-        FieldConfiguration.CellType cell_type;
-        if (x * x + y * y <= sqr_radius)
-          cell_type = FieldConfiguration.CellType.Element;
-        else
-          cell_type = FieldConfiguration.CellType.Hole;
-        m_field_configuration.SetCellType(row_id, column_id, cell_type);
+        var element_type = x * x + y * y <= sqr_radius ? FieldElement.Type.Common : FieldElement.Type.Hole;
+        m_field_configuration.ElementAt(row_id, column_id, element_type);
       }
+  }
+
+  private void _RandomPreset()
+  {
+    var keys = m_tile_color_by_element_id.Keys.ToArray();
+    System.Random random = new System.Random();
+    for (int row_id = 0; row_id < m_field_configuration.height; ++row_id)
+      for (int column_id = 0; column_id < m_field_configuration.width; ++column_id)
+        m_field_configuration.ElementAt(row_id, column_id, keys[random.Next(keys.Length)]);
   }
 
   private void _UpdateTiles()
   {
-    var cells = m_field_configuration.GetCells();
+    var cells = m_field_configuration.GetCellsConfiguration();
     for (int row_id = 0; row_id < m_field_configuration.height; ++row_id)
       for (int column_id = 0; column_id < m_field_configuration.width; ++column_id)
       {
         var image = m_tiles[row_id, column_id].GetComponent<RawImage>();
-        switch (cells[row_id, column_id])
-        {
-          case FieldConfiguration.CellType.Hole:
-            image.color = Color.white;
-            break;
-          case FieldConfiguration.CellType.Element:
-            image.color = Color.black;
-            break;
-          default:
-            throw new NotImplementedException();
-        }
+        image.color = m_tile_color_by_element_id[(FieldElement.Type)cells[row_id, column_id]];
       }
   }
 
@@ -167,10 +201,7 @@ public class EditFieldShape : MonoBehaviour, IPointerClickHandler, IDragHandler,
   {
     var tile = m_tiles[i_position.Item1, i_position.Item2];
     var tile_image = tile.GetComponent<RawImage>();
-    if (tile_image.color == Color.black)
-      tile_image.color = Color.white;
-    else
-      tile_image.color = Color.black;
+    tile_image.color = m_tile_color_by_element_id[m_current_element_type];
   }
 
   private (int, int) _GetTilePosition(Vector2 i_position)

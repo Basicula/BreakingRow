@@ -24,12 +24,6 @@ public class FieldConfiguration
     SpawnThenMove
   }
 
-  public enum CellType
-  {
-    Hole,
-    Element
-  }
-
   [SerializeField] public int width;
   [SerializeField] public int height;
   [SerializeField] public int active_elements_count;
@@ -38,28 +32,28 @@ public class FieldConfiguration
   [SerializeField] public MoveDirection move_direction;
   [SerializeField] public SpawnMoveScenario spawn_move_scenario;
 
-  private CellType[,] m_cells;
+  private FieldElement.Type[,] m_cells_configuration;
 
-  public CellType[,] GetCells()
+  public FieldElement.Type[,] GetCellsConfiguration()
   {
-    if (m_cells is null)
-      InitCells();
-    if (m_cells.GetLength(0) != height || m_cells.GetLength(1) != width)
-      InitCells();
-    return m_cells;
+    if (m_cells_configuration is null)
+      InitCellsConfiguration();
+    if (m_cells_configuration.GetLength(0) != height || m_cells_configuration.GetLength(1) != width)
+      InitCellsConfiguration();
+    return m_cells_configuration;
   }
 
-  public void InitCells(CellType i_type = CellType.Element)
+  public void InitCellsConfiguration()
   {
-    m_cells = new CellType[height, width];
+    m_cells_configuration = new FieldElement.Type[height, width];
     for (int row_id = 0; row_id < height; ++row_id)
       for (int column_id = 0; column_id < width; ++column_id)
-        m_cells[row_id, column_id] = i_type;
+        m_cells_configuration[row_id, column_id] = FieldElement.Type.Common;
   }
 
-  public void SetCellType(int i_row, int i_column, CellType i_type)
+  public void ElementAt(int i_row, int i_column, FieldElement.Type i_type)
   {
-    m_cells[i_row, i_column] = i_type;
+    m_cells_configuration[i_row, i_column] = i_type;
   }
 
   public FieldConfiguration Clone()
@@ -71,7 +65,7 @@ public class FieldConfiguration
     clone.mode = mode;
     clone.spawn_move_scenario = spawn_move_scenario;
     clone.move_direction = move_direction;
-    clone.m_cells = (CellType[,])m_cells.Clone();
+    clone.m_cells_configuration = (FieldElement.Type[,])m_cells_configuration.Clone();
     return clone;
   }
 }
