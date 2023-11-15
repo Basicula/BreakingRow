@@ -147,11 +147,129 @@ public class FieldData
     return from.interactable && to.interactable;
   }
 
-  public void MoveElements()
+  private class ZigzagIterator
   {
-    var changes = ElementsMoveChanges();
+    private int m_height;
+    private int m_width;
+    private (int, int) m_current_element;
+    private (int, int) m_start_element;
+    private (int, int) m_end_element;
+    public readonly (int, int) direction;
+
+    public ZigzagIterator(FieldConfiguration.MoveDirection i_move_direction, int i_height, int i_width)
+    {
+      m_width = i_width;
+      m_height = i_height;
+      switch (i_move_direction)
+      {
+        case FieldConfiguration.MoveDirection.TopToBottom:
+          m_start_element = (m_height - 1, 0);
+          m_end_element = (-1, m_width - 1);
+          direction = (-1, 0);
+          break;
+        case FieldConfiguration.MoveDirection.RightToLeft:
+          m_start_element = (0, 0);
+          m_end_element = (m_height - 1, m_width);
+          direction = (0, 1);
+          break;
+        case FieldConfiguration.MoveDirection.BottomToTop:
+          m_start_element = (0, m_width - 1);
+          m_end_element = (m_height, 0);
+          direction = (1, 0);
+          break;
+        case FieldConfiguration.MoveDirection.LeftToRight:
+          m_start_element = (m_height - 1, m_width - 1);
+          m_end_element = (0, -1);
+          direction = (0, -1);
+          break;
+        default:
+          throw new NotImplementedException();
+      }
+      m_current_element = m_start_element;
+    }
+
+    public (int, int) current { get => m_current_element; set => m_current_element = value; }
+
+    public bool Finished()
+    {
+      return m_current_element.Item1 == m_end_element.Item1 && m_current_element.Item2 == m_end_element.Item2;
+    }
+
+    public bool IsValid()
+    {
+      return m_current_element.Item1 >= 0 && m_current_element.Item2 >= 0 &&
+        m_current_element.Item1 < m_height && m_current_element.Item2 < m_width;
+    }
+
+    public void Validate()
+    {
+      if (Finished())
+        return;
+      var orthogonal_direction = (direction.Item2, -direction.Item1);
+      var offset_from_start = (Math.Abs(m_current_element.Item1 - m_start_element.Item1) + 1, Math.Abs(m_current_element.Item2 - m_start_element.Item2) + 1);
+      m_current_element = (m_start_element.Item1 + orthogonal_direction.Item1 * offset_from_start.Item1,
+        m_start_element.Item2 + orthogonal_direction.Item2 * offset_from_start.Item2);
+    }
+
+    public void Increment(bool i_with_validation)
+    {
+      if (Finished())
+        return;
+      m_current_element.Item1 += direction.Item1;
+      m_current_element.Item2 += direction.Item2;
+      if (i_with_validation && !IsValid())
+        Validate();
+    }
+  }
+
+  public List<((int, int), (int, int))> MoveElements()
+  {
+    var values = m_field.Clone() as FieldElement[,];
+    var changes = new List<((int, int), (int, int))>();
+
+    m_should_stay_empty.Clear();
+    var empty_element = (-1, -1);
+    var it = new ZigzagIterator(m_field_configuration.move_direction, m_field_configuration.height, m_field_configuration.width);
+    while (!it.Finished())
+    {
+      if (!it.IsValid())
+      {
+        it.Validate();
+        empty_element = (-1, -1);
+      }
+      var curr_element = it.current;
+      if (values[curr_element.Item1, curr_element.Item2] == m_empty_element)
+      {
+        if (empty_element == (-1, -1))
+          empty_element = curr_element;
+      }
+      else if (values[curr_element.Item1, curr_element.Item2].movable && empty_element != (-1, -1))
+      {
+        (values[curr_element.Item1, curr_element.Item2], values[empty_element.Item1, empty_element.Item2]) =
+          (values[empty_element.Item1, empty_element.Item2], values[curr_element.Item1, curr_element.Item2]);
+        changes.Add((curr_element, empty_element));
+        it.current = empty_element;
+        empty_element = (-1, -1);
+      }
+      else if (!values[curr_element.Item1, curr_element.Item2].movable && values[curr_element.Item1, curr_element.Item2] != m_hole_element)
+      {
+        if (empty_element != (-1, -1))
+        {
+          var stay_empty_element = empty_element;
+          while (stay_empty_element != curr_element)
+          {
+            m_should_stay_empty.Add(stay_empty_element);
+            stay_empty_element.Item1 += it.direction.Item1;
+            stay_empty_element.Item2 += it.direction.Item2;
+          }
+        }
+        empty_element = (-1, -1);
+      }
+      it.Increment(false);
+    }
     foreach (var change in changes)
       SwapCells(change.Item1.Item1, change.Item1.Item2, change.Item2.Item1, change.Item2.Item2);
+    return changes;
   }
 
   public (int, int) GetMoveDirection()
@@ -171,110 +289,20 @@ public class FieldData
     }
   }
 
-  public List<((int, int), (int, int))> ElementsMoveChanges()
-  {
-    var values = m_field.Clone() as FieldElement[,];
-    var changes = new List<((int, int), (int, int))>();
-
-    var start_element = (0, 0);
-    var end_element = (m_field_configuration.height, m_field_configuration.width);
-    var direction = GetMoveDirection();
-    switch (m_field_configuration.move_direction)
-    {
-      case FieldConfiguration.MoveDirection.TopToBottom:
-        start_element = (m_field_configuration.height - 1, 0);
-        end_element = (-1, m_field_configuration.width - 1);
-        break;
-      case FieldConfiguration.MoveDirection.RightToLeft:
-        start_element = (0, 0);
-        end_element = (m_field_configuration.height - 1, m_field_configuration.width);
-        break;
-      case FieldConfiguration.MoveDirection.BottomToTop:
-        start_element = (0, m_field_configuration.width - 1);
-        end_element = (m_field_configuration.height, 0);
-        break;
-      case FieldConfiguration.MoveDirection.LeftToRight:
-        start_element = (m_field_configuration.height - 1, m_field_configuration.width - 1);
-        end_element = (0, -1);
-        break;
-      default:
-        throw new NotImplementedException();
-    }
-
-    m_should_stay_empty.Clear();
-    var curr_element = start_element;
-    var empty_element = (-1, -1);
-    while (curr_element != end_element)
-    {
-      if (curr_element.Item1 < 0)
-      {
-        curr_element.Item1 = start_element.Item1;
-        ++curr_element.Item2;
-        empty_element = (-1, -1);
-      }
-      if (curr_element.Item1 >= m_field_configuration.height)
-      {
-        curr_element.Item1 = start_element.Item1;
-        --curr_element.Item2;
-        empty_element = (-1, -1);
-      }
-      if (curr_element.Item2 < 0)
-      {
-        curr_element.Item2 = start_element.Item2;
-        --curr_element.Item1;
-        empty_element = (-1, -1);
-      }
-      if (curr_element.Item2 >= m_field_configuration.width)
-      {
-        curr_element.Item2 = start_element.Item2;
-        ++curr_element.Item1;
-        empty_element = (-1, -1);
-      }
-
-      if (values[curr_element.Item1, curr_element.Item2] == m_empty_element)
-      {
-        if (empty_element == (-1, -1))
-          empty_element = curr_element;
-      }
-      else if (values[curr_element.Item1, curr_element.Item2].movable && empty_element != (-1, -1))
-      {
-        (values[curr_element.Item1, curr_element.Item2], values[empty_element.Item1, empty_element.Item2]) =
-          (values[empty_element.Item1, empty_element.Item2], values[curr_element.Item1, curr_element.Item2]);
-        changes.Add((curr_element, empty_element));
-        curr_element = empty_element;
-        empty_element = (-1, -1);
-      }
-      else if (!values[curr_element.Item1, curr_element.Item2].movable && values[curr_element.Item1, curr_element.Item2] != m_hole_element)
-      {
-        if (empty_element != (-1, -1))
-        {
-          var stay_empty_element = empty_element;
-          while (stay_empty_element != curr_element)
-          {
-            m_should_stay_empty.Add(stay_empty_element);
-            stay_empty_element.Item1 += direction.Item1;
-            stay_empty_element.Item2 += direction.Item2;
-          }
-        }
-        empty_element = (-1, -1);
-      }
-
-      curr_element.Item1 += direction.Item1;
-      curr_element.Item2 += direction.Item2;
-    }
-    return changes;
-  }
-
   public List<(int, int)> SpawnNewValues()
   {
     var created = new List<(int, int)>();
-    for (int row_id = 0; row_id < m_field_configuration.height; ++row_id)
-      for (int column_id = 0; column_id < m_field_configuration.width; ++column_id)
-        if (m_field[row_id, column_id] == m_empty_element && !m_should_stay_empty.Contains((row_id, column_id)))
-        {
-          m_field[row_id, column_id] = FieldElementsFactory.CreateElement(FieldElement.Type.Common, _GetRandomValue());
-          created.Add((row_id, column_id));
-        }
+    var it = new ZigzagIterator(m_field_configuration.move_direction, m_field_configuration.height, m_field_configuration.width);
+    while (!it.Finished())
+    {
+      var (row_id, column_id) = it.current;
+      if (m_field[row_id, column_id] == m_empty_element && !m_should_stay_empty.Contains((row_id, column_id)))
+      {
+        m_field[row_id, column_id] = FieldElementsFactory.CreateElement(FieldElement.Type.Common, _GetRandomValue());
+        created.Add((row_id, column_id));
+      }
+      it.Increment(true);
+    }
     return created;
   }
 

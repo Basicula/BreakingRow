@@ -111,10 +111,9 @@ public class GameField : MonoBehaviour
 
   private bool _MoveThenSpawnElements()
   {
-    var element_move_changes = m_field_data.ElementsMoveChanges();
+    var element_move_changes = m_field_data.MoveElements();
     if (element_move_changes.Count > 0)
     {
-      m_field_data.MoveElements();
       foreach (var element_move in element_move_changes)
       {
         var first = element_move.Item1;
@@ -141,8 +140,7 @@ public class GameField : MonoBehaviour
   {
     if (m_field_data.HasEmptyCells())
     {
-      var element_move_changes = m_field_data.ElementsMoveChanges();
-      m_field_data.MoveElements();
+      var element_move_changes = m_field_data.MoveElements();
       foreach (var element_move in element_move_changes)
       {
         var first = element_move.Item1;
@@ -156,11 +154,6 @@ public class GameField : MonoBehaviour
       int main_line = -1;
       var offset = 0;
       var direction = m_field_data.GetMoveDirection();
-      created_elements.Sort((first, second) =>
-        direction.Item2 == 0 ?
-          first.Item2 == second.Item2 ? -direction.Item1 * (second.Item1 - first.Item1) : second.Item2 - first.Item2 :
-          first.Item1 == second.Item1 ? -direction.Item2 * (second.Item2 - first.Item2) : second.Item1 - first.Item1
-      );
       foreach (var element_position in created_elements)
       {
         if (direction.Item2 == 0 && element_position.Item2 != main_line)
