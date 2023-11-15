@@ -1,10 +1,9 @@
-﻿using UnityEngine;
+﻿using System.Linq;
 using TMPro;
-using System.Linq;
+using UnityEngine;
 using UnityEngine.UI;
 
-public class Configurations : MonoBehaviour
-{
+public class Configurations : MonoBehaviour {
   [SerializeReference] private GameField m_game_field;
   [SerializeReference] private Button m_field_shape_apply;
 
@@ -16,8 +15,7 @@ public class Configurations : MonoBehaviour
   private TMP_Dropdown m_mode;
   private TMP_Dropdown m_move_direction;
 
-  void Start()
-  {
+  void Start() {
     m_width_input = transform.GetChild(0).gameObject.GetComponent<IntegerInput>();
     m_height_input = transform.GetChild(1).gameObject.GetComponent<IntegerInput>();
     m_active_elements_count_input = transform.GetChild(2).gameObject.GetComponent<IntegerInput>();
@@ -44,8 +42,7 @@ public class Configurations : MonoBehaviour
     m_move_direction.onValueChanged.AddListener((option_id) => _InitGameField());
   }
 
-  private void _InitDropdown<ValueType>(ref TMP_Dropdown io_dropdown, ValueType i_value)
-  {
+  private void _InitDropdown<ValueType>(ref TMP_Dropdown io_dropdown, ValueType i_value) {
     var options = System.Enum.GetNames(typeof(ValueType)).ToList();
     io_dropdown.ClearOptions();
     io_dropdown.AddOptions(options);
@@ -53,8 +50,7 @@ public class Configurations : MonoBehaviour
     io_dropdown.SetValueWithoutNotify(options.IndexOf(current_option_name));
   }
 
-  private void _InitGameField()
-  {
+  private void _InitGameField() {
     var new_field_configuration = m_game_field.field_configuration.Clone();
     new_field_configuration.width = m_width_input.value;
     new_field_configuration.height = m_height_input.value;
@@ -71,12 +67,10 @@ public class Configurations : MonoBehaviour
     m_game_field.Init(new_field_configuration);
   }
 
-  private void _InitEditFieldShape()
-  {
+  private void _InitEditFieldShape() {
     var edit_field_shape = transform.GetChild(8).GetChild(0).GetComponent<EditFieldShape>();
     edit_field_shape.Init(m_game_field.field_configuration.Clone());
-    m_field_shape_apply.onClick.AddListener(() =>
-    {
+    m_field_shape_apply.onClick.AddListener(() => {
       var field_configuration = m_game_field.field_configuration.Clone();
       var cells = edit_field_shape.GetCells();
       for (int row_id = 0; row_id < field_configuration.height; ++row_id)

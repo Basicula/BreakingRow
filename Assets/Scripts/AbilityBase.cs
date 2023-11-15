@@ -1,12 +1,10 @@
-﻿using UnityEngine;
-using UnityEngine.UI;
-using TMPro;
+﻿using TMPro;
+using UnityEngine;
 using UnityEngine.SceneManagement;
+using UnityEngine.UI;
 
-abstract public class AbilityBase : MonoBehaviour
-{
-  public enum PriceChangeRule
-  {
+abstract public class AbilityBase : MonoBehaviour {
+  public enum PriceChangeRule {
     Additive,
     Multiplicative
   }
@@ -25,10 +23,8 @@ abstract public class AbilityBase : MonoBehaviour
   private float m_cooldown_start_time;
   private string m_save_file_path;
 
-  public void NextPrice()
-  {
-    switch (m_price_change_rule)
-    {
+  public void NextPrice() {
+    switch (m_price_change_rule) {
       case PriceChangeRule.Additive:
         m_current_price += m_price_step;
         break;
@@ -44,8 +40,7 @@ abstract public class AbilityBase : MonoBehaviour
 
   abstract protected void _Init();
 
-  private void Start()
-  {
+  private void Start() {
     m_button = gameObject.GetComponent<Button>();
     m_price_text = transform.GetChild(0).GetChild(2).gameObject.GetComponent<TMP_Text>();
     m_cooldown_overlay = transform.GetChild(0).GetChild(3).gameObject.GetComponent<Image>();
@@ -54,55 +49,44 @@ abstract public class AbilityBase : MonoBehaviour
 
     m_save_file_path = Application.persistentDataPath + $"/{SceneManager.GetActiveScene().name}{gameObject.name}Ability.json";
 
-    if (_Load())
-    {
+    if (_Load()) {
       if (Time.time - m_cooldown_start_time < m_cooldown_time)
         _StartCooldown(m_cooldown_start_time);
-    }
-    else
+    } else
       m_cooldown_start_time = Time.time - m_cooldown_time;
     _Update();
   }
 
-  private void Update()
-  {
+  private void Update() {
     var elapsed_cooldown_time = Time.time - m_cooldown_start_time;
-    if (elapsed_cooldown_time < m_cooldown_time)
-    {
+    if (elapsed_cooldown_time < m_cooldown_time) {
       m_cooldown_timer.text = Mathf.CeilToInt(m_cooldown_time - elapsed_cooldown_time).ToString();
       m_cooldown_overlay.fillAmount = 1.0f - elapsed_cooldown_time / m_cooldown_time;
       _Save();
-    }
-    else if (m_cooldown_timer.IsActive())
-    {
+    } else if (m_cooldown_timer.IsActive()) {
       m_cooldown_timer.gameObject.SetActive(false);
       m_cooldown_overlay.gameObject.SetActive(false);
-    }
-    else if (m_game_info.score < m_current_price)
+    } else if (m_game_info.score < m_current_price)
       m_button.interactable = false;
     else
       m_button.interactable = true;
   }
 
-  public void Reset()
-  {
+  public void Reset() {
     m_current_price = m_starting_price;
     m_cooldown_start_time = -2 * m_cooldown_time;
     _Update();
   }
 
-  public int price
-  {
+  public int price {
     get => m_current_price;
   }
-  private void _Update()
-  {
+  private void _Update() {
     m_price_text.text = m_current_price.ToString();
     _Save();
   }
 
-  private void _StartCooldown(float i_custom_start)
-  {
+  private void _StartCooldown(float i_custom_start) {
     m_button.interactable = false;
     m_cooldown_timer.gameObject.SetActive(true);
     m_cooldown_overlay.gameObject.SetActive(true);
@@ -111,8 +95,7 @@ abstract public class AbilityBase : MonoBehaviour
     m_cooldown_start_time = i_custom_start;
   }
 
-  struct SerializableData
-  {
+  struct SerializableData {
     public PriceChangeRule price_change_rule;
     public int starting_price;
     public int price_step;
@@ -120,8 +103,7 @@ abstract public class AbilityBase : MonoBehaviour
     public int cooldown_elapsed_time;
   }
 
-  private bool _Load()
-  {
+  private bool _Load() {
     var data = new SerializableData();
     if (!SaveLoad.Load(ref data, m_save_file_path))
       return false;
@@ -133,8 +115,7 @@ abstract public class AbilityBase : MonoBehaviour
     return true;
   }
 
-  private void _Save()
-  {
+  private void _Save() {
     var data = new SerializableData();
     data.price_change_rule = m_price_change_rule;
     data.starting_price = m_starting_price;

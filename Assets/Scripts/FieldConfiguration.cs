@@ -2,24 +2,20 @@
 using UnityEngine;
 
 [Serializable]
-public class FieldConfiguration
-{
-  public enum Mode
-  {
+public class FieldConfiguration {
+  public enum Mode {
     Classic,
     Accumulated
   }
 
-  public enum MoveDirection
-  {
+  public enum MoveDirection {
     TopToBottom,
     RightToLeft,
     BottomToTop,
     LeftToRight
   }
 
-  public enum FillStrategy
-  {
+  public enum FillStrategy {
     MoveThenSpawn,
     SpawnThenMove
   }
@@ -34,8 +30,7 @@ public class FieldConfiguration
 
   private FieldElement.Type[,] m_cells_configuration;
 
-  public FieldElement.Type[,] GetCellsConfiguration()
-  {
+  public FieldElement.Type[,] GetCellsConfiguration() {
     if (m_cells_configuration is null)
       InitCellsConfiguration();
     if (m_cells_configuration.GetLength(0) != height || m_cells_configuration.GetLength(1) != width)
@@ -43,21 +38,18 @@ public class FieldConfiguration
     return m_cells_configuration;
   }
 
-  public void InitCellsConfiguration()
-  {
+  public void InitCellsConfiguration() {
     m_cells_configuration = new FieldElement.Type[height, width];
     for (int row_id = 0; row_id < height; ++row_id)
       for (int column_id = 0; column_id < width; ++column_id)
         m_cells_configuration[row_id, column_id] = FieldElement.Type.Common;
   }
 
-  public void ElementAt(int i_row, int i_column, FieldElement.Type i_type)
-  {
+  public void ElementAt(int i_row, int i_column, FieldElement.Type i_type) {
     m_cells_configuration[i_row, i_column] = i_type;
   }
 
-  public FieldConfiguration Clone()
-  {
+  public FieldConfiguration Clone() {
     var clone = new FieldConfiguration();
     clone.width = width;
     clone.height = height;

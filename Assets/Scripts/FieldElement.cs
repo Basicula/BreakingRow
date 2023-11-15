@@ -1,10 +1,8 @@
 using System;
 
 [Serializable]
-public class FieldElement
-{
-  public enum Type
-  {
+public class FieldElement {
+  public enum Type {
     Hole = -2,
     Empty = -1,
     Common = 0,
@@ -27,8 +25,7 @@ public class FieldElement
     bool i_destructible,
     bool i_combinable,
     bool i_affected_by_ability,
-    int i_value = FieldElementsFactory.undefined_value)
-  {
+    int i_value = FieldElementsFactory.undefined_value) {
     type = i_type;
     interactable = i_interactable;
     movable = i_movable;
@@ -38,8 +35,7 @@ public class FieldElement
     value = i_value;
   }
 
-  public static bool operator ==(FieldElement i_first, FieldElement i_second)
-  {
+  public static bool operator ==(FieldElement i_first, FieldElement i_second) {
     return i_first.type == i_second.type &&
       i_first.value == i_second.value &&
       i_first.interactable == i_second.interactable &&
@@ -50,13 +46,11 @@ public class FieldElement
   }
   public static bool operator !=(FieldElement i_first, FieldElement i_second) => !(i_first == i_second);
 
-  public override string ToString()
-  {
+  public override string ToString() {
     return $"{(int)type},{interactable},{movable},{destructible},{combinable},{affected_by_ability},{value}";
   }
 
-  public static FieldElement FromString(string i_string)
-  {
+  public static FieldElement FromString(string i_string) {
     var attributes = i_string.Split(',');
     return new FieldElement(
       (Type)int.Parse(attributes[0]),
@@ -69,8 +63,7 @@ public class FieldElement
     );
   }
 
-  public override bool Equals(object i_obj)
-  {
+  public override bool Equals(object i_obj) {
     return i_obj is FieldElement element &&
            type == element.type &&
            value == element.value &&
@@ -81,8 +74,7 @@ public class FieldElement
            affected_by_ability == element.affected_by_ability;
   }
 
-  public override int GetHashCode()
-  {
+  public override int GetHashCode() {
     return HashCode.Combine(value, type, interactable, movable, destructible, combinable, affected_by_ability);
   }
 }

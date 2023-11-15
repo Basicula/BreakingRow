@@ -1,8 +1,7 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-public class GameField : MonoBehaviour
-{
+public class GameField : MonoBehaviour {
   [SerializeField] private FieldConfiguration m_field_configuration;
   [SerializeField] private bool m_is_auto_play;
 
@@ -32,15 +31,13 @@ public class GameField : MonoBehaviour
   private Vector2 m_mouse_down_position;
   private ((int, int), (int, int))? m_reverse_move;
 
-  public GameField()
-  {
+  public GameField() {
     m_to_create = new List<(int, int)>();
     m_selected_elements = new List<(int, int)>();
     m_highlighted_elements = new List<(int, int)>();
   }
 
-  void Start()
-  {
+  void Start() {
     m_input_handler = transform.GetChild(0).GetChild(0).GetChild(0).gameObject;
     var active_zone = m_input_handler.GetComponent<RectTransform>();
     m_max_active_zone_rect = active_zone.rect;
@@ -50,18 +47,15 @@ public class GameField : MonoBehaviour
     _Init();
   }
 
-  void Update()
-  {
+  void Update() {
     if (!_IsAvailable())
       return;
-    if (m_reverse_move.HasValue)
-    {
+    if (m_reverse_move.HasValue) {
       _MakeMove(m_reverse_move.Value.Item1, m_reverse_move.Value.Item2);
       m_reverse_move = null;
     }
     m_game_info.moves_count = m_field_data.GetAllMoves().Count;
-    if (m_to_create.Count != 0)
-    {
+    if (m_to_create.Count != 0) {
       foreach (var (row_id, column_id) in m_to_create)
         _InitElement(row_id, column_id);
       m_to_create.Clear();
@@ -69,8 +63,7 @@ public class GameField : MonoBehaviour
     }
 
     bool scenario_result = false;
-    switch (m_field_configuration.fill_strategy)
-    {
+    switch (m_field_configuration.fill_strategy) {
       case FieldConfiguration.FillStrategy.MoveThenSpawn:
         scenario_result = _MoveThenSpawnElements();
         break;
@@ -90,16 +83,13 @@ public class GameField : MonoBehaviour
     m_field_data.Save();
   }
 
-  private bool _ProcessElementGroups()
-  {
+  private bool _ProcessElementGroups() {
     if (!m_field_data.HasGroups())
       return false;
 
     var groups_details = m_field_data.ProcessGroups();
-    foreach (var group_details in groups_details)
-    {
-      foreach (var element in group_details.group)
-      {
+    foreach (var group_details in groups_details) {
+      foreach (var element in group_details.group) {
         m_field[element.Item1, element.Item2].Destroy();
         if (m_field_data.At(element.Item1, element.Item2).value >= 0)
           m_to_create.Add(element);
@@ -109,13 +99,10 @@ public class GameField : MonoBehaviour
     return true;
   }
 
-  private bool _MoveThenSpawnElements()
-  {
+  private bool _MoveThenSpawnElements() {
     var element_move_changes = m_field_data.MoveElements();
-    if (element_move_changes.Count > 0)
-    {
-      foreach (var element_move in element_move_changes)
-      {
+    if (element_move_changes.Count > 0) {
+      foreach (var element_move in element_move_changes) {
         var first = element_move.Item1;
         var second = element_move.Item2;
         var target_position = m_field[second.Item1, second.Item2].transform.position;
@@ -126,8 +113,7 @@ public class GameField : MonoBehaviour
       }
       return true;
     }
-    if (m_field_data.HasEmptyCells())
-    {
+    if (m_field_data.HasEmptyCells()) {
       var created_elements = m_field_data.SpawnNewValues();
       foreach (var element_position in created_elements)
         _InitElement(element_position.Item1, element_position.Item2);
@@ -136,13 +122,10 @@ public class GameField : MonoBehaviour
     return false;
   }
 
-  private bool _SpawnThenMoveElements()
-  {
-    if (m_field_data.HasEmptyCells())
-    {
+  private bool _SpawnThenMoveElements() {
+    if (m_field_data.HasEmptyCells()) {
       var element_move_changes = m_field_data.MoveElements();
-      foreach (var element_move in element_move_changes)
-      {
+      foreach (var element_move in element_move_changes) {
         var first = element_move.Item1;
         var second = element_move.Item2;
         m_field[second.Item1, second.Item2].transform.position = m_field[first.Item1, first.Item2].transform.position;
@@ -154,15 +137,11 @@ public class GameField : MonoBehaviour
       int main_line = -1;
       var offset = 0;
       var direction = m_field_data.GetMoveDirection();
-      foreach (var element_position in created_elements)
-      {
-        if (direction.Item2 == 0 && element_position.Item2 != main_line)
-        {
+      foreach (var element_position in created_elements) {
+        if (direction.Item2 == 0 && element_position.Item2 != main_line) {
           main_line = element_position.Item2;
           offset = 0;
-        }
-        else if (direction.Item1 == 0 && element_position.Item1 != main_line)
-        {
+        } else if (direction.Item1 == 0 && element_position.Item1 != main_line) {
           main_line = element_position.Item1;
           offset = 0;
         }
@@ -183,27 +162,23 @@ public class GameField : MonoBehaviour
     return false;
   }
 
-  public void Restart()
-  {
+  public void Restart() {
     Reset();
     for (int row_id = 0; row_id < m_field_configuration.height; ++row_id)
       for (int column_id = 0; column_id < m_field_configuration.width; ++column_id)
         _InitElement(row_id, column_id);
   }
 
-  public void Reset()
-  {
+  public void Reset() {
     m_field_data.Reset();
     m_game_info.Reset();
-    for (int ability_id = 0; ability_id < m_abilities.transform.childCount; ++ability_id)
-    {
+    for (int ability_id = 0; ability_id < m_abilities.transform.childCount; ++ability_id) {
       var ability_game_object = m_abilities.transform.GetChild(ability_id).gameObject;
       ability_game_object.GetComponent<AbilityBase>().Reset();
     }
   }
 
-  public void Init(FieldConfiguration i_field_configuration)
-  {
+  public void Init(FieldConfiguration i_field_configuration) {
     bool is_init_needed = m_field_configuration.width != i_field_configuration.width ||
       m_field_configuration.height != i_field_configuration.height ||
       m_field_configuration.active_elements_count != i_field_configuration.active_elements_count;
@@ -214,8 +189,7 @@ public class GameField : MonoBehaviour
       for (int column_id = 0; column_id < i_field_configuration.width && !is_init_needed; ++column_id)
         is_init_needed = new_cells[row_id, column_id] != old_cells[row_id, column_id];
 
-    if (is_init_needed)
-    {
+    if (is_init_needed) {
       Reset();
       Destroy(transform.GetChild(2).gameObject);
       Destroy(transform.GetChild(3).gameObject);
@@ -231,8 +205,7 @@ public class GameField : MonoBehaviour
       _Init();
   }
 
-  private void _Init()
-  {
+  private void _Init() {
     m_field_data = new FieldData(m_field_configuration, UnityEngine.SceneManagement.SceneManager.GetActiveScene().name);
     m_field_configuration = m_field_data.field_configuration;
 
@@ -253,8 +226,7 @@ public class GameField : MonoBehaviour
     m_game_info.moves_count = m_field_data.GetAllMoves().Count;
     m_field_center = new Vector2(m_grid_step * m_field_configuration.width / 2 - m_max_active_zone_center.x, m_grid_step * m_field_configuration.height / 2 + m_max_active_zone_center.y);
     for (int row_id = 0; row_id < m_field_configuration.height; ++row_id)
-      for (int column_id = 0; column_id < m_field_configuration.width; ++column_id)
-      {
+      for (int column_id = 0; column_id < m_field_configuration.width; ++column_id) {
         Vector2 position = _GetElementPosition(row_id, column_id);
         m_field[row_id, column_id] = Instantiate(m_game_element_prefab, position, Quaternion.identity).GetComponent<GameElement>();
         m_field[row_id, column_id].transform.parent = transform;
@@ -262,20 +234,17 @@ public class GameField : MonoBehaviour
       }
   }
 
-  private Vector2 _PointerEventPositionToWorldPosition(Vector2 i_event_position)
-  {
+  private Vector2 _PointerEventPositionToWorldPosition(Vector2 i_event_position) {
     var world_mouse_event_position = Camera.main.ScreenToWorldPoint(i_event_position);
     return new Vector2(world_mouse_event_position.x, world_mouse_event_position.y);
   }
 
-  private void _HandlePointerDown(Vector2 i_event_position)
-  {
+  private void _HandlePointerDown(Vector2 i_event_position) {
     if (!_IsAvailable())
       return;
     m_mouse_down_position = _PointerEventPositionToWorldPosition(i_event_position);
     var element_position = _GetElementPosition(m_mouse_down_position);
-    if (!_IsValidCell(element_position))
-    {
+    if (!_IsValidCell(element_position)) {
       Debug.LogError($"Bad element position on pointer down: {element_position} with event position {i_event_position}");
       return;
     }
@@ -283,8 +252,7 @@ public class GameField : MonoBehaviour
     _ProcessSelectedElements();
   }
 
-  private void _HandlePointerUp(Vector2 i_event_position)
-  {
+  private void _HandlePointerUp(Vector2 i_event_position) {
     if (m_selected_elements.Count != 1)
       return;
     var mouse_up_position = _PointerEventPositionToWorldPosition(i_event_position);
@@ -293,8 +261,7 @@ public class GameField : MonoBehaviour
       return;
     delta.Normalize();
     var element_position = _GetElementPosition(m_mouse_down_position + delta * m_grid_step);
-    if (!_IsValidCell(element_position))
-    {
+    if (!_IsValidCell(element_position)) {
       Debug.LogError($"Bad element position on pointer up: {element_position} with event position {i_event_position}");
       return;
     }
@@ -302,19 +269,16 @@ public class GameField : MonoBehaviour
     _ProcessSelectedElements();
   }
 
-  private void _HandleAbilityMove(string i_ability_name, Vector2 i_event_position)
-  {
+  private void _HandleAbilityMove(string i_ability_name, Vector2 i_event_position) {
     if (!_IsAvailable())
       return;
     var elements_to_highlight = new List<(int, int)>();
     var main_element_position = _GetElementPosition(Camera.main.ScreenToWorldPoint(i_event_position));
-    if (!_IsValidCell(main_element_position))
-    {
+    if (!_IsValidCell(main_element_position)) {
       _ClearHighlighting();
       return;
     }
-    switch (i_ability_name)
-    {
+    switch (i_ability_name) {
       case "RemoveElement":
         elements_to_highlight.Add(main_element_position);
         break;
@@ -325,8 +289,7 @@ public class GameField : MonoBehaviour
               elements_to_highlight.Add((row_id, column_id));
         break;
       case "RemoveElementsByValue":
-        if (_IsValidCell(main_element_position))
-        {
+        if (_IsValidCell(main_element_position)) {
           var target_element = m_field_data.At(main_element_position.Item1, main_element_position.Item2);
           for (int row_id = 0; row_id < m_field_configuration.height; ++row_id)
             for (int column_id = 0; column_id < m_field_configuration.width; ++column_id)
@@ -346,8 +309,7 @@ public class GameField : MonoBehaviour
     m_highlighted_elements = elements_to_highlight;
   }
 
-  private void _HandleAbility(string i_ability_name, AbilityBase i_ability, Vector2 i_applied_position)
-  {
+  private void _HandleAbility(string i_ability_name, AbilityBase i_ability, Vector2 i_applied_position) {
     if (!_IsAvailable())
       return;
     var main_element_position = _GetElementPosition(Camera.main.ScreenToWorldPoint(i_applied_position));
@@ -355,8 +317,7 @@ public class GameField : MonoBehaviour
       return;
     m_game_info.SpentScore(i_ability.price);
     i_ability.NextPrice();
-    switch (i_ability_name)
-    {
+    switch (i_ability_name) {
       case "RemoveElement":
         var removed_element_info = m_field_data.RemoveZone(main_element_position.Item1, main_element_position.Item2,
           main_element_position.Item1, main_element_position.Item2);
@@ -391,19 +352,16 @@ public class GameField : MonoBehaviour
     _ClearHighlighting();
   }
 
-  public void HandleStaticAbility(string i_name, StaticAbility i_ability)
-  {
+  public void HandleStaticAbility(string i_name, StaticAbility i_ability) {
     if (!_IsAvailable())
       return;
     m_game_info.SpentScore(i_ability.price);
     i_ability.NextPrice();
-    switch (i_name)
-    {
+    switch (i_name) {
       case "Shuffle":
         m_field_data.Shuffle();
         for (int row_id = 0; row_id < m_field_configuration.height; ++row_id)
-          for (int column_id = 0; column_id < m_field_configuration.width; ++column_id)
-          {
+          for (int column_id = 0; column_id < m_field_configuration.width; ++column_id) {
             m_field[row_id, column_id].Destroy();
             m_to_create.Add((row_id, column_id));
           }
@@ -412,8 +370,7 @@ public class GameField : MonoBehaviour
         var small_value = m_field_data.values_interval[0];
         m_field_data.IncreaseValuesInterval();
         for (int row_id = 0; row_id < m_field_configuration.height; ++row_id)
-          for (int column_id = 0; column_id < m_field_configuration.width; ++column_id)
-          {
+          for (int column_id = 0; column_id < m_field_configuration.width; ++column_id) {
             var element = m_field_data.At(row_id, column_id);
             if (element.value == small_value)
               m_field[row_id, column_id].Destroy();
@@ -433,41 +390,34 @@ public class GameField : MonoBehaviour
         break;
     }
   }
-  private void _SelectElement((int, int) i_position)
-  {
+  private void _SelectElement((int, int) i_position) {
     m_selected_elements.Add(i_position);
     m_field[i_position.Item1, i_position.Item2].UpdateSelection(true);
   }
 
-  private void _HighlightElement((int, int) i_position)
-  {
+  private void _HighlightElement((int, int) i_position) {
     m_highlighted_elements.Add(i_position);
     m_field[i_position.Item1, i_position.Item2].UpdateHighlighting(true);
   }
 
-  private void _ClearHighlighting()
-  {
+  private void _ClearHighlighting() {
     foreach (var element_position in m_highlighted_elements)
       m_field[element_position.Item1, element_position.Item2].UpdateHighlighting(false);
     m_highlighted_elements.Clear();
   }
 
-  private void _ProcessSelectedElements()
-  {
+  private void _ProcessSelectedElements() {
     if (m_selected_elements.Count != 2)
       return;
 
     var first = m_selected_elements[0];
     var second = m_selected_elements[1];
     var distance = Mathf.Abs(first.Item1 - second.Item1) + Mathf.Abs(first.Item2 - second.Item2);
-    if (distance > 1)
-    {
+    if (distance > 1) {
       var position = m_selected_elements[0];
       m_field[position.Item1, position.Item2].UpdateSelection(false);
       m_selected_elements.RemoveAt(0);
-    }
-    else
-    {
+    } else {
       foreach (var position in m_selected_elements)
         m_field[position.Item1, position.Item2].UpdateSelection(false);
       m_selected_elements.Clear();
@@ -476,8 +426,7 @@ public class GameField : MonoBehaviour
     }
   }
 
-  private void _InitBackgroundGrid()
-  {
+  private void _InitBackgroundGrid() {
     SVG svg = new SVG();
     var rect_size = new Vector2(m_grid_step, m_grid_step);
     var rect_color = "rgba(20, 20, 20, 0.5)";
@@ -495,30 +444,25 @@ public class GameField : MonoBehaviour
     sprite_renderer.sortingOrder = -1;
   }
 
-  private List<List<(int, int)>> _GetHoles()
-  {
+  private List<List<(int, int)>> _GetHoles() {
     var holes = m_field_data.GetHoles();
     var outer_hole = new List<(int, int)>();
     for (int row_id = 0; row_id <= m_field_configuration.height + 1; ++row_id)
-      for (int column_id = 0; column_id <= m_field_configuration.width + 1; ++column_id)
-      {
+      for (int column_id = 0; column_id <= m_field_configuration.width + 1; ++column_id) {
         if (row_id > 0 && row_id <= m_field_configuration.height &&
           column_id > 0 && column_id <= m_field_configuration.width)
           continue;
         outer_hole.Add((row_id, column_id));
       }
-    for (int hole_id = 0; hole_id < holes.Count; ++hole_id)
-    {
+    for (int hole_id = 0; hole_id < holes.Count; ++hole_id) {
       bool is_outer = false;
-      for (int element_id = 0; element_id < holes[hole_id].Count; ++element_id)
-      {
+      for (int element_id = 0; element_id < holes[hole_id].Count; ++element_id) {
         var (row_id, column_id) = holes[hole_id][element_id];
         holes[hole_id][element_id] = (row_id + 1, column_id + 1);
         is_outer = is_outer || (row_id == 0 || row_id == m_field_configuration.height - 1 ||
           column_id == 0 || column_id == m_field_configuration.width - 1);
       }
-      if (is_outer)
-      {
+      if (is_outer) {
         for (int element_id = 0; element_id < holes[hole_id].Count; ++element_id)
           outer_hole.Add(holes[hole_id][element_id]);
         holes.RemoveAt(hole_id);
@@ -529,11 +473,9 @@ public class GameField : MonoBehaviour
     return holes;
   }
 
-  private List<List<(int, int)>> _GetHolePaths(List<(int, int)> i_hole)
-  {
+  private List<List<(int, int)>> _GetHolePaths(List<(int, int)> i_hole) {
     var hole_edges = new List<((int, int), (int, int))>();
-    foreach (var (row_id, column_id) in i_hole)
-    {
+    foreach (var (row_id, column_id) in i_hole) {
       hole_edges.Add(((row_id, column_id), (row_id, column_id + 1)));
       hole_edges.Add(((row_id, column_id + 1), (row_id + 1, column_id + 1)));
       hole_edges.Add(((row_id + 1, column_id + 1), (row_id + 1, column_id)));
@@ -541,8 +483,7 @@ public class GameField : MonoBehaviour
     }
     for (int i = 0; i < hole_edges.Count; ++i)
       for (int j = i + 1; j < hole_edges.Count; ++j)
-        if (hole_edges[i].Item1 == hole_edges[j].Item2 && hole_edges[i].Item2 == hole_edges[j].Item1)
-        {
+        if (hole_edges[i].Item1 == hole_edges[j].Item2 && hole_edges[i].Item2 == hole_edges[j].Item1) {
           hole_edges.RemoveAt(j);
           hole_edges.RemoveAt(i);
           --i;
@@ -550,10 +491,8 @@ public class GameField : MonoBehaviour
         }
     var paths = new List<List<(int, int)>>();
     int edge_id = hole_edges.Count;
-    while (hole_edges.Count > 0)
-    {
-      if (edge_id >= hole_edges.Count)
-      {
+    while (hole_edges.Count > 0) {
+      if (edge_id >= hole_edges.Count) {
         paths.Add(new List<(int, int)>());
         paths[paths.Count - 1].Add(hole_edges[0].Item1);
         paths[paths.Count - 1].Add(hole_edges[0].Item2);
@@ -561,20 +500,17 @@ public class GameField : MonoBehaviour
         edge_id = 0;
         continue;
       }
-      if (paths[paths.Count - 1][paths[paths.Count - 1].Count - 1] == hole_edges[edge_id].Item1)
-      {
+      if (paths[paths.Count - 1][paths[paths.Count - 1].Count - 1] == hole_edges[edge_id].Item1) {
         paths[paths.Count - 1].Add(hole_edges[edge_id].Item2);
         hole_edges.RemoveAt(edge_id);
         edge_id = 0;
-      }
-      else
+      } else
         ++edge_id;
     }
     return paths;
   }
 
-  private void _InitHoleOverlays()
-  {
+  private void _InitHoleOverlays() {
     var holes = _GetHoles();
     SVG stroke_svg = new SVG();
     SVG fill_svg = new SVG();
@@ -583,8 +519,7 @@ public class GameField : MonoBehaviour
     var hole_stroke = new SVGStrokeProps("#000000", m_outer_grid_stroke_width);
     var no_stroke = new SVGStrokeProps("none", 0);
 
-    foreach (var hole in holes)
-    {
+    foreach (var hole in holes) {
       var paths = _GetHolePaths(hole);
       var fill_path = new SVGPath();
       fill_path.fill_color = fill_color;
@@ -592,12 +527,10 @@ public class GameField : MonoBehaviour
       var stroke_path = new SVGPath();
       stroke_path.fill_color = "rgba(20, 20, 20, 0.25)";
       stroke_path.stroke_props = hole_stroke;
-      foreach (var path_points in paths)
-      {
+      foreach (var path_points in paths) {
         // Remove last point as it's same as first one
         path_points.RemoveAt(path_points.Count - 1);
-        if (path_points[0].Item1 == 0 && path_points[0].Item2 == 0)
-        {
+        if (path_points[0].Item1 == 0 && path_points[0].Item2 == 0) {
           path_points.Clear();
           var max_row_count = Mathf.RoundToInt(Screen.height / m_grid_step) + 1;
           var max_column_count = Mathf.RoundToInt(Screen.width / m_grid_step) + 1;
@@ -619,25 +552,21 @@ public class GameField : MonoBehaviour
         fill_path.Close();
 
         var prev_offset_direction = new Vector2(0, 0);
-        for (int point_id = 0; point_id <= path_points.Count; ++point_id)
-        {
+        for (int point_id = 0; point_id <= path_points.Count; ++point_id) {
           var curr_point_id = point_id == path_points.Count ? 0 : point_id;
           var prev_point_id = point_id == 0 ? path_points.Count - 1 : point_id - 1;
           var edge_direction = new Vector2(path_points[curr_point_id].Item2, path_points[curr_point_id].Item1) -
             new Vector2(path_points[prev_point_id].Item2, path_points[prev_point_id].Item1);
           var offset_direction = new Vector2(-edge_direction.y, -edge_direction.x);
           offset_direction *= offset_value;
-          if (prev_offset_direction == new Vector2(0, 0))
-          {
+          if (prev_offset_direction == new Vector2(0, 0)) {
             prev_offset_direction = offset_direction;
             continue;
           }
-          if (Vector2.Dot(prev_offset_direction, offset_direction) == 0.0f)
-          {
+          if (Vector2.Dot(prev_offset_direction, offset_direction) == 0.0f) {
             offset_path_points[curr_point_id] = offset_path_points[curr_point_id] + offset_direction;
             offset_path_points[point_id - 1] = offset_path_points[point_id - 1] + offset_direction;
-          }
-          else
+          } else
             offset_path_points[curr_point_id] = offset_path_points[curr_point_id] + offset_direction;
           prev_offset_direction = offset_direction;
         }
@@ -674,8 +603,7 @@ public class GameField : MonoBehaviour
     sprite_renderer.sortingOrder = 2;
   }
 
-  private void _InitInputHandler()
-  {
+  private void _InitInputHandler() {
     // Fit input handler size to actual grid size
     var input_handler_rect_transform = m_input_handler.GetComponent<RectTransform>();
     var rect = input_handler_rect_transform.rect;
@@ -693,23 +621,19 @@ public class GameField : MonoBehaviour
     input_handler_component.on_ability_apply = _HandleAbility;
   }
 
-  private void _InitCameraViewport()
-  {
+  private void _InitCameraViewport() {
     var active_zone = m_input_handler.GetComponent<RectTransform>();
     Camera.main.orthographicSize = Screen.height / 2.0f + m_outer_grid_stroke_width;
     Camera.main.aspect = (float)Screen.width / Screen.height;
   }
 
-  private void _AutoMove()
-  {
+  private void _AutoMove() {
     var moves = m_field_data.GetAllMoves();
-    if (moves.Count > 0)
-    {
+    if (moves.Count > 0) {
       moves.Sort((FieldData.MoveDetails first, FieldData.MoveDetails second) => second.strike - first.strike);
       var max_strike_value = moves[0].strike;
       int max_strike_value_count = 0;
-      foreach (var move_details in moves)
-      {
+      foreach (var move_details in moves) {
         if (move_details.strike < max_strike_value)
           break;
         ++max_strike_value_count;
@@ -720,8 +644,7 @@ public class GameField : MonoBehaviour
     }
   }
 
-  private void _MakeMove((int, int) first, (int, int) second)
-  {
+  private void _MakeMove((int, int) first, (int, int) second) {
     if (!m_field_data.IsMoveAvailable(first, second))
       return;
     m_field_data.SwapCells(first.Item1, first.Item2, second.Item1, second.Item2);
@@ -733,36 +656,31 @@ public class GameField : MonoBehaviour
       m_reverse_move = (first, second);
   }
 
-  private Vector2 _GetElementPosition(int row_id, int column_id)
-  {
+  private Vector2 _GetElementPosition(int row_id, int column_id) {
     return new Vector2(
       m_grid_step * column_id - m_field_center.x + m_half_grid_step,
       m_field_center.y - m_half_grid_step - m_grid_step * row_id
     );
   }
 
-  private (int, int) _GetElementPosition(Vector2 position)
-  {
+  private (int, int) _GetElementPosition(Vector2 position) {
     var row_id = Mathf.FloorToInt((m_field_center.y - position.y) / m_grid_step);
     var column_id = Mathf.FloorToInt((m_field_center.x + position.x) / m_grid_step);
     return (row_id, column_id);
   }
 
-  private void _InitElement(int row_id, int column_id, bool i_with_animation = true)
-  {
+  private void _InitElement(int row_id, int column_id, bool i_with_animation = true) {
     var element = m_field_data.At(row_id, column_id);
     m_field[row_id, column_id].Create(m_element_style_provider.Get(element), i_with_animation);
     m_field[row_id, column_id].transform.GetChild(2).GetComponent<SpriteRenderer>().size = new Vector2(m_element_size, m_element_size);
     m_field[row_id, column_id].transform.GetChild(3).GetComponent<SpriteRenderer>().size = new Vector2(m_grid_step, m_grid_step);
   }
 
-  private void OnDestroy()
-  {
+  private void OnDestroy() {
     m_field_data.Save();
   }
 
-  private bool _IsAvailable()
-  {
+  private bool _IsAvailable() {
     for (int i = 0; i < m_field_configuration.height; ++i)
       for (int j = 0; j < m_field_configuration.width; ++j)
         if (!m_field[i, j].IsAvailable())
@@ -770,18 +688,15 @@ public class GameField : MonoBehaviour
     return true;
   }
 
-  private bool _IsValidCell(int i_row_id, int i_column_id)
-  {
+  private bool _IsValidCell(int i_row_id, int i_column_id) {
     return i_row_id >= 0 && i_row_id < m_field_configuration.height && i_column_id >= 0 && i_column_id < m_field_configuration.width;
   }
 
-  private bool _IsValidCell((int, int) i_position)
-  {
+  private bool _IsValidCell((int, int) i_position) {
     return _IsValidCell(i_position.Item1, i_position.Item2);
   }
 
-  public FieldConfiguration field_configuration
-  {
+  public FieldConfiguration field_configuration {
     get => m_field_configuration;
   }
 }

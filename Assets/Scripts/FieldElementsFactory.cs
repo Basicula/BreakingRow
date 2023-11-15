@@ -1,11 +1,8 @@
-public class FieldElementsFactory
-{
+public class FieldElementsFactory {
   public const int undefined_value = -1;
 
-  public static FieldElement CreateElement(FieldElement.Type i_type, int i_value = undefined_value)
-  {
-    switch (i_type)
-    {
+  public static FieldElement CreateElement(FieldElement.Type i_type, int i_value = undefined_value) {
+    switch (i_type) {
       case FieldElement.Type.Common:
         return new FieldElement(i_type, true, true, false, true, true, i_value);
       case FieldElement.Type.Empty:
