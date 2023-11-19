@@ -44,6 +44,10 @@ public class GameField : MonoBehaviour {
     m_max_active_zone_anchor_min = active_zone.anchorMin;
     m_max_active_zone_anchor_max = active_zone.anchorMax;
     m_max_active_zone_center = active_zone.localPosition;
+
+    if (!m_field_configuration.Load(name))
+      m_field_configuration.InitCellsConfiguration();
+
     _Init();
   }
 
@@ -198,16 +202,15 @@ public class GameField : MonoBehaviour {
           Destroy(m_field[row_id, column_id].gameObject);
     }
 
-    m_field_configuration = i_field_configuration;
-    m_field_data.field_configuration = i_field_configuration;
+    m_field_configuration.Update(i_field_configuration);
 
     if (is_init_needed)
       _Init();
   }
 
   private void _Init() {
-    m_field_data = new FieldData(m_field_configuration, UnityEngine.SceneManagement.SceneManager.GetActiveScene().name);
-    m_field_configuration = m_field_data.field_configuration;
+    var name = UnityEngine.SceneManagement.SceneManager.GetActiveScene().name;
+    m_field_data = new FieldData(m_field_configuration, name);
 
     m_grid_step = Mathf.Min(m_max_active_zone_rect.width / m_field_configuration.width, m_max_active_zone_rect.height / m_field_configuration.height);
     m_half_grid_step = m_grid_step / 2;
@@ -677,6 +680,7 @@ public class GameField : MonoBehaviour {
   }
 
   private void OnDestroy() {
+    m_field_configuration.Save(UnityEngine.SceneManagement.SceneManager.GetActiveScene().name);
     m_field_data.Save();
   }
 

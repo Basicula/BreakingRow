@@ -155,7 +155,7 @@ public class EditFieldShape : MonoBehaviour, IPointerClickHandler, IDragHandler,
         var x = column_id - m_field_configuration.width / 2.0f + 0.5;
         var y = row_id - m_field_configuration.height / 2.0f + 0.5;
         var element_type = x * x + y * y <= sqr_radius ? FieldElement.Type.Common : FieldElement.Type.Hole;
-        m_field_configuration.ElementAt(row_id, column_id, element_type);
+        m_field_configuration.SetElementTypeAt(row_id, column_id, element_type);
       }
   }
 
@@ -164,7 +164,7 @@ public class EditFieldShape : MonoBehaviour, IPointerClickHandler, IDragHandler,
     System.Random random = new System.Random();
     for (int row_id = 0; row_id < m_field_configuration.height; ++row_id)
       for (int column_id = 0; column_id < m_field_configuration.width; ++column_id)
-        m_field_configuration.ElementAt(row_id, column_id, keys[random.Next(keys.Length)]);
+        m_field_configuration.SetElementTypeAt(row_id, column_id, keys[random.Next(keys.Length)]);
   }
 
   private void _UpdateTiles() {

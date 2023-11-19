@@ -75,7 +75,7 @@ public class Configurations : MonoBehaviour {
       var cells = edit_field_shape.GetCells();
       for (int row_id = 0; row_id < field_configuration.height; ++row_id)
         for (int column_id = 0; column_id < field_configuration.width; ++column_id)
-          field_configuration.ElementAt(row_id, column_id, cells[row_id, column_id]);
+          field_configuration.SetElementTypeAt(row_id, column_id, cells[row_id, column_id]);
       m_game_field.Init(field_configuration);
     });
   }

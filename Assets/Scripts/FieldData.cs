@@ -4,7 +4,7 @@ using System.Linq;
 using UnityEngine;
 
 public class FieldData {
-  private FieldConfiguration m_field_configuration;
+  private readonly FieldConfiguration m_field_configuration;
   private FieldElement[,] m_field;
 
   private int[] m_values_interval;
@@ -31,18 +31,6 @@ public class FieldData {
 
   public FieldElement At(int row_id, int column_id) {
     return m_field[row_id, column_id];
-  }
-
-  public FieldConfiguration field_configuration {
-    get => m_field_configuration;
-    set {
-      var old = m_field_configuration;
-      m_field_configuration = value;
-      if (m_field_configuration.height != old.height ||
-        m_field_configuration.width != old.width ||
-        m_field_configuration.active_elements_count != old.active_elements_count)
-        _Init();
-    }
   }
 
   public int[] values_interval {
@@ -578,55 +566,34 @@ public class FieldData {
   }
 
   private struct SerializableData {
-    public int width;
-    public int height;
-    public int active_elements_count;
     public string[] field;
     public int[] values_interval;
     public float[] values_probability_mask;
-    public string mode;
-    public string move_direction;
-    public string fill_strategy;
   }
 
   private bool _Load() {
     var data = new SerializableData();
     if (!SaveLoad.Load(ref data, m_save_file_path))
       return false;
-    m_field_configuration.width = data.width;
-    m_field_configuration.height = data.height;
-    m_field_configuration.active_elements_count = data.active_elements_count;
     m_field = new FieldElement[m_field_configuration.height, m_field_configuration.width];
-    m_field_configuration.InitCellsConfiguration();
     for (int row_id = 0; row_id < m_field_configuration.height; ++row_id)
-      for (int column_id = 0; column_id < m_field_configuration.width; ++column_id) {
+      for (int column_id = 0; column_id < m_field_configuration.width; ++column_id)
         m_field[row_id, column_id] = FieldElement.FromString(data.field[row_id * m_field_configuration.width + column_id]);
-        m_field_configuration.ElementAt(row_id, column_id, m_field[row_id, column_id].type);
-      }
     m_values_interval = data.values_interval;
     m_values_probability_interval = data.values_probability_mask;
-    m_field_configuration.mode = Enum.Parse<FieldConfiguration.Mode>(data.mode);
-    m_field_configuration.move_direction = Enum.Parse<FieldConfiguration.MoveDirection>(data.move_direction);
-    m_field_configuration.fill_strategy = Enum.Parse<FieldConfiguration.FillStrategy>(data.fill_strategy);
     return true;
   }
 
   public void Save() {
     var data = new SerializableData();
-    data.width = m_field_configuration.width;
-    data.height = m_field_configuration.height;
-    data.active_elements_count = m_field_configuration.active_elements_count;
-    data.field = new string[data.width * data.height];
+    data.field = new string[m_field_configuration.width * m_field_configuration.height];
     for (int row_id = 0; row_id < m_field_configuration.height; ++row_id)
       for (int column_id = 0; column_id < m_field_configuration.width; ++column_id) {
-        int flat_id = row_id * data.width + column_id;
+        int flat_id = row_id * m_field_configuration.width + column_id;
         data.field[flat_id] = m_field[row_id, column_id].ToString();
       }
     data.values_interval = m_values_interval;
     data.values_probability_mask = m_values_probability_interval;
-    data.mode = Enum.GetName(typeof(FieldConfiguration.Mode), m_field_configuration.mode);
-    data.move_direction = Enum.GetName(typeof(FieldConfiguration.MoveDirection), m_field_configuration.move_direction);
-    data.fill_strategy = Enum.GetName(typeof(FieldConfiguration.FillStrategy), m_field_configuration.fill_strategy);
     SaveLoad.Save(data, m_save_file_path);
   }
 }
