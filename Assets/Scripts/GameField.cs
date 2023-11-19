@@ -54,11 +54,7 @@ public class GameField : MonoBehaviour {
   void Update() {
     if (!_IsAvailable())
       return;
-    if (m_reverse_move.HasValue) {
-      _MakeMove(m_reverse_move.Value.Item1, m_reverse_move.Value.Item2);
-      m_reverse_move = null;
-    }
-    m_game_info.moves_count = m_field_data.GetAllMoves().Count;
+
     if (m_to_create.Count != 0) {
       foreach (var (row_id, column_id) in m_to_create)
         _InitElement(row_id, column_id);
@@ -81,16 +77,22 @@ public class GameField : MonoBehaviour {
       return;
 
     if (_ProcessElementGroups())
-      return;
+      // If moved and then we successfully procced groups then we don't want to remember how to undo it
+      m_reverse_move = null;
+
+    if (m_reverse_move.HasValue) {
+      _MakeMove(m_reverse_move.Value.Item1, m_reverse_move.Value.Item2);
+      m_reverse_move = null;
+    }
+
+    m_game_info.moves_count = m_field_data.GetAllMoves().Count;
+
     if (m_is_auto_play)
       _AutoMove();
     m_field_data.Save();
   }
 
   private bool _ProcessElementGroups() {
-    if (!m_field_data.HasGroups())
-      return false;
-
     var groups_details = m_field_data.ProcessGroups();
     foreach (var group_details in groups_details) {
       foreach (var element in group_details.group) {
@@ -100,7 +102,7 @@ public class GameField : MonoBehaviour {
       }
       m_game_info.UpdateScore(group_details.value, group_details.group.Count);
     }
-    return true;
+    return groups_details.Count != 0;
   }
 
   private bool _MoveThenSpawnElements() {
@@ -655,7 +657,7 @@ public class GameField : MonoBehaviour {
       (m_field[second.Item1, second.Item2], m_field[first.Item1, first.Item2]);
     m_field[first.Item1, first.Item2].MoveTo(m_field[second.Item1, second.Item2].transform.position);
     m_field[second.Item1, second.Item2].MoveTo(m_field[first.Item1, first.Item2].transform.position);
-    if (!m_field_data.HasGroups() && !m_reverse_move.HasValue)
+    if (!m_reverse_move.HasValue)
       m_reverse_move = (first, second);
   }
 

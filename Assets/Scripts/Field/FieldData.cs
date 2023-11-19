@@ -100,10 +100,6 @@ public class FieldData {
     return hole_groups;
   }
 
-  public bool HasGroups() {
-    return _GetCrossGroups().Count > 0;
-  }
-
   public bool HasEmptyCells() {
     for (int row_id = 0; row_id < m_field_configuration.height; ++row_id)
       for (int column_id = 0; column_id < m_field_configuration.width; ++column_id)
@@ -314,14 +310,6 @@ public class FieldData {
           SwapCells(row_id, column_id, neighbor_row_id, neighbor_column_id);
         }
     return moves_data;
-  }
-
-  public int CheckMove((int, int) first, (int, int) second) {
-    SwapCells(first.Item1, first.Item2, second.Item1, second.Item2);
-    var first_cross_group = _CrossGroupAt(first.Item1, first.Item2);
-    var second_cross_group = _CrossGroupAt(second.Item1, second.Item2);
-    SwapCells(first.Item1, first.Item2, second.Item1, second.Item2);
-    return Convert.ToInt32(first_cross_group.Count > 0) + Convert.ToInt32(second_cross_group.Count > 0);
   }
 
   public void Shuffle() {
