@@ -1,7 +1,7 @@
 ﻿using System.Collections.Generic;
 using UnityEngine;
 
-public class VectorUtilities : ScriptableObject {
+public class VectorUtilities {
   public static Vector3 Lerp(List<Vector3> i_control_points, float i_max_value, float i_value) {
     var step = i_max_value / i_control_points.Count;
     i_value %= i_max_value;
