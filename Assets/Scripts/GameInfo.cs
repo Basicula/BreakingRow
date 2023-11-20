@@ -81,9 +81,10 @@ public class GameInfo : MonoBehaviour {
   }
 
   private void _Save() {
-    var data = new SerializableData();
-    data.score = m_score;
-    data.best_score = m_best_score;
+    var data = new SerializableData {
+      score = m_score,
+      best_score = m_best_score
+    };
     SaveLoad.Save(data, m_save_file_path);
   }
 }

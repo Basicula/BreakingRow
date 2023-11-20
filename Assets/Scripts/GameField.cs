@@ -27,9 +27,10 @@ public class GameField : MonoBehaviour {
   private float m_inner_grid_stroke_width;
   private float m_outer_grid_stroke_width;
   private Vector2 m_field_center;
-  private List<(int, int)> m_to_create;
-  private List<(int, int)> m_selected_elements;
-  private List<(int, int)> m_highlighted_elements;
+  private readonly List<(int, int)> m_to_create;
+  private readonly List<(int, int)> m_selected_elements;
+  private readonly List<(int, int)> m_highlighted_elements;
+  private (int, int) m_highlighted_focus_position;
   private Vector2 m_mouse_down_position;
   private ((int, int), (int, int))? m_reverse_move;
 
@@ -274,21 +275,23 @@ public class GameField : MonoBehaviour {
   private void _HandleAbilityMove(string i_ability_name, Vector2 i_event_position) {
     if (!_IsAvailable())
       return;
-    var elements_to_highlight = new List<(int, int)>();
     var main_element_position = _GetElementPosition(Camera.main.ScreenToWorldPoint(i_event_position));
-    if (!_IsValidCell(main_element_position)) {
-      _ClearHighlighting();
+    var offset_from_previous_main = Mathf.Abs(main_element_position.Item1 - m_highlighted_focus_position.Item1) +
+      Mathf.Abs(main_element_position.Item2 - m_highlighted_focus_position.Item2);
+    if (offset_from_previous_main == 0)
       return;
-    }
+    _ClearHighlighting();
+    if (!_IsValidCell(main_element_position))
+      return;
     switch (i_ability_name) {
       case "RemoveElement":
-        elements_to_highlight.Add(main_element_position);
+        _HighlightElement(main_element_position);
         break;
       case "Bomb":
         for (int row_id = main_element_position.Item1 - 1; row_id <= main_element_position.Item1 + 1; ++row_id)
           for (int column_id = main_element_position.Item2 - 1; column_id <= main_element_position.Item2 + 1; ++column_id)
             if (_IsValidCell(row_id, column_id))
-              elements_to_highlight.Add((row_id, column_id));
+              _HighlightElement((row_id, column_id));
         break;
       case "RemoveElementsByValue":
         if (_IsValidCell(main_element_position)) {
@@ -296,25 +299,20 @@ public class GameField : MonoBehaviour {
           for (int row_id = 0; row_id < m_field_configuration.height; ++row_id)
             for (int column_id = 0; column_id < m_field_configuration.width; ++column_id)
               if (m_field_data[row_id, column_id] == target_element)
-                elements_to_highlight.Add((row_id, column_id));
+                _HighlightElement((row_id, column_id));
         }
         break;
       default:
         break;
     }
-    foreach (var element_position in m_highlighted_elements)
-      if (!elements_to_highlight.Contains(element_position))
-        m_field[element_position.Item1, element_position.Item2].UpdateHighlighting(false);
-    foreach (var element_position in elements_to_highlight)
-      if (!m_highlighted_elements.Contains(element_position))
-        m_field[element_position.Item1, element_position.Item2].UpdateHighlighting(true);
-    m_highlighted_elements = elements_to_highlight;
+    m_highlighted_focus_position = main_element_position;
   }
 
   private void _HandleAbility(string i_ability_name, AbilityBase i_ability, Vector2 i_applied_position) {
     if (!_IsAvailable())
       return;
     var main_element_position = _GetElementPosition(Camera.main.ScreenToWorldPoint(i_applied_position));
+    _ClearHighlighting();
     if (!_IsValidCell(main_element_position))
       return;
     m_game_info.SpentScore(i_ability.price);
@@ -351,7 +349,6 @@ public class GameField : MonoBehaviour {
       default:
         return;
     }
-    _ClearHighlighting();
   }
 
   public void HandleStaticAbility(string i_name, StaticAbility i_ability) {
@@ -403,6 +400,7 @@ public class GameField : MonoBehaviour {
   }
 
   private void _ClearHighlighting() {
+    m_highlighted_focus_position = (-1, -1);
     foreach (var element_position in m_highlighted_elements)
       m_field[element_position.Item1, element_position.Item2].UpdateHighlighting(false);
     m_highlighted_elements.Clear();
@@ -496,14 +494,14 @@ public class GameField : MonoBehaviour {
     while (hole_edges.Count > 0) {
       if (edge_id >= hole_edges.Count) {
         paths.Add(new List<(int, int)>());
-        paths[paths.Count - 1].Add(hole_edges[0].Item1);
-        paths[paths.Count - 1].Add(hole_edges[0].Item2);
+        paths[^1].Add(hole_edges[0].Item1);
+        paths[^1].Add(hole_edges[0].Item2);
         hole_edges.RemoveAt(0);
         edge_id = 0;
         continue;
       }
-      if (paths[paths.Count - 1][paths[paths.Count - 1].Count - 1] == hole_edges[edge_id].Item1) {
-        paths[paths.Count - 1].Add(hole_edges[edge_id].Item2);
+      if (paths[^1][^1] == hole_edges[edge_id].Item1) {
+        paths[^1].Add(hole_edges[edge_id].Item2);
         hole_edges.RemoveAt(edge_id);
         edge_id = 0;
       } else
@@ -523,12 +521,14 @@ public class GameField : MonoBehaviour {
 
     foreach (var hole in holes) {
       var paths = _GetHolePaths(hole);
-      var fill_path = new SVGPath();
-      fill_path.fill_color = fill_color;
-      fill_path.stroke_props = no_stroke;
-      var stroke_path = new SVGPath();
-      stroke_path.fill_color = "rgba(20, 20, 20, 0.25)";
-      stroke_path.stroke_props = hole_stroke;
+      var fill_path = new SVGPath {
+        fill_color = fill_color,
+        stroke_props = no_stroke
+      };
+      var stroke_path = new SVGPath {
+        fill_color = "rgba(20, 20, 20, 0.25)",
+        stroke_props = hole_stroke
+      };
       foreach (var path_points in paths) {
         // Remove last point as it's same as first one
         path_points.RemoveAt(path_points.Count - 1);

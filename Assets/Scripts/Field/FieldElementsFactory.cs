@@ -1,8 +1,8 @@
 public class FieldElementsFactory {
   public const int undefined_value = -1;
 
-  public static readonly FieldElement hole_element = new FieldElement(FieldElement.Type.Hole, false, false, false, false, false, undefined_value);
-  public static readonly FieldElement empty_element = new FieldElement(FieldElement.Type.Empty, false, false, false, false, false, undefined_value);
+  public static readonly FieldElement hole_element = new(FieldElement.Type.Hole, false, false, false, false, false, undefined_value);
+  public static readonly FieldElement empty_element = new(FieldElement.Type.Empty, false, false, false, false, false, undefined_value);
 
   public static FieldElement CreateElement(FieldElement.Type i_type, int i_value = undefined_value) {
     switch (i_type) {

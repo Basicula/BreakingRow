@@ -1,12 +1,12 @@
 using System;
 
 public class FieldDataIterator {
-  private int m_height;
-  private int m_width;
+  public readonly (int, int) direction;
+  private readonly int m_height;
+  private readonly int m_width;
   private (int, int) m_current_element;
   private (int, int) m_start_element;
   private (int, int) m_end_element;
-  public readonly (int, int) direction;
 
   public FieldDataIterator(FieldConfiguration.MoveDirection i_move_direction, int i_height, int i_width) {
     m_width = i_width;
