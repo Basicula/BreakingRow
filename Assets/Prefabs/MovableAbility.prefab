@@ -5,8 +5,21 @@ PrefabInstance:
   m_ObjectHideFlags: 0
   serializedVersion: 2
   m_Modification:
+    serializedVersion: 3
     m_TransformParent: {fileID: 0}
     m_Modifications:
+    - target: {fileID: 3017392404108230762, guid: 71b4b00f51c386a43b15cafa13c8446e, type: 3}
+      propertyPath: m_AnchorMax.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 3017392404108230762, guid: 71b4b00f51c386a43b15cafa13c8446e, type: 3}
+      propertyPath: m_AnchorMax.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 3017392404108230762, guid: 71b4b00f51c386a43b15cafa13c8446e, type: 3}
+      propertyPath: m_SizeDelta.y
+      value: 0
+      objectReference: {fileID: 0}
     - target: {fileID: 5692712427419031816, guid: 71b4b00f51c386a43b15cafa13c8446e, type: 3}
       propertyPath: m_Pivot.x
       value: 0.5
@@ -111,7 +124,17 @@ PrefabInstance:
       propertyPath: m_Sprite
       value: 
       objectReference: {fileID: 21300000, guid: a267f5bcf632fc54bb5a8f79fd612381, type: 3}
+    - target: {fileID: 5692712427832998841, guid: 71b4b00f51c386a43b15cafa13c8446e, type: 3}
+      propertyPath: m_fontSize
+      value: 22.2
+      objectReference: {fileID: 0}
     m_RemovedComponents: []
+    m_RemovedGameObjects: []
+    m_AddedGameObjects: []
+    m_AddedComponents:
+    - targetCorrespondingSourceObject: {fileID: 5692712427419031817, guid: 71b4b00f51c386a43b15cafa13c8446e, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: -7731185403930620433}
   m_SourcePrefab: {fileID: 100100000, guid: 71b4b00f51c386a43b15cafa13c8446e, type: 3}
 --- !u!1 &3509983385296024843 stripped
 GameObject:
@@ -127,7 +150,7 @@ MonoBehaviour:
   m_GameObject: {fileID: 3509983385296024843}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 8ce01502b3b7c3147b8cd84e4ac6594b, type: 3}
+  m_Script: {fileID: 11500000, guid: 21d32b4bafae2d94f906419461c7f397, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
   m_price_change_rule: 0
