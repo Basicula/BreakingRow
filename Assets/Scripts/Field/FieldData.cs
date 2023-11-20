@@ -1,46 +1,32 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
-using UnityEngine;
 
 public class FieldData {
   private readonly FieldConfiguration m_field_configuration;
   private FieldElement[,] m_field;
 
-  private int[] m_values_interval;
-  private float[] m_values_probability_interval;
-
   private List<(int, int)> m_should_stay_empty;
 
-  private string m_save_file_path;
+  private readonly string m_save_file_path;
 
-  private static readonly FieldElement m_hole_element = FieldElementsFactory.CreateElement(FieldElement.Type.Hole);
-  private static readonly FieldElement m_empty_element = FieldElementsFactory.CreateElement(FieldElement.Type.Empty);
-
-  public FieldData(FieldConfiguration i_field_configuration, string i_name) {
-    m_should_stay_empty = new List<(int, int)>();
+  public FieldData(FieldConfiguration i_field_configuration) {
     m_field_configuration = i_field_configuration;
-    m_save_file_path = $"{Application.persistentDataPath}/{i_name}FieldData.json";
-    if (!_Load())
-      _Init();
-
-    //for (int row_id = 0; row_id < m_field_configuration.height; ++row_id)
-    //  for (int column_id = 0; column_id < m_field_configuration.width; ++column_id)
-    //    m_field[row_id, column_id] = FieldElementsFactory.CreateCommonElement(row_id * m_field_configuration.width + column_id);
+    m_save_file_path = Utilities.GetSavePath("FieldData");
+    _Init();
+    _Load();
   }
 
-  public FieldElement At(int row_id, int column_id) {
-    return m_field[row_id, column_id];
+  public FieldElement this[int i_row_id, int i_column_id] {
+    get => m_field[i_row_id, i_column_id];
+    set => m_field[i_row_id, i_column_id] = value;
   }
 
-  public int[] values_interval {
-    get => m_values_interval;
+  public FieldElement this[(int, int) i_cell_id] {
+    get => m_field[i_cell_id.Item1, i_cell_id.Item2];
+    set => m_field[i_cell_id.Item1, i_cell_id.Item2] = value;
   }
 
-  public void IncreaseValuesInterval() {
-    for (int i = 0; i < m_values_interval.Length; ++i)
-      ++m_values_interval[i];
-  }
+  public FieldConfiguration configuration { get => m_field_configuration; }
 
   public int RemoveValue(int value) {
     int count = 0;
@@ -48,7 +34,7 @@ public class FieldData {
       for (int column_id = 0; column_id < m_field_configuration.width; ++column_id)
         if (m_field[row_id, column_id].value == value) {
           ++count;
-          m_field[row_id, column_id] = m_empty_element;
+          m_field[row_id, column_id] = FieldElementsFactory.empty_element;
         }
     return count;
   }
@@ -66,7 +52,7 @@ public class FieldData {
           ++removed_values[value];
         else
           removed_values[value] = 1;
-        m_field[row_id, column_id] = m_empty_element;
+        m_field[row_id, column_id] = FieldElementsFactory.empty_element;
       }
     return removed_values;
   }
@@ -77,7 +63,7 @@ public class FieldData {
     _InitArray(visited, false);
     for (int row_id = 0; row_id < m_field_configuration.height; ++row_id)
       for (int column_id = 0; column_id < m_field_configuration.width; ++column_id) {
-        if (m_field[row_id, column_id] != m_hole_element || visited[row_id, column_id])
+        if (m_field[row_id, column_id] != FieldElementsFactory.hole_element || visited[row_id, column_id])
           continue;
         var group = new List<(int, int)>();
         var to_check = new Queue<(int, int)>();
@@ -86,7 +72,7 @@ public class FieldData {
           var (row, column) = to_check.Dequeue();
           if (row < 0 || column < 0 || row >= m_field_configuration.height || column >= m_field_configuration.width)
             continue;
-          if (m_field[row, column] != m_hole_element || visited[row, column])
+          if (m_field[row, column] != FieldElementsFactory.hole_element || visited[row, column])
             continue;
           visited[row, column] = true;
           to_check.Enqueue((row - 1, column));
@@ -103,7 +89,7 @@ public class FieldData {
   public bool HasEmptyCells() {
     for (int row_id = 0; row_id < m_field_configuration.height; ++row_id)
       for (int column_id = 0; column_id < m_field_configuration.width; ++column_id)
-        if (m_field[row_id, column_id] == m_empty_element && !m_should_stay_empty.Contains((row_id, column_id)))
+        if (m_field[row_id, column_id] == FieldElementsFactory.empty_element && !m_should_stay_empty.Contains((row_id, column_id)))
           return true;
     return false;
   }
@@ -114,88 +100,20 @@ public class FieldData {
     return from.interactable && to.interactable;
   }
 
-  private class ZigzagIterator {
-    private int m_height;
-    private int m_width;
-    private (int, int) m_current_element;
-    private (int, int) m_start_element;
-    private (int, int) m_end_element;
-    public readonly (int, int) direction;
-
-    public ZigzagIterator(FieldConfiguration.MoveDirection i_move_direction, int i_height, int i_width) {
-      m_width = i_width;
-      m_height = i_height;
-      switch (i_move_direction) {
-        case FieldConfiguration.MoveDirection.TopToBottom:
-          m_start_element = (m_height - 1, 0);
-          m_end_element = (-1, m_width - 1);
-          direction = (-1, 0);
-          break;
-        case FieldConfiguration.MoveDirection.RightToLeft:
-          m_start_element = (0, 0);
-          m_end_element = (m_height - 1, m_width);
-          direction = (0, 1);
-          break;
-        case FieldConfiguration.MoveDirection.BottomToTop:
-          m_start_element = (0, m_width - 1);
-          m_end_element = (m_height, 0);
-          direction = (1, 0);
-          break;
-        case FieldConfiguration.MoveDirection.LeftToRight:
-          m_start_element = (m_height - 1, m_width - 1);
-          m_end_element = (0, -1);
-          direction = (0, -1);
-          break;
-        default:
-          throw new NotImplementedException();
-      }
-      m_current_element = m_start_element;
-    }
-
-    public (int, int) current { get => m_current_element; set => m_current_element = value; }
-
-    public bool Finished() {
-      return m_current_element.Item1 == m_end_element.Item1 && m_current_element.Item2 == m_end_element.Item2;
-    }
-
-    public bool IsValid() {
-      return m_current_element.Item1 >= 0 && m_current_element.Item2 >= 0 &&
-        m_current_element.Item1 < m_height && m_current_element.Item2 < m_width;
-    }
-
-    public void Validate() {
-      if (Finished())
-        return;
-      var orthogonal_direction = (direction.Item2, -direction.Item1);
-      var offset_from_start = (Math.Abs(m_current_element.Item1 - m_start_element.Item1) + 1, Math.Abs(m_current_element.Item2 - m_start_element.Item2) + 1);
-      m_current_element = (m_start_element.Item1 + orthogonal_direction.Item1 * offset_from_start.Item1,
-        m_start_element.Item2 + orthogonal_direction.Item2 * offset_from_start.Item2);
-    }
-
-    public void Increment(bool i_with_validation) {
-      if (Finished())
-        return;
-      m_current_element.Item1 += direction.Item1;
-      m_current_element.Item2 += direction.Item2;
-      if (i_with_validation && !IsValid())
-        Validate();
-    }
-  }
-
   public List<((int, int), (int, int))> MoveElements() {
     var values = m_field.Clone() as FieldElement[,];
     var changes = new List<((int, int), (int, int))>();
 
     m_should_stay_empty.Clear();
     var empty_element = (-1, -1);
-    var it = new ZigzagIterator(m_field_configuration.move_direction, m_field_configuration.height, m_field_configuration.width);
+    var it = new FieldDataIterator(m_field_configuration.move_direction, m_field_configuration.height, m_field_configuration.width);
     while (!it.Finished()) {
       if (!it.IsValid()) {
         it.Validate();
         empty_element = (-1, -1);
       }
       var curr_element = it.current;
-      if (values[curr_element.Item1, curr_element.Item2] == m_empty_element) {
+      if (values[curr_element.Item1, curr_element.Item2] == FieldElementsFactory.empty_element) {
         if (empty_element == (-1, -1))
           empty_element = curr_element;
       } else if (values[curr_element.Item1, curr_element.Item2].movable && empty_element != (-1, -1)) {
@@ -204,7 +122,7 @@ public class FieldData {
         changes.Add((curr_element, empty_element));
         it.current = empty_element;
         empty_element = (-1, -1);
-      } else if (!values[curr_element.Item1, curr_element.Item2].movable && values[curr_element.Item1, curr_element.Item2] != m_hole_element) {
+      } else if (!values[curr_element.Item1, curr_element.Item2].movable && values[curr_element.Item1, curr_element.Item2] != FieldElementsFactory.hole_element) {
         if (empty_element != (-1, -1)) {
           var stay_empty_element = empty_element;
           while (stay_empty_element != curr_element) {
@@ -237,20 +155,6 @@ public class FieldData {
     }
   }
 
-  public List<(int, int)> SpawnNewValues() {
-    var created = new List<(int, int)>();
-    var it = new ZigzagIterator(m_field_configuration.move_direction, m_field_configuration.height, m_field_configuration.width);
-    while (!it.Finished()) {
-      var (row_id, column_id) = it.current;
-      if (m_field[row_id, column_id] == m_empty_element && !m_should_stay_empty.Contains((row_id, column_id))) {
-        m_field[row_id, column_id] = FieldElementsFactory.CreateElement(FieldElement.Type.Common, _GetRandomValue());
-        created.Add((row_id, column_id));
-      }
-      it.Increment(true);
-    }
-    return created;
-  }
-
   public void SwapCells(int row1, int column1, int row2, int column2) {
     if (!_IsValidElementPosition(row1, column1) || !_IsValidElementPosition(row2, column2))
       return;
@@ -276,9 +180,9 @@ public class FieldData {
   }
 
   public List<MoveDetails> GetAllMoves() {
-    var neighbors = new (int, int)[4] { (0, 1), (0, -1), (1, 0), (-1, 0) };
     var moves_data = new List<MoveDetails>();
-    Func<MoveDetails, bool> is_move_exists = (MoveDetails new_move) => {
+
+    bool is_move_exists(MoveDetails new_move) {
       foreach (var move_data in moves_data) {
         if (move_data.first.Item1 == new_move.first.Item1 && move_data.first.Item2 == new_move.first.Item2 &&
           move_data.second.Item1 == new_move.second.Item1 && move_data.second.Item2 == new_move.second.Item2 ||
@@ -287,7 +191,9 @@ public class FieldData {
           return true;
       }
       return false;
-    };
+    }
+
+    var neighbors = new (int, int)[4] { (0, 1), (0, -1), (1, 0), (-1, 0) };
     for (int row_id = 0; row_id < m_field_configuration.height; ++row_id)
       for (int column_id = 0; column_id < m_field_configuration.width; ++column_id)
         foreach (var neighbor in neighbors) {
@@ -323,17 +229,6 @@ public class FieldData {
     } while (GetAllMoves().Count == 0);
   }
 
-  private int _GetRandomValue() {
-    float random = UnityEngine.Random.Range(0.0f, 1.0f);
-    float accumulated_probability = 0.0f;
-    for (int i = 0; i < m_values_interval.Length; ++i) {
-      if (random <= accumulated_probability)
-        return m_values_interval[i - 1];
-      accumulated_probability += m_values_probability_interval[i];
-    }
-    return m_values_interval[m_values_interval.Length - 1];
-  }
-
   private static void _InitArray<T>(T[,] array, T default_value) {
     for (int i = 0; i < array.GetLength(0); ++i)
       for (int j = 0; j < array.GetLength(1); ++j)
@@ -343,37 +238,37 @@ public class FieldData {
   private List<(int, int)> _CrossGroupAt(int row_id, int column_id) {
     var target_element = m_field[row_id, column_id];
 
-    Func<int, int, int, bool, (int, int)> get_coordinates = (int row_id, int column_id, int range_index, bool check_row) => {
+    (int, int) get_coordinates(int row_id, int column_id, int range_index, bool check_row) {
       if (check_row)
         return (row_id, range_index);
       return (range_index, column_id);
-    };
-    Func<int, int, bool, (int, int)> check_line = (row_id, column_id, check_row) => {
+    }
+    (int, int) check_line(int row_id, int column_id, bool check_row) {
       var r = check_row ? column_id + 1 : row_id + 1;
       var l = check_row ? column_id - 1 : row_id - 1;
       var max_r = check_row ? m_field_configuration.width : m_field_configuration.height;
       while (true) {
         var right_coordinates = get_coordinates(row_id, column_id, r, check_row);
-        if (r < max_r && At(right_coordinates.Item1, right_coordinates.Item2) == target_element) {
+        if (r < max_r && this[right_coordinates] == target_element) {
           ++r;
           continue;
         }
         var left_coordinates = get_coordinates(row_id, column_id, l, check_row);
-        if (l >= 0 && At(left_coordinates.Item1, left_coordinates.Item2) == target_element) {
+        if (l >= 0 && this[left_coordinates] == target_element) {
           --l;
           continue;
         }
         break;
       }
       return (r, l);
-    };
+    }
 
     bool[,] taken = new bool[m_field_configuration.height, m_field_configuration.width];
     _InitArray(taken, false);
-    Queue<(int, int, bool)> to_check = new Queue<(int, int, bool)>();
+    var to_check = new Queue<(int, int, bool)>();
     to_check.Enqueue((row_id, column_id, true));
     to_check.Enqueue((row_id, column_id, false));
-    List<(int, int)> group = new List<(int, int)>();
+    var group = new List<(int, int)>();
     while (to_check.Count > 0) {
       var current_element = to_check.Dequeue();
       if (!m_field[current_element.Item1, current_element.Item2].combinable)
@@ -434,7 +329,7 @@ public class FieldData {
       var group = groups[group_id];
       group_details.Add(new GroupDetails(group, m_field[group[0].Item1, group[0].Item2].value));
       foreach (var element in group)
-        m_field[element.Item1, element.Item2] = m_empty_element;
+        m_field[element.Item1, element.Item2] = FieldElementsFactory.empty_element;
     }
     return group_details;
   }
@@ -452,7 +347,7 @@ public class FieldData {
       while (accumulated_value > 0) {
         if (accumulated_value % 2 == 1)
           values.Enqueue(pow);
-        accumulated_value = accumulated_value / 2;
+        accumulated_value /= 2;
         ++pow;
       }
       for (int i = 0; i < group.Count; ++i) {
@@ -464,7 +359,7 @@ public class FieldData {
         if (values.Count > 0)
           new_value = values.Dequeue();
         if (new_value == FieldElementsFactory.undefined_value)
-          m_field[element.Item1, element.Item2] = m_empty_element;
+          m_field[element.Item1, element.Item2] = FieldElementsFactory.empty_element;
         else
           m_field[element.Item1, element.Item2].value = new_value;
       }
@@ -497,7 +392,7 @@ public class FieldData {
           var neighbor_position = (element_position.Item1 + neighbor_offset.Item1, element_position.Item2 + neighbor_offset.Item2);
           if (!_IsValidElementPosition(neighbor_position.Item1, neighbor_position.Item2))
             continue;
-          if (!At(neighbor_position.Item1, neighbor_position.Item2).destructible)
+          if (!this[neighbor_position].destructible)
             continue;
           affected_destractable_elements.Add(neighbor_position);
         }
@@ -505,47 +400,15 @@ public class FieldData {
       int old_value = m_field[row, column].value;
       int value = old_value - 1;
       if (value < 0)
-        m_field[row, column] = m_empty_element;
+        m_field[row, column] = FieldElementsFactory.empty_element;
       else
         m_field[row, column].value = value;
     }
   }
 
   private void _Init() {
+    m_should_stay_empty = new List<(int, int)>();
     m_field = new FieldElement[m_field_configuration.height, m_field_configuration.width];
-    _InitIntervals();
-    var cells_configuration = m_field_configuration.GetCellsConfiguration();
-    for (int row_id = 0; row_id < m_field_configuration.height; ++row_id)
-      for (int column_id = 0; column_id < m_field_configuration.width; ++column_id) {
-        var element_type = cells_configuration[row_id, column_id];
-        int value = FieldElementsFactory.undefined_value;
-        //if (element_type == FieldElement.Type.Common)
-        if (element_type != FieldElement.Type.Hole)
-          value = _GetRandomValue();
-        m_field[row_id, column_id] = FieldElementsFactory.CreateElement(element_type, value);
-      }
-    while (true) {
-      var removed_groups_sizes = _RemoveGroups();
-      if (removed_groups_sizes.Count == 0)
-        break;
-      SpawnNewValues();
-    }
-  }
-
-  private void _InitIntervals() {
-    m_values_interval = Enumerable.Range(0, m_field_configuration.active_elements_count).ToArray();
-    m_values_probability_interval = new float[m_field_configuration.active_elements_count];
-    var mean = 0;
-    var deviation = m_field_configuration.active_elements_count / 2;
-
-    Func<float, float> normal_distribution = (x) =>
-      Mathf.Exp(-Mathf.Pow((x - mean) / deviation, 2) / 2) / (deviation * Mathf.Sqrt(2 * Mathf.PI));
-
-    for (int x = 0; x < m_field_configuration.active_elements_count; ++x) {
-      m_values_probability_interval[x] = normal_distribution(x);
-      if (x > 0)
-        m_values_probability_interval[x] += normal_distribution(-x);
-    }
   }
 
   public void Reset() {
@@ -555,33 +418,27 @@ public class FieldData {
 
   private struct SerializableData {
     public string[] field;
-    public int[] values_interval;
-    public float[] values_probability_mask;
   }
 
   private bool _Load() {
     var data = new SerializableData();
     if (!SaveLoad.Load(ref data, m_save_file_path))
       return false;
-    m_field = new FieldElement[m_field_configuration.height, m_field_configuration.width];
     for (int row_id = 0; row_id < m_field_configuration.height; ++row_id)
       for (int column_id = 0; column_id < m_field_configuration.width; ++column_id)
         m_field[row_id, column_id] = FieldElement.FromString(data.field[row_id * m_field_configuration.width + column_id]);
-    m_values_interval = data.values_interval;
-    m_values_probability_interval = data.values_probability_mask;
     return true;
   }
 
   public void Save() {
-    var data = new SerializableData();
-    data.field = new string[m_field_configuration.width * m_field_configuration.height];
+    var data = new SerializableData {
+      field = new string[m_field_configuration.width * m_field_configuration.height]
+    };
     for (int row_id = 0; row_id < m_field_configuration.height; ++row_id)
       for (int column_id = 0; column_id < m_field_configuration.width; ++column_id) {
         int flat_id = row_id * m_field_configuration.width + column_id;
         data.field[flat_id] = m_field[row_id, column_id].ToString();
       }
-    data.values_interval = m_values_interval;
-    data.values_probability_mask = m_values_probability_interval;
     SaveLoad.Save(data, m_save_file_path);
   }
 }

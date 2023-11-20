@@ -15,9 +15,11 @@ public class GameField : MonoBehaviour {
   private Vector2 m_max_active_zone_center;
   private GameObject m_input_handler;
 
-  private GameElement[,] m_field;
   private FieldData m_field_data;
+  private SimpleCommonElementsSpawner m_elements_spawner;
   private ElementStyleProvider m_element_style_provider;
+
+  private GameElement[,] m_field;
   private float m_grid_step;
   private float m_half_grid_step;
   private float m_element_size;
@@ -45,7 +47,7 @@ public class GameField : MonoBehaviour {
     m_max_active_zone_anchor_max = active_zone.anchorMax;
     m_max_active_zone_center = active_zone.localPosition;
 
-    if (!m_field_configuration.Load(name))
+    if (!m_field_configuration.Load())
       m_field_configuration.InitCellsConfiguration();
 
     _Init();
@@ -62,17 +64,11 @@ public class GameField : MonoBehaviour {
       return;
     }
 
-    bool scenario_result = false;
-    switch (m_field_configuration.fill_strategy) {
-      case FieldConfiguration.FillStrategy.MoveThenSpawn:
-        scenario_result = _MoveThenSpawnElements();
-        break;
-      case FieldConfiguration.FillStrategy.SpawnThenMove:
-        scenario_result = _SpawnThenMoveElements();
-        break;
-      default:
-        throw new System.NotImplementedException();
-    }
+    bool scenario_result = m_field_configuration.fill_strategy switch {
+      FieldConfiguration.FillStrategy.MoveThenSpawn => _MoveThenSpawnElements(),
+      FieldConfiguration.FillStrategy.SpawnThenMove => _SpawnThenMoveElements(),
+      _ => throw new System.NotImplementedException(),
+    };
     if (scenario_result)
       return;
 
@@ -89,7 +85,7 @@ public class GameField : MonoBehaviour {
 
     if (m_is_auto_play)
       _AutoMove();
-    m_field_data.Save();
+    _Save();
   }
 
   private bool _ProcessElementGroups() {
@@ -97,7 +93,7 @@ public class GameField : MonoBehaviour {
     foreach (var group_details in groups_details) {
       foreach (var element in group_details.group) {
         m_field[element.Item1, element.Item2].Destroy();
-        if (m_field_data.At(element.Item1, element.Item2).value >= 0)
+        if (m_field_data[element].value >= 0)
           m_to_create.Add(element);
       }
       m_game_info.UpdateScore(group_details.value, group_details.group.Count);
@@ -120,7 +116,7 @@ public class GameField : MonoBehaviour {
       return true;
     }
     if (m_field_data.HasEmptyCells()) {
-      var created_elements = m_field_data.SpawnNewValues();
+      var created_elements = m_elements_spawner.SpawnElements();
       foreach (var element_position in created_elements)
         _InitElement(element_position.Item1, element_position.Item2);
       return true;
@@ -139,7 +135,7 @@ public class GameField : MonoBehaviour {
         (m_field[first.Item1, first.Item2], m_field[second.Item1, second.Item2]) =
           (m_field[second.Item1, second.Item2], m_field[first.Item1, first.Item2]);
       }
-      var created_elements = m_field_data.SpawnNewValues();
+      var created_elements = m_elements_spawner.SpawnElements();
       int main_line = -1;
       var offset = 0;
       var direction = m_field_data.GetMoveDirection();
@@ -211,8 +207,9 @@ public class GameField : MonoBehaviour {
   }
 
   private void _Init() {
-    var name = UnityEngine.SceneManagement.SceneManager.GetActiveScene().name;
-    m_field_data = new FieldData(m_field_configuration, name);
+    m_field_data = new FieldData(m_field_configuration);
+    m_elements_spawner = new SimpleCommonElementsSpawner(m_field_data);
+    m_elements_spawner.InitElements();
 
     m_grid_step = Mathf.Min(m_max_active_zone_rect.width / m_field_configuration.width, m_max_active_zone_rect.height / m_field_configuration.height);
     m_half_grid_step = m_grid_step / 2;
@@ -241,7 +238,7 @@ public class GameField : MonoBehaviour {
 
   private Vector2 _PointerEventPositionToWorldPosition(Vector2 i_event_position) {
     var world_mouse_event_position = Camera.main.ScreenToWorldPoint(i_event_position);
-    return new Vector2(world_mouse_event_position.x, world_mouse_event_position.y);
+    return (Vector2)world_mouse_event_position;
   }
 
   private void _HandlePointerDown(Vector2 i_event_position) {
@@ -295,10 +292,10 @@ public class GameField : MonoBehaviour {
         break;
       case "RemoveElementsByValue":
         if (_IsValidCell(main_element_position)) {
-          var target_element = m_field_data.At(main_element_position.Item1, main_element_position.Item2);
+          var target_element = m_field_data[main_element_position];
           for (int row_id = 0; row_id < m_field_configuration.height; ++row_id)
             for (int column_id = 0; column_id < m_field_configuration.width; ++column_id)
-              if (m_field_data.At(row_id, column_id) == target_element)
+              if (m_field_data[row_id, column_id] == target_element)
                 elements_to_highlight.Add((row_id, column_id));
         }
         break;
@@ -343,10 +340,10 @@ public class GameField : MonoBehaviour {
           m_game_info.UpdateScore(element_info.Key, element_info.Value);
         break;
       case "RemoveElementsByValue":
-        var element = m_field_data.At(main_element_position.Item1, main_element_position.Item2);
+        var element = m_field_data[main_element_position];
         for (int row_id = 0; row_id < m_field_configuration.height; ++row_id)
           for (int column_id = 0; column_id < m_field_configuration.width; ++column_id)
-            if (m_field_data.At(row_id, column_id) == element)
+            if (m_field_data[row_id, column_id] == element)
               m_field[row_id, column_id].Destroy();
         var removed_count = m_field_data.RemoveValue(element.value);
         m_game_info.UpdateScore(element.value, removed_count);
@@ -372,11 +369,11 @@ public class GameField : MonoBehaviour {
           }
         break;
       case "UpgradeGenerator":
-        var small_value = m_field_data.values_interval[0];
-        m_field_data.IncreaseValuesInterval();
+        var small_value = m_elements_spawner.values_interval[0];
+        m_elements_spawner.IncreaseValuesInterval();
         for (int row_id = 0; row_id < m_field_configuration.height; ++row_id)
           for (int column_id = 0; column_id < m_field_configuration.width; ++column_id) {
-            var element = m_field_data.At(row_id, column_id);
+            var element = m_field_data[row_id, column_id];
             if (element.value == small_value)
               m_field[row_id, column_id].Destroy();
           }
@@ -389,7 +386,7 @@ public class GameField : MonoBehaviour {
         _ClearHighlighting();
         _HighlightElement(move.first);
         _HighlightElement(move.second);
-        Invoke("_ClearHighlighting", 1);
+        Invoke(nameof(_ClearHighlighting), 1);
         break;
       default:
         break;
@@ -432,7 +429,7 @@ public class GameField : MonoBehaviour {
   }
 
   private void _InitBackgroundGrid() {
-    SVG svg = new SVG();
+    var svg = new SVG();
     var rect_size = new Vector2(m_grid_step, m_grid_step);
     var rect_color = "rgba(20, 20, 20, 0.5)";
     var rect_stroke_props = new SVGStrokeProps("#000000", m_inner_grid_stroke_width);
@@ -441,7 +438,7 @@ public class GameField : MonoBehaviour {
         svg.Add(new SVGRect(new Vector2(column_id * m_grid_step, row_id * m_grid_step), rect_size, rect_color, rect_stroke_props));
 
     var sprite = SVG.BuildSprite(svg, m_grid_step);
-    GameObject background = new GameObject();
+    var background = new GameObject();
     background.transform.parent = gameObject.transform;
     background.transform.localPosition = m_input_handler.transform.localPosition;
     var sprite_renderer = background.AddComponent<SpriteRenderer>();
@@ -517,8 +514,8 @@ public class GameField : MonoBehaviour {
 
   private void _InitHoleOverlays() {
     var holes = _GetHoles();
-    SVG stroke_svg = new SVG();
-    SVG fill_svg = new SVG();
+    var stroke_svg = new SVG();
+    var fill_svg = new SVG();
     var fill_color = "rgba(20, 20, 20, 0.5)";
     var offset_value = m_outer_grid_stroke_width / 2;
     var hole_stroke = new SVGStrokeProps("#000000", m_outer_grid_stroke_width);
@@ -600,7 +597,7 @@ public class GameField : MonoBehaviour {
     field_background_image.transform.localScale = new Vector3(x_scale, y_scale, 1);
 
     var stroke_sprite = SVG.BuildSprite(stroke_svg, m_grid_step);
-    GameObject holes_stroke = new GameObject();
+    var holes_stroke = new GameObject();
     holes_stroke.transform.SetParent(transform);
     holes_stroke.transform.localPosition = m_input_handler.transform.localPosition;
     var sprite_renderer = holes_stroke.AddComponent<SpriteRenderer>();
@@ -627,7 +624,6 @@ public class GameField : MonoBehaviour {
   }
 
   private void _InitCameraViewport() {
-    var active_zone = m_input_handler.GetComponent<RectTransform>();
     Camera.main.orthographicSize = Screen.height / 2.0f + m_outer_grid_stroke_width;
     Camera.main.aspect = (float)Screen.width / Screen.height;
   }
@@ -675,15 +671,20 @@ public class GameField : MonoBehaviour {
   }
 
   private void _InitElement(int row_id, int column_id, bool i_with_animation = true) {
-    var element = m_field_data.At(row_id, column_id);
+    var element = m_field_data[row_id, column_id];
     m_field[row_id, column_id].Create(m_element_style_provider.Get(element), i_with_animation);
     m_field[row_id, column_id].transform.GetChild(2).GetComponent<SpriteRenderer>().size = new Vector2(m_element_size, m_element_size);
     m_field[row_id, column_id].transform.GetChild(3).GetComponent<SpriteRenderer>().size = new Vector2(m_grid_step, m_grid_step);
   }
 
   private void OnDestroy() {
-    m_field_configuration.Save(UnityEngine.SceneManagement.SceneManager.GetActiveScene().name);
+    _Save();
+  }
+
+  private void _Save() {
+    m_field_configuration.Save();
     m_field_data.Save();
+    m_elements_spawner.Save();
   }
 
   private bool _IsAvailable() {

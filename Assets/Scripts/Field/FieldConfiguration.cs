@@ -50,14 +50,15 @@ public class FieldConfiguration {
   }
 
   public FieldConfiguration Clone() {
-    var clone = new FieldConfiguration();
-    clone.width = width;
-    clone.height = height;
-    clone.active_elements_count = active_elements_count;
-    clone.mode = mode;
-    clone.fill_strategy = fill_strategy;
-    clone.move_direction = move_direction;
-    clone.m_cells_configuration = (FieldElement.Type[,])m_cells_configuration.Clone();
+    var clone = new FieldConfiguration {
+      width = width,
+      height = height,
+      active_elements_count = active_elements_count,
+      mode = mode,
+      fill_strategy = fill_strategy,
+      move_direction = move_direction,
+      m_cells_configuration = (FieldElement.Type[,])m_cells_configuration.Clone()
+    };
     return clone;
   }
 
@@ -81,8 +82,8 @@ public class FieldConfiguration {
     public int[] cells_configuration;
   }
 
-  public bool Load(string i_name) {
-    var save_file_path = $"{Application.persistentDataPath}/{i_name}FieldConfiguration.json";
+  public bool Load() {
+    var save_file_path = Utilities.GetSavePath("FieldConfiguration");
     var data = new SerializableData();
     if (!SaveLoad.Load(ref data, save_file_path))
       return false;
@@ -99,21 +100,22 @@ public class FieldConfiguration {
     return true;
   }
 
-  public void Save(string i_name) {
-    var save_file_path = $"{Application.persistentDataPath}/{i_name}FieldConfiguration.json";
-    var data = new SerializableData();
-    data.width = width;
-    data.height = height;
-    data.active_elements_count = active_elements_count;
-    data.cells_configuration = new int[width * height];
+  public void Save() {
+    var save_file_path = Utilities.GetSavePath("FieldConfiguration");
+    var data = new SerializableData {
+      width = width,
+      height = height,
+      active_elements_count = active_elements_count,
+      cells_configuration = new int[width * height],
+      mode = Enum.GetName(typeof(Mode), mode),
+      move_direction = Enum.GetName(typeof(MoveDirection), move_direction),
+      fill_strategy = Enum.GetName(typeof(FillStrategy), fill_strategy),
+    };
     for (int row_id = 0; row_id < height; ++row_id)
       for (int column_id = 0; column_id < width; ++column_id) {
         int flat_id = row_id * width + column_id;
         data.cells_configuration[flat_id] = (int)m_cells_configuration[row_id, column_id];
       }
-    data.mode = Enum.GetName(typeof(Mode), mode);
-    data.move_direction = Enum.GetName(typeof(MoveDirection), move_direction);
-    data.fill_strategy = Enum.GetName(typeof(FillStrategy), fill_strategy);
     SaveLoad.Save(data, save_file_path);
   }
 }

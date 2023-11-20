@@ -11,5 +11,4 @@
     var json = UnityEngine.JsonUtility.ToJson(i_data, true);
     System.IO.File.WriteAllText(i_path, json);
   }
-
 }
