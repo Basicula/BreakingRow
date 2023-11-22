@@ -28,15 +28,17 @@ public class FieldData {
 
   public FieldConfiguration configuration { get => m_field_configuration; }
 
-  public int RemoveValue(int value) {
-    int count = 0;
-    for (int row_id = 0; row_id < m_field_configuration.height; ++row_id)
-      for (int column_id = 0; column_id < m_field_configuration.width; ++column_id)
-        if (m_field[row_id, column_id].value == value) {
-          ++count;
-          m_field[row_id, column_id] = FieldElementsFactory.empty_element;
-        }
-    return count;
+  public List<(int, int)> RemoveSameAs(FieldElement i_reference_element) {
+    var removed = new List<(int, int)>();
+    var it = new FieldDataIterator(m_field_configuration.move_direction, m_field_configuration.height, m_field_configuration.width);
+    while (!it.Finished()) {
+      if (this[it.current] == i_reference_element) {
+        this[it.current] = FieldElementsFactory.empty_element;
+        removed.Add(it.current);
+      }
+      it.Increment(true);
+    }
+    return removed;
   }
 
   public Dictionary<int, int> RemoveZone(int row1, int column1, int row2, int column2) {

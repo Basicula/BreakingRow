@@ -13,8 +13,10 @@ public abstract class IFieldElementsSpawner {
 
   protected abstract void _Init();
 
-  public abstract List<(int, int)> SpawnElements();
+  public abstract void Reset();
   public abstract void InitElements();
+  public abstract List<(int, int)> SpawnElements();
+  public abstract List<(int, int)> Upgrade();
 
   public abstract bool Load();
   public abstract void Save();

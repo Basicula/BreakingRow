@@ -16,7 +16,7 @@ public class GameField : MonoBehaviour {
   private GameObject m_input_handler;
 
   private FieldData m_field_data;
-  private SimpleCommonElementsSpawner m_elements_spawner;
+  private IFieldElementsSpawner m_elements_spawner;
   private ElementStyleProvider m_element_style_provider;
 
   private GameElement[,] m_field;
@@ -173,7 +173,9 @@ public class GameField : MonoBehaviour {
   }
 
   public void Reset() {
+    m_elements_spawner.Reset();
     m_field_data.Reset();
+    m_elements_spawner.InitElements();
     m_game_info.Reset();
     for (int ability_id = 0; ability_id < m_abilities.transform.childCount; ++ability_id) {
       var ability_game_object = m_abilities.transform.GetChild(ability_id).gameObject;
@@ -338,13 +340,11 @@ public class GameField : MonoBehaviour {
           m_game_info.UpdateScore(element_info.Key, element_info.Value);
         break;
       case "RemoveElementsByValue":
-        var element = m_field_data[main_element_position];
-        for (int row_id = 0; row_id < m_field_configuration.height; ++row_id)
-          for (int column_id = 0; column_id < m_field_configuration.width; ++column_id)
-            if (m_field_data[row_id, column_id] == element)
-              m_field[row_id, column_id].Destroy();
-        var removed_count = m_field_data.RemoveValue(element.value);
-        m_game_info.UpdateScore(element.value, removed_count);
+        var value = m_field_data[main_element_position].value;
+        var removed_elements = m_field_data.RemoveSameAs(m_field_data[main_element_position]);
+        foreach (var (row_id, column_id) in removed_elements)
+          m_field[row_id, column_id].Destroy();
+        m_game_info.UpdateScore(value, removed_elements.Count);
         break;
       default:
         return;
@@ -366,16 +366,9 @@ public class GameField : MonoBehaviour {
           }
         break;
       case "UpgradeGenerator":
-        var small_value = m_elements_spawner.values_interval[0];
-        m_elements_spawner.IncreaseValuesInterval();
-        for (int row_id = 0; row_id < m_field_configuration.height; ++row_id)
-          for (int column_id = 0; column_id < m_field_configuration.width; ++column_id) {
-            var element = m_field_data[row_id, column_id];
-            if (element.value == small_value)
-              m_field[row_id, column_id].Destroy();
-          }
-        var removed_count = m_field_data.RemoveValue(small_value);
-        m_game_info.UpdateScore(small_value, removed_count);
+        var removed_elements = m_elements_spawner.Upgrade();
+        foreach (var (row_id, column_id) in removed_elements)
+          m_field[row_id, column_id].Destroy();
         break;
       case "Search":
         var moves = m_field_data.GetAllMoves();

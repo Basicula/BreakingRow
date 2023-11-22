@@ -1,4 +1,3 @@
-using System;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
@@ -9,8 +8,8 @@ class SimpleCommonElementsSpawner : IFieldElementsSpawner {
 
   public SimpleCommonElementsSpawner(FieldData i_field_data) : base(i_field_data) { }
 
-  public int[] values_interval {
-    get => m_values_interval;
+  public override void Reset() {
+    m_values_interval = Enumerable.Range(0, m_field_data.configuration.active_elements_count).ToArray();
   }
 
   public override void InitElements() {
@@ -37,9 +36,11 @@ class SimpleCommonElementsSpawner : IFieldElementsSpawner {
     return created;
   }
 
-  public void IncreaseValuesInterval() {
+  public override List<(int, int)> Upgrade() {
+    var elements_to_remove = FieldElementsFactory.CreateElement(FieldElement.Type.Common, m_values_interval[0]);
     for (int i = 0; i < m_values_interval.Length; ++i)
       ++m_values_interval[i];
+    return m_field_data.RemoveSameAs(elements_to_remove);
   }
 
   private int _GetRandomValue() {
