@@ -24,12 +24,14 @@ public class GameInfo : MonoBehaviour {
     _Update();
   }
 
-  public void UpdateScore(int i_value, int i_count) {
+  public void UpdateScore(int i_value, int i_count, bool i_with_bonus_multiplier) {
     int bonus_multiplier = 1;
-    if (i_count > 7)
-      bonus_multiplier = 25;
-    else if (i_count > 2)
-      bonus_multiplier = m_score_bonuses[i_count];
+    if (i_with_bonus_multiplier) {
+      if (i_count > 7)
+        bonus_multiplier = 25;
+      else if (i_count > 2)
+        bonus_multiplier = m_score_bonuses[i_count];
+    }
     m_score += Mathf.FloorToInt(Mathf.Pow(2, i_value)) * i_count * bonus_multiplier;
     if (m_score > m_best_score)
       m_best_score = m_score;

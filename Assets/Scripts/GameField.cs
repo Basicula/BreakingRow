@@ -97,7 +97,7 @@ public class GameField : MonoBehaviour {
         if (m_field_data[element].value >= 0)
           m_to_create.Add(element);
       }
-      m_game_info.UpdateScore(group_details.value, group_details.group.Count);
+      m_game_info.UpdateScore(group_details.value, group_details.group.Count, true);
     }
     return groups_details.Count != 0;
   }
@@ -325,7 +325,7 @@ public class GameField : MonoBehaviour {
           main_element_position.Item1, main_element_position.Item2);
         m_field[main_element_position.Item1, main_element_position.Item2].Destroy();
         foreach (var element_info in removed_element_info)
-          m_game_info.UpdateScore(element_info.Key, element_info.Value);
+          m_game_info.UpdateScore(element_info.Key, element_info.Value, false);
         break;
       case "Bomb":
         var zone_to_remove = ((main_element_position.Item1 - 1, main_element_position.Item2 - 1),
@@ -337,14 +337,14 @@ public class GameField : MonoBehaviour {
             if (_IsValidCell(row_id, column_id))
               m_field[row_id, column_id].Destroy();
         foreach (var element_info in removed_zone_info)
-          m_game_info.UpdateScore(element_info.Key, element_info.Value);
+          m_game_info.UpdateScore(element_info.Key, element_info.Value, false);
         break;
       case "RemoveElementsByValue":
         var value = m_field_data[main_element_position].value;
         var removed_elements = m_field_data.RemoveSameAs(m_field_data[main_element_position]);
         foreach (var (row_id, column_id) in removed_elements)
           m_field[row_id, column_id].Destroy();
-        m_game_info.UpdateScore(value, removed_elements.Count);
+        m_game_info.UpdateScore(value, removed_elements.Count, false);
         break;
       default:
         return;
