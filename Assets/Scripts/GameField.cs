@@ -9,6 +9,11 @@ public class GameField : MonoBehaviour {
   [SerializeReference] private GameInfo m_game_info;
   [SerializeReference] private GameObject m_abilities;
   [SerializeReference] private GameObject m_input_handler;
+  [SerializeReference] private GameObject m_background_grid;
+  [SerializeReference] private GameObject m_holes_contour_overlay;
+  [SerializeReference] private GameObject m_holes_fill_overlay;
+  [SerializeReference] private GameObject m_holes_image;
+  [SerializeReference] private GameObject m_field_image;
 
   private Rect m_max_active_zone_rect;
   private Vector2 m_max_active_zone_anchor_min;
@@ -190,8 +195,6 @@ public class GameField : MonoBehaviour {
 
     if (is_init_needed) {
       Reset();
-      Destroy(transform.GetChild(2).gameObject);
-      Destroy(transform.GetChild(3).gameObject);
       for (int row_id = 0; row_id < m_field_configuration.height; ++row_id)
         for (int column_id = 0; column_id < m_field_configuration.width; ++column_id)
           Destroy(m_field[row_id, column_id].gameObject);
@@ -432,13 +435,9 @@ public class GameField : MonoBehaviour {
       for (int column_id = 0; column_id < m_field_configuration.width; ++column_id)
         svg.Add(new SVGRect(new Vector2(column_id * m_grid_step, row_id * m_grid_step), rect_size, rect_color, rect_stroke_props));
 
-    var sprite = SVG.BuildSprite(svg, m_grid_step);
-    var background = new GameObject();
-    background.transform.parent = gameObject.transform;
-    background.transform.localPosition = m_input_handler.transform.localPosition;
-    var sprite_renderer = background.AddComponent<SpriteRenderer>();
-    sprite_renderer.sprite = sprite;
-    sprite_renderer.sortingOrder = -1;
+    m_background_grid.transform.localPosition = m_input_handler.transform.localPosition;
+    var sprite_renderer = m_background_grid.GetComponent<SpriteRenderer>();
+    sprite_renderer.sprite = SVG.BuildSprite(svg, m_grid_step);
   }
 
   private List<List<(int, int)>> _GetHoles() {
@@ -579,27 +578,19 @@ public class GameField : MonoBehaviour {
       stroke_svg.Add(stroke_path);
     }
 
-    var sprite = SVG.BuildSprite(fill_svg, m_grid_step);
-    GameObject holes_fill = transform.GetChild(1).gameObject;
-    holes_fill.transform.localPosition = m_input_handler.transform.localPosition;
-    var holes_fill_mask = holes_fill.GetComponent<SpriteMask>();
-    holes_fill_mask.sprite = sprite;
+    m_holes_fill_overlay.transform.localPosition = m_input_handler.transform.localPosition;
+    var holes_fill_mask = m_holes_fill_overlay.GetComponent<SpriteMask>();
+    holes_fill_mask.sprite = SVG.BuildSprite(fill_svg, m_grid_step);
 
-    var holes_background_image = transform.GetChild(1).GetChild(0).gameObject;
-    var field_background_image = transform.GetChild(1).GetChild(1).gameObject;
-    var background_image_size = holes_background_image.GetComponent<SpriteRenderer>().sprite.rect.size;
+    var background_image_size = m_holes_image.GetComponent<SpriteRenderer>().sprite.rect.size;
     var x_scale = (Screen.width + 2 * m_outer_grid_stroke_width) / background_image_size.x;
     var y_scale = (Screen.height + 2 * m_outer_grid_stroke_width) / background_image_size.x;
-    holes_background_image.transform.localScale = new Vector3(x_scale, y_scale, 1);
-    field_background_image.transform.localScale = new Vector3(x_scale, y_scale, 1);
+    m_holes_image.transform.localScale = new Vector3(x_scale, y_scale, 1);
+    m_field_image.transform.localScale = new Vector3(x_scale, y_scale, 1);
 
-    var stroke_sprite = SVG.BuildSprite(stroke_svg, m_grid_step);
-    var holes_stroke = new GameObject();
-    holes_stroke.transform.SetParent(transform);
-    holes_stroke.transform.localPosition = m_input_handler.transform.localPosition;
-    var sprite_renderer = holes_stroke.AddComponent<SpriteRenderer>();
-    sprite_renderer.sprite = stroke_sprite;
-    sprite_renderer.sortingOrder = 2;
+    m_holes_contour_overlay.transform.localPosition = m_input_handler.transform.localPosition;
+    var sprite_renderer = m_holes_contour_overlay.GetComponent<SpriteRenderer>();
+    sprite_renderer.sprite = SVG.BuildSprite(stroke_svg, m_grid_step);
   }
 
   private void _InitInputHandler() {
