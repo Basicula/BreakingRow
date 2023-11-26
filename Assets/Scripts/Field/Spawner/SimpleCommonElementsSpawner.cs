@@ -15,9 +15,12 @@ class SimpleCommonElementsSpawner : IFieldElementsSpawner {
   public override void InitElements() {
     var field_configuration = m_field_data.configuration;
     var it = new FieldDataIterator(field_configuration.move_direction, field_configuration.height, field_configuration.width);
+    var cells_configuration = field_configuration.GetCellsConfiguration();
     while (!it.Finished()) {
-      if (m_field_data[it.current] is null)
-        m_field_data[it.current] = FieldElementsFactory.CreateElement(FieldElement.Type.Common, _GetRandomValue());
+      if (m_field_data[it.current] is null) {
+        var cell_type = cells_configuration[it.current.Item1, it.current.Item2];
+        m_field_data[it.current] = FieldElementsFactory.CreateElement(cell_type, _GetRandomValue());
+      }
       it.Increment(true);
     }
   }
@@ -27,7 +30,7 @@ class SimpleCommonElementsSpawner : IFieldElementsSpawner {
     var created = new List<(int, int)>();
     var it = new FieldDataIterator(field_configuration.move_direction, field_configuration.height, field_configuration.width);
     while (!it.Finished()) {
-      if (m_field_data[it.current] == FieldElementsFactory.empty_element) {
+      if (m_field_data[it.current] == FieldElementsFactory.empty_element && !m_field_data.ShouldBeEmpty(it.current)) {
         m_field_data[it.current] = FieldElementsFactory.CreateElement(FieldElement.Type.Common, _GetRandomValue());
         created.Add(it.current);
       }
