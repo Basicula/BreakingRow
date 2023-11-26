@@ -8,12 +8,12 @@ public class GameField : MonoBehaviour {
   [SerializeReference] private GameObject m_game_element_prefab;
   [SerializeReference] private GameInfo m_game_info;
   [SerializeReference] private GameObject m_abilities;
+  [SerializeReference] private GameObject m_input_handler;
 
   private Rect m_max_active_zone_rect;
   private Vector2 m_max_active_zone_anchor_min;
   private Vector2 m_max_active_zone_anchor_max;
   private Vector2 m_max_active_zone_center;
-  private GameObject m_input_handler;
 
   private FieldData m_field_data;
   private IFieldElementsSpawner m_elements_spawner;
@@ -40,7 +40,6 @@ public class GameField : MonoBehaviour {
   }
 
   void Start() {
-    m_input_handler = transform.GetChild(0).GetChild(0).GetChild(0).gameObject;
     var active_zone = m_input_handler.GetComponent<RectTransform>();
     m_max_active_zone_rect = active_zone.rect;
     m_max_active_zone_anchor_min = active_zone.anchorMin;
