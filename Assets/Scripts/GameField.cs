@@ -17,6 +17,7 @@ public class GameField : MonoBehaviour {
 
   private FieldData m_field_data;
   private IFieldElementsSpawner m_elements_spawner;
+  private IFieldResolver m_field_resolver;
   private ElementStyleProvider m_element_style_provider;
 
   private GameElement[,] m_field;
@@ -27,7 +28,6 @@ public class GameField : MonoBehaviour {
   private float m_inner_grid_stroke_width;
   private float m_outer_grid_stroke_width;
   private Vector2 m_field_center;
-  private readonly List<(int, int)> m_to_create;
   private readonly List<(int, int)> m_selected_elements;
   private readonly List<(int, int)> m_highlighted_elements;
   private (int, int) m_highlighted_focus_position;
@@ -35,7 +35,6 @@ public class GameField : MonoBehaviour {
   private ((int, int), (int, int))? m_reverse_move;
 
   public GameField() {
-    m_to_create = new List<(int, int)>();
     m_selected_elements = new List<(int, int)>();
     m_highlighted_elements = new List<(int, int)>();
   }
@@ -58,13 +57,6 @@ public class GameField : MonoBehaviour {
     if (!_IsAvailable())
       return;
 
-    if (m_to_create.Count != 0) {
-      foreach (var (row_id, column_id) in m_to_create)
-        _InitElement(row_id, column_id);
-      m_to_create.Clear();
-      return;
-    }
-
     bool scenario_result = m_field_configuration.fill_strategy switch {
       FieldConfiguration.FillStrategy.MoveThenSpawn => _MoveThenSpawnElements(),
       FieldConfiguration.FillStrategy.SpawnThenMove => _SpawnThenMoveElements(),
@@ -82,7 +74,7 @@ public class GameField : MonoBehaviour {
       m_reverse_move = null;
     }
 
-    m_game_info.moves_count = m_field_data.GetAllMoves().Count;
+    m_game_info.moves_count = m_field_resolver.GetAllMoves().Count;
 
     if (m_is_auto_play)
       _AutoMove();
@@ -90,16 +82,19 @@ public class GameField : MonoBehaviour {
   }
 
   private bool _ProcessElementGroups() {
-    var groups_details = m_field_data.ProcessGroups();
-    foreach (var group_details in groups_details) {
-      foreach (var element in group_details.group) {
+    var changes = m_field_resolver.Process();
+    foreach (var (row_id, column_id) in changes.destroyed)
+      m_field[row_id, column_id].Destroy();
+    foreach (var (value, positions) in changes.combined) {
+      foreach (var element in positions)
         m_field[element.Item1, element.Item2].Destroy();
-        if (m_field_data[element].value >= 0)
-          m_to_create.Add(element);
-      }
-      m_game_info.UpdateScore(group_details.value, group_details.group.Count, true);
+      m_game_info.UpdateScore(value, positions.Count, true);
     }
-    return groups_details.Count != 0;
+    foreach (var position in changes.created)
+      _InitElement(position.Item1, position.Item2, true);
+    foreach (var position in changes.updated)
+      _InitElement(position.Item1, position.Item2, true);
+    return changes.combined.Count != 0;
   }
 
   private bool _MoveThenSpawnElements() {
@@ -213,6 +208,16 @@ public class GameField : MonoBehaviour {
     m_field_data = new FieldData(m_field_configuration);
     m_elements_spawner = new SimpleCommonElementsSpawner(m_field_data);
     m_elements_spawner.InitElements();
+    switch (m_field_configuration.mode) {
+      case FieldConfiguration.Mode.Classic:
+        m_field_resolver = new ClassicFieldResolver(m_field_data);
+        break;
+      case FieldConfiguration.Mode.Accumulated:
+        m_field_resolver = new AccumulativeFieldResolver(m_field_data);
+        break;
+      default:
+        throw new System.NotImplementedException();
+    }
 
     m_grid_step = Mathf.Min(m_max_active_zone_rect.width / m_field_configuration.width, m_max_active_zone_rect.height / m_field_configuration.height);
     m_half_grid_step = m_grid_step / 2;
@@ -228,7 +233,7 @@ public class GameField : MonoBehaviour {
 
     m_element_style_provider = new ElementStyleProvider(m_element_size);
     m_field = new GameElement[m_field_configuration.height, m_field_configuration.width];
-    m_game_info.moves_count = m_field_data.GetAllMoves().Count;
+    m_game_info.moves_count = m_field_resolver.GetAllMoves().Count;
     m_field_center = new Vector2(m_grid_step * m_field_configuration.width / 2 - m_max_active_zone_center.x, m_grid_step * m_field_configuration.height / 2 + m_max_active_zone_center.y);
     for (int row_id = 0; row_id < m_field_configuration.height; ++row_id)
       for (int column_id = 0; column_id < m_field_configuration.width; ++column_id) {
@@ -362,7 +367,7 @@ public class GameField : MonoBehaviour {
         for (int row_id = 0; row_id < m_field_configuration.height; ++row_id)
           for (int column_id = 0; column_id < m_field_configuration.width; ++column_id) {
             m_field[row_id, column_id].Destroy();
-            m_to_create.Add((row_id, column_id));
+            _InitElement(row_id, column_id);
           }
         break;
       case "UpgradeGenerator":
@@ -371,7 +376,7 @@ public class GameField : MonoBehaviour {
           m_field[row_id, column_id].Destroy();
         break;
       case "Search":
-        var moves = m_field_data.GetAllMoves();
+        var moves = m_field_resolver.GetAllMoves();
         var move = moves[UnityEngine.Random.Range(0, moves.Count)];
         _ClearHighlighting();
         _HighlightElement(move.first);
@@ -622,9 +627,9 @@ public class GameField : MonoBehaviour {
   }
 
   private void _AutoMove() {
-    var moves = m_field_data.GetAllMoves();
+    var moves = m_field_resolver.GetAllMoves();
     if (moves.Count > 0) {
-      moves.Sort((FieldData.MoveDetails first, FieldData.MoveDetails second) => second.strike - first.strike);
+      moves.Sort((IFieldResolver.MoveDetails first, IFieldResolver.MoveDetails second) => second.strike - first.strike);
       var max_strike_value = moves[0].strike;
       int max_strike_value_count = 0;
       foreach (var move_details in moves) {

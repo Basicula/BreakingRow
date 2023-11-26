@@ -13,9 +13,9 @@ public class FieldElementsFactory {
       case FieldElement.Type.ImmobileDestractable:
         return new FieldElement(i_type, false, false, true, false, true, i_value);
       case FieldElement.Type.Empty:
-        throw new System.ArgumentException($"No need to create empty element, please use public static readonly field with corresponding info");
+        return empty_element;
       case FieldElement.Type.Hole:
-        throw new System.ArgumentException($"No need to create hole element, please use public static readonly field with corresponding info");
+        return hole_element;
       default:
         throw new System.NotImplementedException($"Field elements factory can't create element with type {i_type} as it's not implemented yet");
     }
