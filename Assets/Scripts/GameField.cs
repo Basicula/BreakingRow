@@ -183,33 +183,29 @@ public class GameField : MonoBehaviour {
   }
 
   public void Init(FieldConfiguration i_field_configuration) {
-    bool is_init_needed = m_field_configuration.width != i_field_configuration.width ||
-      m_field_configuration.height != i_field_configuration.height ||
-      m_field_configuration.active_elements_count != i_field_configuration.active_elements_count;
+    var old_field_configuration = m_field_configuration.Clone();
+    m_field_configuration.Update(i_field_configuration);
 
-    var old_cells = m_field_configuration.GetCellsConfiguration();
-    var new_cells = i_field_configuration.GetCellsConfiguration();
+    bool is_init_needed = m_field_configuration.width != old_field_configuration.width ||
+      m_field_configuration.height != old_field_configuration.height ||
+      m_field_configuration.active_elements_count != old_field_configuration.active_elements_count;
+    var old_cells = old_field_configuration.GetCellsConfiguration();
+    var new_cells = m_field_configuration.GetCellsConfiguration();
     for (int row_id = 0; row_id < i_field_configuration.height && !is_init_needed; ++row_id)
       for (int column_id = 0; column_id < i_field_configuration.width && !is_init_needed; ++column_id)
         is_init_needed = new_cells[row_id, column_id] != old_cells[row_id, column_id];
 
     if (is_init_needed) {
       Reset();
-      for (int row_id = 0; row_id < m_field_configuration.height; ++row_id)
-        for (int column_id = 0; column_id < m_field_configuration.width; ++column_id)
+      for (int row_id = 0; row_id < old_field_configuration.height; ++row_id)
+        for (int column_id = 0; column_id < old_field_configuration.width; ++column_id)
           Destroy(m_field[row_id, column_id].gameObject);
-    }
-
-    m_field_configuration.Update(i_field_configuration);
-
-    if (is_init_needed)
       _Init();
+    } else if (m_field_configuration.mode != old_field_configuration.mode)
+      _InitFieldResolver();
   }
 
-  private void _Init() {
-    m_field_data = new FieldData(m_field_configuration);
-    m_elements_spawner = new SimpleCommonElementsSpawner(m_field_data);
-    m_elements_spawner.InitElements();
+  private void _InitFieldResolver() {
     switch (m_field_configuration.mode) {
       case FieldConfiguration.Mode.Classic:
         m_field_resolver = new ClassicFieldResolver(m_field_data);
@@ -220,6 +216,13 @@ public class GameField : MonoBehaviour {
       default:
         throw new System.NotImplementedException();
     }
+  }
+
+  private void _Init() {
+    m_field_data = new FieldData(m_field_configuration);
+    m_elements_spawner = new SimpleCommonElementsSpawner(m_field_data);
+    m_elements_spawner.InitElements();
+    _InitFieldResolver();
 
     m_grid_step = Mathf.Min(m_max_active_zone_rect.width / m_field_configuration.width, m_max_active_zone_rect.height / m_field_configuration.height);
     m_half_grid_step = m_grid_step / 2;
