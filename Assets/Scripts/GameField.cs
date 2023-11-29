@@ -446,24 +446,24 @@ public class GameField : MonoBehaviour {
   private List<List<(int, int)>> _GetHoles() {
     var holes = m_field_data.GetHoles();
     var outer_hole = new List<(int, int)>();
-    for (int row_id = 0; row_id <= m_field_configuration.height + 1; ++row_id)
-      for (int column_id = 0; column_id <= m_field_configuration.width + 1; ++column_id) {
-        if (row_id > 0 && row_id <= m_field_configuration.height &&
-          column_id > 0 && column_id <= m_field_configuration.width)
+    for (int row_id = -1; row_id <= m_field_configuration.height; ++row_id)
+      for (int column_id = -1; column_id <= m_field_configuration.width; ++column_id) {
+        if (row_id >= 0 && row_id < m_field_configuration.height &&
+          column_id >= 0 && column_id < m_field_configuration.width)
           continue;
         outer_hole.Add((row_id, column_id));
       }
     for (int hole_id = 0; hole_id < holes.Count; ++hole_id) {
       bool is_outer = false;
-      for (int element_id = 0; element_id < holes[hole_id].Count; ++element_id) {
-        var (row_id, column_id) = holes[hole_id][element_id];
-        holes[hole_id][element_id] = (row_id + 1, column_id + 1);
-        is_outer = is_outer || (row_id == 0 || row_id == m_field_configuration.height - 1 ||
-          column_id == 0 || column_id == m_field_configuration.width - 1);
+      foreach (var (row_id, column_id) in holes[hole_id]) {
+        if (row_id == 0 || row_id == m_field_configuration.height - 1 ||
+          column_id == 0 || column_id == m_field_configuration.width - 1) {
+          is_outer = true;
+          break;
+        }
       }
       if (is_outer) {
-        for (int element_id = 0; element_id < holes[hole_id].Count; ++element_id)
-          outer_hole.Add(holes[hole_id][element_id]);
+        outer_hole.AddRange(holes[hole_id].ToArray());
         holes.RemoveAt(hole_id);
         --hole_id;
       }
@@ -531,21 +531,22 @@ public class GameField : MonoBehaviour {
       foreach (var path_points in paths) {
         // Remove last point as it's same as first one
         path_points.RemoveAt(path_points.Count - 1);
-        if (path_points[0].Item1 == 0 && path_points[0].Item2 == 0) {
+        if (path_points[0].Item1 == -1 && path_points[0].Item2 == -1) {
+          // Extend outer hole to cover all unused outer space
           path_points.Clear();
           var max_row_count = Mathf.RoundToInt(Screen.height / m_grid_step) + 1;
           var max_column_count = Mathf.RoundToInt(Screen.width / m_grid_step) + 1;
           var additional_rows = Mathf.Max(0, max_row_count - m_field_configuration.height) / 2 + 1;
           var additional_columns = Mathf.Max(0, max_column_count - m_field_configuration.width) / 2 + 1;
           path_points.Add((-additional_rows, -additional_columns));
-          path_points.Add((-additional_rows, m_field_configuration.width + 2 + additional_columns));
-          path_points.Add((m_field_configuration.height + 2 + additional_rows, m_field_configuration.width + 2 + additional_columns));
-          path_points.Add((m_field_configuration.height + 2 + additional_rows, -additional_columns));
+          path_points.Add((-additional_rows, m_field_configuration.width + additional_columns));
+          path_points.Add((m_field_configuration.height + additional_rows, m_field_configuration.width + additional_columns));
+          path_points.Add((m_field_configuration.height + additional_rows, -additional_columns));
         }
 
         var offset_path_points = new List<Vector2>(path_points.Count);
         foreach (var (row_id, column_id) in path_points)
-          offset_path_points.Add(new Vector2(column_id * m_grid_step, (m_field_configuration.height - row_id + 2) * m_grid_step));
+          offset_path_points.Add(new Vector2(column_id * m_grid_step, -row_id * m_grid_step));
 
         fill_path.MoveTo(offset_path_points[0]);
         for (int point_id = 1; point_id < offset_path_points.Count; ++point_id)
