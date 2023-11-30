@@ -107,7 +107,6 @@ public class FieldData {
   }
 
   public List<((int, int), (int, int))> MoveElements() {
-    var values = m_field.Clone() as FieldElement[,];
     var changes = new List<((int, int), (int, int))>();
 
     m_should_stay_empty.Clear();
@@ -119,16 +118,15 @@ public class FieldData {
         empty_element = (-1, -1);
       }
       var curr_element = it.current;
-      if (values[curr_element.Item1, curr_element.Item2] == FieldElementsFactory.empty_element) {
+      if (this[curr_element] == FieldElementsFactory.empty_element) {
         if (empty_element == (-1, -1))
           empty_element = curr_element;
-      } else if (values[curr_element.Item1, curr_element.Item2].movable && empty_element != (-1, -1)) {
-        (values[curr_element.Item1, curr_element.Item2], values[empty_element.Item1, empty_element.Item2]) =
-          (values[empty_element.Item1, empty_element.Item2], values[curr_element.Item1, curr_element.Item2]);
+      } else if (this[curr_element].movable && empty_element != (-1, -1)) {
+        (this[curr_element], this[empty_element]) = (this[empty_element], this[curr_element]);
         changes.Add((curr_element, empty_element));
         it.current = empty_element;
         empty_element = (-1, -1);
-      } else if (!values[curr_element.Item1, curr_element.Item2].movable && values[curr_element.Item1, curr_element.Item2] != FieldElementsFactory.hole_element) {
+      } else if (!this[curr_element].movable && this[curr_element] != FieldElementsFactory.hole_element) {
         if (empty_element != (-1, -1)) {
           var stay_empty_element = empty_element;
           while (stay_empty_element != curr_element) {
@@ -141,8 +139,6 @@ public class FieldData {
       }
       it.Increment(false);
     }
-    foreach (var change in changes)
-      SwapCells(change.Item1.Item1, change.Item1.Item2, change.Item2.Item1, change.Item2.Item2);
     return changes;
   }
 
