@@ -3,20 +3,6 @@ using System.Collections.Generic;
 public abstract class IFieldResolver {
   protected FieldData m_field_data;
 
-  public class FieldChanges {
-    public List<(int, List<(int, int)>)> combined;
-    public List<(int, int)> destroyed;
-    public List<(int, int)> created;
-    public List<(int, int)> updated;
-
-    public FieldChanges() {
-      combined = new();
-      destroyed = new();
-      created = new();
-      updated = new();
-    }
-  }
-
   protected IFieldResolver(FieldData i_field_data) {
     m_field_data = i_field_data;
   }
