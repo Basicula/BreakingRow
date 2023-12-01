@@ -5,8 +5,6 @@ public class FieldData {
   private readonly FieldConfiguration m_field_configuration;
   private FieldElement[,] m_field;
 
-  private List<(int, int)> m_should_stay_empty;
-
   private readonly string m_save_file_path;
 
   public FieldData(FieldConfiguration i_field_configuration) {
@@ -91,55 +89,15 @@ public class FieldData {
   public bool HasEmptyCells() {
     for (int row_id = 0; row_id < m_field_configuration.height; ++row_id)
       for (int column_id = 0; column_id < m_field_configuration.width; ++column_id)
-        if (m_field[row_id, column_id] == FieldElementsFactory.empty_element && !m_should_stay_empty.Contains((row_id, column_id)))
+        if (m_field[row_id, column_id] == FieldElementsFactory.empty_element)
           return true;
     return false;
-  }
-
-  public bool ShouldBeEmpty((int, int) i_position) {
-    return m_should_stay_empty.Contains(i_position);
   }
 
   public bool IsMoveAvailable((int, int) i_from, (int, int) i_to) {
     FieldElement from = m_field[i_from.Item1, i_from.Item2];
     FieldElement to = m_field[i_to.Item1, i_to.Item2];
     return from.interactable && to.interactable;
-  }
-
-  public List<((int, int), (int, int))> MoveElements() {
-    var changes = new List<((int, int), (int, int))>();
-
-    m_should_stay_empty.Clear();
-    var empty_element = (-1, -1);
-    var it = new FieldDataIterator(m_field_configuration.move_direction, m_field_configuration.height, m_field_configuration.width);
-    while (!it.Finished()) {
-      if (!it.IsValid()) {
-        it.Validate();
-        empty_element = (-1, -1);
-      }
-      var curr_element = it.current;
-      if (this[curr_element] == FieldElementsFactory.empty_element) {
-        if (empty_element == (-1, -1))
-          empty_element = curr_element;
-      } else if (this[curr_element].movable && empty_element != (-1, -1)) {
-        (this[curr_element], this[empty_element]) = (this[empty_element], this[curr_element]);
-        changes.Add((curr_element, empty_element));
-        it.current = empty_element;
-        empty_element = (-1, -1);
-      } else if (!this[curr_element].movable && this[curr_element] != FieldElementsFactory.hole_element) {
-        if (empty_element != (-1, -1)) {
-          var stay_empty_element = empty_element;
-          while (stay_empty_element != curr_element) {
-            m_should_stay_empty.Add(stay_empty_element);
-            stay_empty_element.Item1 += it.direction.Item1;
-            stay_empty_element.Item2 += it.direction.Item2;
-          }
-        }
-        empty_element = (-1, -1);
-      }
-      it.Increment(false);
-    }
-    return changes;
   }
 
   public (int, int) GetMoveDirection() {
@@ -188,7 +146,6 @@ public class FieldData {
   }
 
   private void _Init() {
-    m_should_stay_empty = new List<(int, int)>();
     m_field = new FieldElement[m_field_configuration.height, m_field_configuration.width];
   }
 

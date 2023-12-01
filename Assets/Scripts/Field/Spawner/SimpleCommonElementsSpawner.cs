@@ -30,7 +30,7 @@ class SimpleCommonElementsSpawner : IFieldElementsSpawner {
     var created = new List<(int, int)>();
     var it = new FieldDataIterator(field_configuration.move_direction, field_configuration.height, field_configuration.width);
     while (!it.Finished()) {
-      if (m_field_data[it.current] == FieldElementsFactory.empty_element && !m_field_data.ShouldBeEmpty(it.current)) {
+      if (m_field_data[it.current] == FieldElementsFactory.empty_element) {
         m_field_data[it.current] = FieldElementsFactory.CreateElement(FieldElement.Type.Common, _GetRandomValue());
         created.Add(it.current);
       }

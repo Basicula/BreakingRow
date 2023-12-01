@@ -13,7 +13,7 @@ public class FieldElementsFactory {
       case FieldElement.Type.ImmobileDestractable:
         return new FieldElement(i_type, false, false, true, false, true, i_value);
       case FieldElement.Type.Empty:
-        return empty_element;
+        return new(FieldElement.Type.Empty, false, false, false, false, false, i_value);
       case FieldElement.Type.Hole:
         return hole_element;
       default:

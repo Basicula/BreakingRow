@@ -22,6 +22,7 @@ public class GameField : MonoBehaviour {
 
   private FieldData m_field_data;
   private IFieldElementsSpawner m_elements_spawner;
+  private IFieldElementsMover m_elements_mover;
   private IFieldResolver m_field_resolver;
   private ElementStyleProvider m_element_style_provider;
 
@@ -102,11 +103,11 @@ public class GameField : MonoBehaviour {
   }
 
   private bool _MoveThenSpawnElements() {
-    var element_move_changes = m_field_data.MoveElements();
+    var element_move_changes = m_elements_mover.Move().moved;
     if (element_move_changes.Count > 0) {
       foreach (var element_move in element_move_changes) {
         var first = element_move.Item1;
-        var second = element_move.Item2;
+        var second = element_move.Item2[^1];
         var target_position = m_field[second.Item1, second.Item2].transform.position;
         m_field[second.Item1, second.Item2].transform.position = m_field[first.Item1, first.Item2].transform.position;
         m_field[first.Item1, first.Item2].MoveTo(target_position);
@@ -126,10 +127,10 @@ public class GameField : MonoBehaviour {
 
   private bool _SpawnThenMoveElements() {
     if (m_field_data.HasEmptyCells()) {
-      var element_move_changes = m_field_data.MoveElements();
+      var element_move_changes = m_elements_mover.Move().moved;
       foreach (var element_move in element_move_changes) {
         var first = element_move.Item1;
-        var second = element_move.Item2;
+        var second = element_move.Item2[^1];
         m_field[second.Item1, second.Item2].transform.position = m_field[first.Item1, first.Item2].transform.position;
         m_field[first.Item1, first.Item2].MoveTo(_GetElementPosition(second.Item1, second.Item2));
         (m_field[first.Item1, first.Item2], m_field[second.Item1, second.Item2]) =
@@ -222,6 +223,7 @@ public class GameField : MonoBehaviour {
     m_field_data = new FieldData(m_field_configuration);
     m_elements_spawner = new SimpleCommonElementsSpawner(m_field_data);
     m_elements_spawner.InitElements();
+    m_elements_mover = new ClassicMover(m_field_data);
     _InitFieldResolver();
 
     m_grid_step = Mathf.Min(m_max_active_zone_rect.width / m_field_configuration.width, m_max_active_zone_rect.height / m_field_configuration.height);
