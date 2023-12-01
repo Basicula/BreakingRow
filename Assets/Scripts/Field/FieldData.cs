@@ -165,6 +165,10 @@ public class FieldData {
       (m_field[row2, column2], m_field[row1, column1]);
   }
 
+  public void SwapCells((int, int) i_first_cell, (int, int) i_second_cell) {
+    SwapCells(i_first_cell.Item1, i_first_cell.Item2, i_second_cell.Item1, i_second_cell.Item2);
+  }
+
   public bool IsValidElementPosition(int i_row, int i_column) {
     return i_row >= 0 && i_column >= 0 &&
       i_row < m_field_configuration.height && i_column < m_field_configuration.width;
