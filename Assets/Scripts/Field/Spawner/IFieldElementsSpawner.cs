@@ -13,7 +13,11 @@ public abstract class IFieldElementsSpawner {
 
   protected abstract void _Init();
 
-  public abstract void Reset();
+  public void Reset() {
+    System.IO.File.Delete(m_save_path);
+    _Init();
+  }
+
   public abstract void InitElements();
   public abstract List<(int, int)> SpawnElements();
   public abstract List<(int, int)> Upgrade();

@@ -8,10 +8,6 @@ class SimpleCommonElementsSpawner : IFieldElementsSpawner {
 
   public SimpleCommonElementsSpawner(FieldData i_field_data) : base(i_field_data) { }
 
-  public override void Reset() {
-    m_values_interval = Enumerable.Range(0, m_field_data.configuration.active_elements_count).ToArray();
-  }
-
   public override void InitElements() {
     var field_configuration = m_field_data.configuration;
     var it = new FieldDataIterator(field_configuration.move_direction, field_configuration.height, field_configuration.width);
