@@ -86,14 +86,6 @@ public class FieldData {
     return hole_groups;
   }
 
-  public bool HasEmptyCells() {
-    for (int row_id = 0; row_id < m_field_configuration.height; ++row_id)
-      for (int column_id = 0; column_id < m_field_configuration.width; ++column_id)
-        if (m_field[row_id, column_id] == FieldElementsFactory.empty_element)
-          return true;
-    return false;
-  }
-
   public bool IsMoveAvailable((int, int) i_from, (int, int) i_to) {
     FieldElement from = m_field[i_from.Item1, i_from.Item2];
     FieldElement to = m_field[i_to.Item1, i_to.Item2];

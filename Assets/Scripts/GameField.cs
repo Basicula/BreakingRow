@@ -62,12 +62,7 @@ public class GameField : MonoBehaviour {
     if (!_IsAvailable())
       return;
 
-    bool scenario_result = m_field_configuration.fill_strategy switch {
-      FieldConfiguration.FillStrategy.MoveThenSpawn => _MoveThenSpawnElements(),
-      FieldConfiguration.FillStrategy.SpawnThenMove => _SpawnThenMoveElements(),
-      _ => throw new System.NotImplementedException(),
-    };
-    if (scenario_result)
+    if (_FillField())
       return;
 
     if (_ProcessElementGroups())
@@ -102,6 +97,14 @@ public class GameField : MonoBehaviour {
     return changes.combined.Count != 0;
   }
 
+  private bool _FillField() {
+    return m_field_configuration.fill_strategy switch {
+      FieldConfiguration.FillStrategy.MoveThenSpawn => _MoveThenSpawnElements(),
+      FieldConfiguration.FillStrategy.SpawnThenMove => _SpawnThenMoveElements(),
+      _ => throw new System.NotImplementedException(),
+    };
+  }
+
   private bool _MoveThenSpawnElements() {
     var element_move_changes = m_elements_mover.Move().moved;
     if (element_move_changes.Count > 0) {
@@ -116,8 +119,8 @@ public class GameField : MonoBehaviour {
       }
       return true;
     }
-    if (m_field_data.HasEmptyCells()) {
-      var created_elements = m_elements_spawner.SpawnElements();
+    var created_elements = m_elements_spawner.SpawnElements();
+    if (created_elements.Count > 0) {
       foreach (var element_position in created_elements)
         _InitElement(element_position.Item1, element_position.Item2);
       return true;
@@ -126,43 +129,40 @@ public class GameField : MonoBehaviour {
   }
 
   private bool _SpawnThenMoveElements() {
-    if (m_field_data.HasEmptyCells()) {
-      var element_move_changes = m_elements_mover.Move().moved;
-      foreach (var element_move in element_move_changes) {
-        var first = element_move.Item1;
-        var second = element_move.Item2[^1];
-        m_field[second.Item1, second.Item2].transform.position = m_field[first.Item1, first.Item2].transform.position;
-        m_field[first.Item1, first.Item2].MoveTo(_GetElementPosition(second.Item1, second.Item2));
-        (m_field[first.Item1, first.Item2], m_field[second.Item1, second.Item2]) =
-          (m_field[second.Item1, second.Item2], m_field[first.Item1, first.Item2]);
-      }
-      var created_elements = m_elements_spawner.SpawnElements();
-      int main_line = -1;
-      var offset = 0;
-      var direction = m_field_data.GetMoveDirection();
-      foreach (var element_position in created_elements) {
-        if (direction.Item2 == 0 && element_position.Item2 != main_line) {
-          main_line = element_position.Item2;
-          offset = 0;
-        } else if (direction.Item1 == 0 && element_position.Item1 != main_line) {
-          main_line = element_position.Item1;
-          offset = 0;
-        }
-        --offset;
-        _InitElement(element_position.Item1, element_position.Item2, false);
-        var row_id = direction.Item1 == 0 ? 0 : direction.Item1 < 0 ? offset : m_field_configuration.height - 1 - offset;
-        var column_id = direction.Item2 == 0 ? 0 : direction.Item2 < 0 ? offset : m_field_configuration.width - 1 - offset;
-        if (row_id == 0)
-          row_id = element_position.Item1;
-        if (column_id == 0)
-          column_id = element_position.Item2;
-        var target_element_position = _GetElementPosition(row_id, column_id);
-        m_field[element_position.Item1, element_position.Item2].gameObject.transform.position = target_element_position;
-        m_field[element_position.Item1, element_position.Item2].MoveTo(_GetElementPosition(element_position.Item1, element_position.Item2));
-      }
-      return true;
+    var element_move_changes = m_elements_mover.Move().moved;
+    foreach (var element_move in element_move_changes) {
+      var first = element_move.Item1;
+      var second = element_move.Item2[^1];
+      m_field[second.Item1, second.Item2].transform.position = m_field[first.Item1, first.Item2].transform.position;
+      m_field[first.Item1, first.Item2].MoveTo(_GetElementPosition(second.Item1, second.Item2));
+      (m_field[first.Item1, first.Item2], m_field[second.Item1, second.Item2]) =
+        (m_field[second.Item1, second.Item2], m_field[first.Item1, first.Item2]);
     }
-    return false;
+    var created_elements = m_elements_spawner.SpawnElements();
+    int main_line = -1;
+    var offset = 0;
+    var direction = m_field_data.GetMoveDirection();
+    foreach (var element_position in created_elements) {
+      if (direction.Item2 == 0 && element_position.Item2 != main_line) {
+        main_line = element_position.Item2;
+        offset = 0;
+      } else if (direction.Item1 == 0 && element_position.Item1 != main_line) {
+        main_line = element_position.Item1;
+        offset = 0;
+      }
+      --offset;
+      _InitElement(element_position.Item1, element_position.Item2, false);
+      var row_id = direction.Item1 == 0 ? 0 : direction.Item1 < 0 ? offset : m_field_configuration.height - 1 - offset;
+      var column_id = direction.Item2 == 0 ? 0 : direction.Item2 < 0 ? offset : m_field_configuration.width - 1 - offset;
+      if (row_id == 0)
+        row_id = element_position.Item1;
+      if (column_id == 0)
+        column_id = element_position.Item2;
+      var target_element_position = _GetElementPosition(row_id, column_id);
+      m_field[element_position.Item1, element_position.Item2].gameObject.transform.position = target_element_position;
+      m_field[element_position.Item1, element_position.Item2].MoveTo(_GetElementPosition(element_position.Item1, element_position.Item2));
+    }
+    return element_move_changes.Count > 0 || created_elements.Count > 0;
   }
 
   public void Restart() {
