@@ -227,7 +227,7 @@ public class GameField : MonoBehaviour {
         m_elements_mover = new ImmobileMover(m_field_data);
         break;
       case FieldConfiguration.MoveType.Fall:
-        m_elements_mover = new ClassicMover(m_field_data);
+        m_elements_mover = new StraightFallMover(m_field_data);
         break;
       case FieldConfiguration.MoveType.FallAndSlide:
       default:

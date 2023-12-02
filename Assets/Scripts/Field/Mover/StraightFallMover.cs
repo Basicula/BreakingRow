@@ -1,7 +1,7 @@
 using System.Collections.Generic;
 
-public class ClassicMover : IFieldElementsMover {
-  public ClassicMover(FieldData i_field_data) : base(i_field_data) {
+public class StraightFallMover : IFieldElementsMover {
+  public StraightFallMover(FieldData i_field_data) : base(i_field_data) {
   }
 
   public override FieldChanges Move() {
