@@ -6,9 +6,8 @@ public class StraightFallMover : IFieldElementsMover {
 
   public override FieldChanges Move() {
     var changes = new FieldChanges();
-    var field_configuration = m_field_data.configuration;
     var empty_element = (-1, -1);
-    var it = new FieldDataIterator(field_configuration.move_direction, field_configuration.height, field_configuration.width);
+    var it = m_field_data.GetIterator();
     while (!it.Finished()) {
       if (!it.IsValid()) {
         it.Validate();

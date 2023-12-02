@@ -9,9 +9,8 @@ class SimpleCommonElementsSpawner : IFieldElementsSpawner {
   public SimpleCommonElementsSpawner(FieldData i_field_data) : base(i_field_data) { }
 
   public override void InitElements() {
-    var field_configuration = m_field_data.configuration;
-    var it = new FieldDataIterator(field_configuration.move_direction, field_configuration.height, field_configuration.width);
-    var cells_configuration = field_configuration.GetCellsConfiguration();
+    var it = m_field_data.GetIterator();
+    var cells_configuration = m_field_data.configuration.GetCellsConfiguration();
     while (!it.Finished()) {
       if (m_field_data[it.current] is null) {
         var cell_type = cells_configuration[it.current.Item1, it.current.Item2];
@@ -22,9 +21,8 @@ class SimpleCommonElementsSpawner : IFieldElementsSpawner {
   }
 
   public override List<(int, int)> SpawnElements() {
-    var field_configuration = m_field_data.configuration;
     var created = new List<(int, int)>();
-    var it = new FieldDataIterator(field_configuration.move_direction, field_configuration.height, field_configuration.width);
+    var it = m_field_data.GetIterator();
     while (!it.Finished()) {
       if (m_field_data[it.current] == FieldElementsFactory.empty_element) {
         m_field_data[it.current] = FieldElementsFactory.CreateElement(FieldElement.Type.Common, _GetRandomValue());

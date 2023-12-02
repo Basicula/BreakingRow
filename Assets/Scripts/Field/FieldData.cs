@@ -26,9 +26,13 @@ public class FieldData {
 
   public FieldConfiguration configuration { get => m_field_configuration; }
 
+  public FieldDataIterator GetIterator() {
+    return new FieldDataIterator(m_field_configuration.move_direction, m_field_configuration.height, m_field_configuration.width);
+  }
+
   public List<(int, int)> RemoveSameAs(FieldElement i_reference_element) {
     var removed = new List<(int, int)>();
-    var it = new FieldDataIterator(m_field_configuration.move_direction, m_field_configuration.height, m_field_configuration.width);
+    var it = GetIterator();
     while (!it.Finished()) {
       if (this[it.current] == i_reference_element) {
         this[it.current] = FieldElementsFactory.empty_element;
