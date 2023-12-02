@@ -204,6 +204,8 @@ public class GameField : MonoBehaviour {
       _Init();
     } else if (m_field_configuration.mode != old_field_configuration.mode)
       _InitFieldResolver();
+    else if (m_field_configuration.move_type != old_field_configuration.move_type)
+      _InitFieldMover();
   }
 
   private void _InitFieldResolver() {
@@ -219,11 +221,25 @@ public class GameField : MonoBehaviour {
     }
   }
 
+  private void _InitFieldMover() {
+    switch (m_field_configuration.move_type) {
+      case FieldConfiguration.MoveType.Immobile:
+        m_elements_mover = new ImmobileMover(m_field_data);
+        break;
+      case FieldConfiguration.MoveType.Fall:
+        m_elements_mover = new ClassicMover(m_field_data);
+        break;
+      case FieldConfiguration.MoveType.FallAndSlide:
+      default:
+        throw new System.NotImplementedException();
+    }
+  }
+
   private void _Init() {
     m_field_data = new FieldData(m_field_configuration);
     m_elements_spawner = new SimpleCommonElementsSpawner(m_field_data);
     m_elements_spawner.InitElements();
-    m_elements_mover = new ClassicMover(m_field_data);
+    _InitFieldMover();
     _InitFieldResolver();
 
     m_grid_step = Mathf.Min(m_max_active_zone_rect.width / m_field_configuration.width, m_max_active_zone_rect.height / m_field_configuration.height);
