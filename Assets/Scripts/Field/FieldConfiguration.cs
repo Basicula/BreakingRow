@@ -85,11 +85,11 @@ public class FieldConfiguration {
     public int width;
     public int height;
     public int active_elements_count;
-    public string mode;
-    public string move_direction;
-    public string move_type;
-    public string fill_strategy;
-    public int[] cells_configuration;
+    public Mode mode;
+    public MoveDirection move_direction;
+    public MoveType move_type;
+    public FillStrategy fill_strategy;
+    public FieldElement.Type[] cells_configuration;
   }
 
   public bool Load() {
@@ -103,11 +103,11 @@ public class FieldConfiguration {
     m_cells_configuration = new FieldElement.Type[height, width];
     for (int row_id = 0; row_id < height; ++row_id)
       for (int column_id = 0; column_id < width; ++column_id)
-        m_cells_configuration[row_id, column_id] = (FieldElement.Type)data.cells_configuration[row_id * width + column_id];
-    mode = Enum.Parse<Mode>(data.mode);
-    move_direction = Enum.Parse<MoveDirection>(data.move_direction);
-    move_type = Enum.Parse<MoveType>(data.move_type);
-    fill_strategy = Enum.Parse<FillStrategy>(data.fill_strategy);
+        m_cells_configuration[row_id, column_id] = data.cells_configuration[row_id * width + column_id];
+    mode = data.mode;
+    move_direction = data.move_direction;
+    move_type = data.move_type;
+    fill_strategy = data.fill_strategy;
     return true;
   }
 
@@ -117,16 +117,16 @@ public class FieldConfiguration {
       width = width,
       height = height,
       active_elements_count = active_elements_count,
-      cells_configuration = new int[width * height],
-      mode = Enum.GetName(typeof(Mode), mode),
-      move_direction = Enum.GetName(typeof(MoveDirection), move_direction),
-      move_type = Enum.GetName(typeof(MoveType), move_type),
-      fill_strategy = Enum.GetName(typeof(FillStrategy), fill_strategy),
+      cells_configuration = new FieldElement.Type[width * height],
+      mode = mode,
+      move_direction = move_direction,
+      move_type = move_type,
+      fill_strategy = fill_strategy,
     };
     for (int row_id = 0; row_id < height; ++row_id)
       for (int column_id = 0; column_id < width; ++column_id) {
         int flat_id = row_id * width + column_id;
-        data.cells_configuration[flat_id] = (int)m_cells_configuration[row_id, column_id];
+        data.cells_configuration[flat_id] = m_cells_configuration[row_id, column_id];
       }
     SaveLoad.Save(data, save_file_path);
   }
