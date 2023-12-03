@@ -2,6 +2,20 @@ using System.Collections.Generic;
 using UnityEngine;
 
 public class GameField : MonoBehaviour {
+  public struct MaxActiveZone {
+    public readonly Rect rect;
+    public readonly Vector2 anchor_min;
+    public readonly Vector2 anchor_max;
+    public readonly Vector3 position;
+
+    public MaxActiveZone(RectTransform i_transform) {
+      rect = new Rect(i_transform.rect);
+      anchor_min = new Vector2(i_transform.anchorMin.x, i_transform.anchorMin.y);
+      anchor_max = new Vector2(i_transform.anchorMax.x, i_transform.anchorMax.y);
+      position = new Vector3(i_transform.localPosition.x, i_transform.localPosition.y, i_transform.localPosition.z);
+    }
+  }
+
   [SerializeField] private FieldConfiguration m_field_configuration;
   [SerializeField] private bool m_is_auto_play;
 
@@ -9,16 +23,13 @@ public class GameField : MonoBehaviour {
   [SerializeReference] private GameInfo m_game_info;
   [SerializeReference] private GameObject m_abilities;
   [SerializeReference] private GameObject m_input_handler;
-  [SerializeReference] private GameObject m_background_grid;
+  [SerializeReference] private GameFieldBackgroundGrid m_background_grid;
   [SerializeReference] private GameObject m_holes_contour_overlay;
   [SerializeReference] private GameObject m_holes_fill_overlay;
   [SerializeReference] private GameObject m_holes_image;
   [SerializeReference] private GameObject m_field_image;
 
-  private Rect m_max_active_zone_rect;
-  private Vector2 m_max_active_zone_anchor_min;
-  private Vector2 m_max_active_zone_anchor_max;
-  private Vector2 m_max_active_zone_center;
+  private MaxActiveZone m_max_active_zone;
 
   private FieldData m_field_data;
   private IFieldElementsSpawner m_elements_spawner;
@@ -27,13 +38,7 @@ public class GameField : MonoBehaviour {
   private ElementStyleProvider m_element_style_provider;
 
   private GameElement[,] m_field;
-  private float m_grid_step;
-  private float m_half_grid_step;
-  private float m_element_size;
-  private float m_element_offset;
-  private float m_inner_grid_stroke_width;
-  private float m_outer_grid_stroke_width;
-  private Vector2 m_field_center;
+  private FieldGridConfiguration m_grid_configuration;
   private readonly List<(int, int)> m_selected_elements;
   private readonly List<(int, int)> m_highlighted_elements;
   private (int, int) m_highlighted_focus_position;
@@ -46,11 +51,7 @@ public class GameField : MonoBehaviour {
   }
 
   void Start() {
-    var active_zone = m_input_handler.GetComponent<RectTransform>();
-    m_max_active_zone_rect = active_zone.rect;
-    m_max_active_zone_anchor_min = active_zone.anchorMin;
-    m_max_active_zone_anchor_max = active_zone.anchorMax;
-    m_max_active_zone_center = active_zone.localPosition;
+    m_max_active_zone = new MaxActiveZone(m_input_handler.GetComponent<RectTransform>());
 
     if (!m_field_configuration.Load())
       m_field_configuration.InitCellsConfiguration();
@@ -134,7 +135,7 @@ public class GameField : MonoBehaviour {
       var first = element_move.Item1;
       var second = element_move.Item2[^1];
       m_field[second.Item1, second.Item2].transform.position = m_field[first.Item1, first.Item2].transform.position;
-      m_field[first.Item1, first.Item2].MoveTo(_GetElementPosition(second.Item1, second.Item2));
+      m_field[first.Item1, first.Item2].MoveTo(m_grid_configuration.GetElementPosition(second));
       (m_field[first.Item1, first.Item2], m_field[second.Item1, second.Item2]) =
         (m_field[second.Item1, second.Item2], m_field[first.Item1, first.Item2]);
     }
@@ -158,9 +159,9 @@ public class GameField : MonoBehaviour {
         row_id = element_position.Item1;
       if (column_id == 0)
         column_id = element_position.Item2;
-      var target_element_position = _GetElementPosition(row_id, column_id);
+      var target_element_position = m_grid_configuration.GetElementPosition(row_id, column_id);
       m_field[element_position.Item1, element_position.Item2].gameObject.transform.position = target_element_position;
-      m_field[element_position.Item1, element_position.Item2].MoveTo(_GetElementPosition(element_position.Item1, element_position.Item2));
+      m_field[element_position.Item1, element_position.Item2].MoveTo(m_grid_configuration.GetElementPosition(element_position));
     }
     return element_move_changes.Count > 0 || created_elements.Count > 0;
   }
@@ -242,25 +243,19 @@ public class GameField : MonoBehaviour {
     _InitFieldMover();
     _InitFieldResolver();
 
-    m_grid_step = Mathf.Min(m_max_active_zone_rect.width / m_field_configuration.width, m_max_active_zone_rect.height / m_field_configuration.height);
-    m_half_grid_step = m_grid_step / 2;
-    m_element_offset = m_grid_step * 0.05f;
-    m_element_size = m_grid_step - 2 * m_element_offset;
-    m_inner_grid_stroke_width = m_element_offset / 4;
-    m_outer_grid_stroke_width = m_element_offset;
+    m_grid_configuration = new FieldGridConfiguration(m_field_configuration, m_max_active_zone);
 
-    _InitBackgroundGrid();
+    m_background_grid.Init(m_field_configuration, m_grid_configuration);
     _InitHoleOverlays();
     _InitInputHandler();
     _InitCameraViewport();
 
-    m_element_style_provider = new ElementStyleProvider(m_element_size);
+    m_element_style_provider = new ElementStyleProvider(m_grid_configuration.element_size);
     m_field = new GameElement[m_field_configuration.height, m_field_configuration.width];
     m_game_info.moves_count = m_field_resolver.GetAllMoves().Count;
-    m_field_center = new Vector2(m_grid_step * m_field_configuration.width / 2 - m_max_active_zone_center.x, m_grid_step * m_field_configuration.height / 2 + m_max_active_zone_center.y);
     for (int row_id = 0; row_id < m_field_configuration.height; ++row_id)
       for (int column_id = 0; column_id < m_field_configuration.width; ++column_id) {
-        Vector2 position = _GetElementPosition(row_id, column_id);
+        Vector2 position = m_grid_configuration.GetElementPosition(row_id, column_id);
         m_field[row_id, column_id] = Instantiate(m_game_element_prefab, position, Quaternion.identity).GetComponent<GameElement>();
         m_field[row_id, column_id].transform.parent = transform;
         _InitElement(row_id, column_id);
@@ -276,7 +271,7 @@ public class GameField : MonoBehaviour {
     if (!_IsAvailable())
       return;
     m_mouse_down_position = _PointerEventPositionToWorldPosition(i_event_position);
-    var element_position = _GetElementPosition(m_mouse_down_position);
+    var element_position = m_grid_configuration.GetElementPosition(m_mouse_down_position);
     if (!_IsValidCell(element_position)) {
       Debug.LogError($"Bad element position on pointer down: {element_position} with event position {i_event_position}");
       return;
@@ -290,10 +285,10 @@ public class GameField : MonoBehaviour {
       return;
     var mouse_up_position = _PointerEventPositionToWorldPosition(i_event_position);
     var delta = mouse_up_position - m_mouse_down_position;
-    if (delta.magnitude / m_grid_step < 0.5)
+    if (delta.magnitude / m_grid_configuration.grid_step < 0.5)
       return;
     delta.Normalize();
-    var element_position = _GetElementPosition(m_mouse_down_position + delta * m_grid_step);
+    var element_position = m_grid_configuration.GetElementPosition(m_mouse_down_position + delta * m_grid_configuration.grid_step);
     if (!_IsValidCell(element_position)) {
       Debug.LogError($"Bad element position on pointer up: {element_position} with event position {i_event_position}");
       return;
@@ -305,7 +300,7 @@ public class GameField : MonoBehaviour {
   private void _HandleAbilityMove(string i_ability_name, Vector2 i_event_position) {
     if (!_IsAvailable())
       return;
-    var main_element_position = _GetElementPosition(Camera.main.ScreenToWorldPoint(i_event_position));
+    var main_element_position = m_grid_configuration.GetElementPosition(Camera.main.ScreenToWorldPoint(i_event_position));
     var offset_from_previous_main = Mathf.Abs(main_element_position.Item1 - m_highlighted_focus_position.Item1) +
       Mathf.Abs(main_element_position.Item2 - m_highlighted_focus_position.Item2);
     if (offset_from_previous_main == 0)
@@ -341,7 +336,7 @@ public class GameField : MonoBehaviour {
   private void _HandleAbility(string i_ability_name, AbilityBase i_ability, Vector2 i_applied_position) {
     if (!_IsAvailable())
       return;
-    var main_element_position = _GetElementPosition(Camera.main.ScreenToWorldPoint(i_applied_position));
+    var main_element_position = m_grid_configuration.GetElementPosition(Camera.main.ScreenToWorldPoint(i_applied_position));
     _ClearHighlighting();
     if (!_IsValidCell(main_element_position))
       return;
@@ -447,20 +442,6 @@ public class GameField : MonoBehaviour {
     }
   }
 
-  private void _InitBackgroundGrid() {
-    var svg = new SVG();
-    var rect_size = new Vector2(m_grid_step, m_grid_step);
-    var rect_color = "rgba(20, 20, 20, 0.5)";
-    var rect_stroke_props = new SVGStrokeProps("#000000", m_inner_grid_stroke_width);
-    for (int row_id = 0; row_id < m_field_configuration.height; ++row_id)
-      for (int column_id = 0; column_id < m_field_configuration.width; ++column_id)
-        svg.Add(new SVGRect(new Vector2(column_id * m_grid_step, row_id * m_grid_step), rect_size, rect_color, rect_stroke_props));
-
-    m_background_grid.transform.localPosition = m_input_handler.transform.localPosition;
-    var sprite_renderer = m_background_grid.GetComponent<SpriteRenderer>();
-    sprite_renderer.sprite = SVG.BuildSprite(svg, m_grid_step);
-  }
-
   private List<List<(int, int)>> _GetHoles() {
     var holes = m_field_data.GetHoles();
     var outer_hole = new List<(int, int)>();
@@ -532,8 +513,8 @@ public class GameField : MonoBehaviour {
     var stroke_svg = new SVG();
     var fill_svg = new SVG();
     var fill_color = "rgba(20, 20, 20, 0.5)";
-    var offset_value = m_outer_grid_stroke_width / 2;
-    var hole_stroke = new SVGStrokeProps("#000000", m_outer_grid_stroke_width);
+    var offset_value = m_grid_configuration.outer_grid_stroke_width / 2;
+    var hole_stroke = new SVGStrokeProps("#000000", m_grid_configuration.outer_grid_stroke_width);
     var no_stroke = new SVGStrokeProps("none", 0);
 
     foreach (var hole in holes) {
@@ -552,8 +533,8 @@ public class GameField : MonoBehaviour {
         if (path_points[0].Item1 == -1 && path_points[0].Item2 == -1) {
           // Extend outer hole to cover all unused outer space
           path_points.Clear();
-          var max_row_count = Mathf.RoundToInt(Screen.height / m_grid_step) + 1;
-          var max_column_count = Mathf.RoundToInt(Screen.width / m_grid_step) + 1;
+          var max_row_count = Mathf.RoundToInt(Screen.height / m_grid_configuration.grid_step) + 1;
+          var max_column_count = Mathf.RoundToInt(Screen.width / m_grid_configuration.grid_step) + 1;
           var additional_rows = Mathf.Max(0, max_row_count - m_field_configuration.height) / 2 + 1;
           var additional_columns = Mathf.Max(0, max_column_count - m_field_configuration.width) / 2 + 1;
           path_points.Add((-additional_rows, -additional_columns));
@@ -564,7 +545,7 @@ public class GameField : MonoBehaviour {
 
         var offset_path_points = new List<Vector2>(path_points.Count);
         foreach (var (row_id, column_id) in path_points)
-          offset_path_points.Add(new Vector2(column_id * m_grid_step, -row_id * m_grid_step));
+          offset_path_points.Add(new Vector2(column_id * m_grid_configuration.grid_step, -row_id * m_grid_configuration.grid_step));
 
         fill_path.MoveTo(offset_path_points[0]);
         for (int point_id = 1; point_id < offset_path_points.Count; ++point_id)
@@ -602,28 +583,25 @@ public class GameField : MonoBehaviour {
 
     m_holes_fill_overlay.transform.localPosition = m_input_handler.transform.localPosition;
     var holes_fill_mask = m_holes_fill_overlay.GetComponent<SpriteMask>();
-    holes_fill_mask.sprite = SVG.BuildSprite(fill_svg, m_grid_step);
+    holes_fill_mask.sprite = SVG.BuildSprite(fill_svg, m_grid_configuration.grid_step);
 
     var background_image_size = m_holes_image.GetComponent<SpriteRenderer>().sprite.rect.size;
-    var x_scale = (Screen.width + 2 * m_outer_grid_stroke_width) / background_image_size.x;
-    var y_scale = (Screen.height + 2 * m_outer_grid_stroke_width) / background_image_size.x;
+    var x_scale = (Screen.width + 2 * m_grid_configuration.outer_grid_stroke_width) / background_image_size.x;
+    var y_scale = (Screen.height + 2 * m_grid_configuration.outer_grid_stroke_width) / background_image_size.x;
     m_holes_image.transform.localScale = new Vector3(x_scale, y_scale, 1);
     m_field_image.transform.localScale = new Vector3(x_scale, y_scale, 1);
 
     m_holes_contour_overlay.transform.localPosition = m_input_handler.transform.localPosition;
     var sprite_renderer = m_holes_contour_overlay.GetComponent<SpriteRenderer>();
-    sprite_renderer.sprite = SVG.BuildSprite(stroke_svg, m_grid_step);
+    sprite_renderer.sprite = SVG.BuildSprite(stroke_svg, m_grid_configuration.grid_step);
   }
 
   private void _InitInputHandler() {
     // Fit input handler size to actual grid size
     var input_handler_rect_transform = m_input_handler.GetComponent<RectTransform>();
-    var rect = input_handler_rect_transform.rect;
-    var anchor_delta = m_max_active_zone_anchor_max - m_max_active_zone_anchor_min;
-    var height_fraction = anchor_delta.y * (m_max_active_zone_rect.height - m_grid_step * m_field_configuration.height) / m_max_active_zone_rect.height / 2;
-    var width_fraction = anchor_delta.x * (m_max_active_zone_rect.width - m_grid_step * m_field_configuration.width) / m_max_active_zone_rect.width / 2;
-    input_handler_rect_transform.anchorMin = m_max_active_zone_anchor_min + new Vector2(width_fraction, height_fraction);
-    input_handler_rect_transform.anchorMax = m_max_active_zone_anchor_max - new Vector2(width_fraction, height_fraction);
+    var anchors = m_grid_configuration.GetAnchors();
+    input_handler_rect_transform.anchorMin = anchors.Item1;
+    input_handler_rect_transform.anchorMax = anchors.Item2;
 
     // Init input handler callbacks
     var input_handler_component = m_input_handler.GetComponent<GameFieldInputHandler>();
@@ -634,7 +612,7 @@ public class GameField : MonoBehaviour {
   }
 
   private void _InitCameraViewport() {
-    Camera.main.orthographicSize = Screen.height / 2.0f + m_outer_grid_stroke_width;
+    Camera.main.orthographicSize = Screen.height / 2.0f + m_grid_configuration.outer_grid_stroke_width;
     Camera.main.aspect = (float)Screen.width / Screen.height;
   }
 
@@ -667,24 +645,11 @@ public class GameField : MonoBehaviour {
       m_reverse_move = (first, second);
   }
 
-  private Vector2 _GetElementPosition(int row_id, int column_id) {
-    return new Vector2(
-      m_grid_step * column_id - m_field_center.x + m_half_grid_step,
-      m_field_center.y - m_half_grid_step - m_grid_step * row_id
-    );
-  }
-
-  private (int, int) _GetElementPosition(Vector2 position) {
-    var row_id = Mathf.FloorToInt((m_field_center.y - position.y) / m_grid_step);
-    var column_id = Mathf.FloorToInt((m_field_center.x + position.x) / m_grid_step);
-    return (row_id, column_id);
-  }
-
   private void _InitElement(int row_id, int column_id, bool i_with_animation = true) {
     var element = m_field_data[row_id, column_id];
     m_field[row_id, column_id].Create(m_element_style_provider.Get(element), i_with_animation);
-    m_field[row_id, column_id].transform.GetChild(2).GetComponent<SpriteRenderer>().size = new Vector2(m_element_size, m_element_size);
-    m_field[row_id, column_id].transform.GetChild(3).GetComponent<SpriteRenderer>().size = new Vector2(m_grid_step, m_grid_step);
+    m_field[row_id, column_id].transform.GetChild(2).GetComponent<SpriteRenderer>().size = new Vector2(m_grid_configuration.element_size, m_grid_configuration.element_size);
+    m_field[row_id, column_id].transform.GetChild(3).GetComponent<SpriteRenderer>().size = new Vector2(m_grid_configuration.grid_step, m_grid_configuration.grid_step);
   }
 
   private void OnDestroy() {

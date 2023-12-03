@@ -10,6 +10,7 @@ GameObject:
   m_Component:
   - component: {fileID: 3358287742732346704}
   - component: {fileID: 2465255208819634992}
+  - component: {fileID: 475206049564914132}
   m_Layer: 0
   m_Name: BackgroundGrid
   m_TagString: Untagged
@@ -84,6 +85,18 @@ SpriteRenderer:
   m_WasSpriteAssigned: 0
   m_MaskInteraction: 0
   m_SpriteSortPoint: 0
+--- !u!114 &475206049564914132
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1401256541988624132}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 8db59dc19384f404babd0998bac1d19a, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
 --- !u!1 &3837003338939959636
 GameObject:
   m_ObjectHideFlags: 0
@@ -226,13 +239,14 @@ MonoBehaviour:
     active_elements_count: 0
     mode: 0
     move_direction: 0
+    move_type: 0
     fill_strategy: 0
   m_is_auto_play: 0
   m_game_element_prefab: {fileID: 4158200364965129860, guid: 3f80bd48050dc4248a0cb65865243003, type: 3}
   m_game_info: {fileID: 0}
   m_abilities: {fileID: 0}
   m_input_handler: {fileID: 3837003338939959636}
-  m_background_grid: {fileID: 1401256541988624132}
+  m_background_grid: {fileID: 475206049564914132}
   m_holes_contour_overlay: {fileID: 7756945784907964939}
   m_holes_fill_overlay: {fileID: 4474663674749487071}
   m_holes_image: {fileID: 7439158917097090231}
