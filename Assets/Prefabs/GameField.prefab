@@ -10,7 +10,6 @@ GameObject:
   m_Component:
   - component: {fileID: 3358287742732346704}
   - component: {fileID: 2465255208819634992}
-  - component: {fileID: 475206049564914132}
   m_Layer: 0
   m_Name: BackgroundGrid
   m_TagString: Untagged
@@ -85,18 +84,6 @@ SpriteRenderer:
   m_WasSpriteAssigned: 0
   m_MaskInteraction: 0
   m_SpriteSortPoint: 0
---- !u!114 &475206049564914132
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1401256541988624132}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 8db59dc19384f404babd0998bac1d19a, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
 --- !u!1 &3837003338939959636
 GameObject:
   m_ObjectHideFlags: 0
@@ -195,6 +182,8 @@ GameObject:
   m_Component:
   - component: {fileID: 3837003339136064395}
   - component: {fileID: 3837003339136064394}
+  - component: {fileID: 8592461306325027335}
+  - component: {fileID: 8021273548451010284}
   m_Layer: 0
   m_Name: GameField
   m_TagString: Untagged
@@ -246,11 +235,37 @@ MonoBehaviour:
   m_game_info: {fileID: 0}
   m_abilities: {fileID: 0}
   m_input_handler: {fileID: 3837003338939959636}
-  m_background_grid: {fileID: 475206049564914132}
-  m_holes_contour_overlay: {fileID: 7756945784907964939}
+  m_background_grid: {fileID: 8021273548451010284}
+  m_holes: {fileID: 8592461306325027335}
+--- !u!114 &8592461306325027335
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3837003339136064397}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 93926ee5a369cb14f893b1113ab98a86, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
   m_holes_fill_overlay: {fileID: 4474663674749487071}
   m_holes_image: {fileID: 7439158917097090231}
   m_field_image: {fileID: 8206365537653009939}
+  m_holes_contour_overlay: {fileID: 7756945784907964939}
+--- !u!114 &8021273548451010284
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3837003339136064397}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 8db59dc19384f404babd0998bac1d19a, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  m_background_image: {fileID: 1401256541988624132}
 --- !u!1 &3837003340172479773
 GameObject:
   m_ObjectHideFlags: 0
