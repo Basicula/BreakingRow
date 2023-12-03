@@ -34,14 +34,6 @@ public class GameModeSelection : MonoBehaviour, IPointerDownHandler, IPointerUpH
       description = "Match 3 game but combined elements will be accumulated like in 2048"
     });
 
-    //m_game_mode_infos = new List<GameModeInfo>();
-    //for (int i = 0; i < 9; ++i)
-    //  m_game_mode_infos.Add(new GameModeInfo
-    //  {
-    //    name = $"Test{i}",
-    //    description = $"Test{i}"
-    //  });
-
     _Init();
   }
 
