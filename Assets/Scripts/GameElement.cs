@@ -120,6 +120,12 @@ public class GameElement : MonoBehaviour {
     m_animation_details.position_control_points.Add(position);
   }
 
+  public void MoveByPath(List<Vector3> i_path) {
+    m_state = State.Moving;
+    m_animation_details.Reset(false);
+    m_animation_details.position_control_points.AddRange(i_path);
+  }
+
   public bool IsAvailable() {
     return m_state == State.Waiting || m_state == State.Highlighted ||
       m_state == State.Selected;
