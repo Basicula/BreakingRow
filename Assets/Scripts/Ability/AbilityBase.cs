@@ -46,7 +46,7 @@ abstract public class AbilityBase : MonoBehaviour {
     m_cooldown_timer = transform.GetChild(0).GetChild(4).gameObject.GetComponent<TMP_Text>();
     _Init();
 
-    m_save_file_path = Utilities.GetSavePath($"{gameObject.name}Ability.json");
+    m_save_file_path = Utilities.GetSavePath($"{gameObject.name}Ability");
 
     if (_Load()) {
       if (Time.time - m_cooldown_start_time < m_cooldown_time)
