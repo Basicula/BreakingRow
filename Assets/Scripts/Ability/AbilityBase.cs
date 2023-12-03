@@ -16,9 +16,9 @@ abstract public class AbilityBase : MonoBehaviour {
   [SerializeReference] private GameInfo m_game_info;
 
   protected Button m_button;
-  private TMP_Text m_price_text;
-  private Image m_cooldown_overlay;
-  private TMP_Text m_cooldown_timer;
+  [SerializeReference] private TMP_Text m_price_text;
+  [SerializeReference] private Image m_cooldown_overlay;
+  [SerializeReference] private TMP_Text m_cooldown_timer;
   private float m_cooldown_start_time;
   private string m_save_file_path;
 
@@ -41,9 +41,6 @@ abstract public class AbilityBase : MonoBehaviour {
 
   private void Start() {
     m_button = gameObject.GetComponent<Button>();
-    m_price_text = transform.GetChild(0).GetChild(2).gameObject.GetComponent<TMP_Text>();
-    m_cooldown_overlay = transform.GetChild(0).GetChild(3).gameObject.GetComponent<Image>();
-    m_cooldown_timer = transform.GetChild(0).GetChild(4).gameObject.GetComponent<TMP_Text>();
     _Init();
 
     m_save_file_path = Utilities.GetSavePath($"{gameObject.name}Ability");
