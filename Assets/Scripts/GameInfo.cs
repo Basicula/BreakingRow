@@ -1,7 +1,6 @@
 using System.Collections.Generic;
 using TMPro;
 using UnityEngine;
-using UnityEngine.SceneManagement;
 
 public class GameInfo : MonoBehaviour {
   [SerializeReference] private TMP_Text score_text;
@@ -19,7 +18,7 @@ public class GameInfo : MonoBehaviour {
     m_score = 0;
     m_moves_count = 0;
     m_best_score = 0;
-    m_save_file_path = Application.persistentDataPath + $"/{SceneManager.GetActiveScene().name}GameInfo.json";
+    m_save_file_path = Utilities.GetSavePath("GameInfo");
     _Load();
     _Update();
   }
