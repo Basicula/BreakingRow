@@ -1,24 +1,19 @@
 using System.Collections.Generic;
-using System.Xml.Linq;
 using UnityEngine;
 
-public class ElementStyleProvider
-{
-  public struct ElementProps
-  {
+public class ElementStyleProvider {
+  public struct ElementProps {
     public Sprite sprite;
     public string number;
     public float text_zone_size;
   }
 
-  private struct ElementStyleLibrary
-  {
+  private struct ElementStyleLibrary {
     public string[] colors;
     public List<SVGPath> paths;
     public Dictionary<int, ElementProps> sprite_cache;
 
-    public ElementProps Get(int i_value, float i_size, float i_line_width)
-    {
+    public ElementProps Get(int i_value, float i_size, float i_line_width) {
       int value = i_value;
       if (sprite_cache.ContainsKey(value))
         return sprite_cache[value];
@@ -43,20 +38,16 @@ public class ElementStyleProvider
       return sprite_cache[value];
     }
 
-    private void _FillElementNumberText(ref ElementProps io_element_props, int i_value)
-    {
-      if (i_value > 20)
-      {
+    private void _FillElementNumberText(ref ElementProps io_element_props, int i_value) {
+      if (i_value > 20) {
         char[] exponents = new char[10] { '⁰', '¹', '²', '³', '⁴', '⁵', '⁶', '⁷', '⁸', '⁹' };
         string exponent = "";
-        while (i_value > 0)
-        {
+        while (i_value > 0) {
           exponent = exponents[i_value % 10] + exponent;
           i_value /= 10;
         }
         io_element_props.number = $"2{exponent}";
-      }
-      else
+      } else
         io_element_props.number = Mathf.FloorToInt(Mathf.Pow(2, i_value)).ToString();
     }
   }
@@ -66,8 +57,7 @@ public class ElementStyleProvider
   private float m_line_width;
   private ShapeProvider m_shape_provider;
 
-  public ElementStyleProvider(float size)
-  {
+  public ElementStyleProvider(float size) {
     m_size = size;
     m_line_width = m_size / 25;
     m_shape_provider = new ShapeProvider(m_size, m_line_width);
@@ -75,8 +65,7 @@ public class ElementStyleProvider
     _InitLibraries();
   }
 
-  public ElementProps Get(FieldElement i_element)
-  {
+  public ElementProps Get(FieldElement i_element) {
     if (i_element.type == FieldElement.Type.Hole || i_element.type == FieldElement.Type.Empty)
       return new ElementProps();
     if (!m_element_style_library.ContainsKey(i_element.type))
@@ -84,16 +73,14 @@ public class ElementStyleProvider
     return m_element_style_library[i_element.type].Get(i_element.value, m_size, m_line_width);
   }
 
-  private void _InitLibraries()
-  {
+  private void _InitLibraries() {
     m_element_style_library = new Dictionary<FieldElement.Type, ElementStyleLibrary>();
     _InitCommonElementLibrary();
     _InitInteractableDestractableElementLibrary();
     _InitImmobileDestractableElementLibrary();
   }
 
-  private void _InitCommonElementLibrary()
-  {
+  private void _InitCommonElementLibrary() {
     var library = new ElementStyleLibrary();
     library.colors = new string[]
     {
@@ -181,8 +168,7 @@ public class ElementStyleProvider
     m_element_style_library[FieldElement.Type.Common] = library;
   }
 
-  private void _InitInteractableDestractableElementLibrary()
-  {
+  private void _InitInteractableDestractableElementLibrary() {
     var library = new ElementStyleLibrary();
     library.colors = new string[]
     {
@@ -194,8 +180,7 @@ public class ElementStyleProvider
     m_element_style_library[FieldElement.Type.InteractableDestractable] = library;
   }
 
-  private void _InitImmobileDestractableElementLibrary()
-  {
+  private void _InitImmobileDestractableElementLibrary() {
     var library = new ElementStyleLibrary();
     library.colors = new string[]
     {

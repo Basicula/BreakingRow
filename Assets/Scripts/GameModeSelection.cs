@@ -1,13 +1,11 @@
 ﻿using System.Collections.Generic;
-using UnityEngine;
 using TMPro;
-using UnityEngine.UI;
+using UnityEngine;
 using UnityEngine.EventSystems;
+using UnityEngine.UI;
 
-public class GameModeSelection : MonoBehaviour, IPointerDownHandler, IPointerUpHandler
-{
-  private struct GameModeInfo
-  {
+public class GameModeSelection : MonoBehaviour, IPointerDownHandler, IPointerUpHandler {
+  private struct GameModeInfo {
     public string name;
     public string description;
   }
@@ -19,42 +17,28 @@ public class GameModeSelection : MonoBehaviour, IPointerDownHandler, IPointerUpH
 
   private Vector2 m_swipe_start;
 
-  void Start()
-  {
+  void Start() {
     m_current_game_mode_id = 1;
 
     m_game_mode_infos = new List<GameModeInfo>();
-    m_game_mode_infos.Add(new GameModeInfo
-    {
+    m_game_mode_infos.Add(new GameModeInfo {
       name = "Sandbox",
       description = "Configure your own match 3 game with available variety of options"
     });
-    m_game_mode_infos.Add(new GameModeInfo
-    {
+    m_game_mode_infos.Add(new GameModeInfo {
       name = "Classic",
       description = "Simple match 3 game combined elements will be simply removed"
     });
-    m_game_mode_infos.Add(new GameModeInfo
-    {
+    m_game_mode_infos.Add(new GameModeInfo {
       name = "Accumulated",
       description = "Match 3 game but combined elements will be accumulated like in 2048"
     });
 
-    //m_game_mode_infos = new List<GameModeInfo>();
-    //for (int i = 0; i < 9; ++i)
-    //  m_game_mode_infos.Add(new GameModeInfo
-    //  {
-    //    name = $"Test{i}",
-    //    description = $"Test{i}"
-    //  });
-
     _Init();
   }
 
-  private void _Init()
-  {
-    foreach (var game_mode_info in m_game_mode_infos)
-    {
+  private void _Init() {
+    foreach (var game_mode_info in m_game_mode_infos) {
       var game_mode_info_instance = Instantiate(m_game_mode_info_prefab, transform);
       game_mode_info_instance.transform.GetChild(0).GetChild(0).GetComponent<TMP_Text>().text = game_mode_info.name;
       game_mode_info_instance.transform.GetChild(1).GetChild(0).GetComponent<TMP_Text>().text = game_mode_info.description;
@@ -73,8 +57,7 @@ public class GameModeSelection : MonoBehaviour, IPointerDownHandler, IPointerUpH
     play_button.GetComponent<Button>().onClick.AddListener(() => { SceneLoader.LoadScene($"{m_game_mode_infos[m_current_game_mode_id].name}Game"); });
   }
 
-  private System.Collections.IEnumerator _ChangeCurrentMode(int i_offset)
-  {
+  private System.Collections.IEnumerator _ChangeCurrentMode(int i_offset) {
     m_current_game_mode_id += i_offset;
     if (m_current_game_mode_id < 0)
       m_current_game_mode_id += m_game_mode_infos.Count;
@@ -88,8 +71,7 @@ public class GameModeSelection : MonoBehaviour, IPointerDownHandler, IPointerUpH
     yield return null;
   }
 
-  private System.Collections.IEnumerator _Move(int i_instance_id, int i_offset)
-  {
+  private System.Collections.IEnumerator _Move(int i_instance_id, int i_offset) {
     var rect_transform = transform.GetChild(3 + i_instance_id).GetComponent<RectTransform>();
     var from_offset = rect_transform.anchoredPosition.x;
     var anchor_id = m_game_mode_infos.Count / 2;
@@ -110,8 +92,7 @@ public class GameModeSelection : MonoBehaviour, IPointerDownHandler, IPointerUpH
     sorting_group.sortingOrder = direction * to_id;
 
     float start_time = Time.time;
-    while (offset != to_offset || scale != to_scale)
-    {
+    while (offset != to_offset || scale != to_scale) {
       var t = 2 * (Time.time - start_time);
       offset = Mathf.Lerp(from_offset, to_offset, t);
       rect_transform.anchoredPosition = new Vector2(offset, 0);
@@ -121,13 +102,11 @@ public class GameModeSelection : MonoBehaviour, IPointerDownHandler, IPointerUpH
     }
   }
 
-  public void OnPointerDown(PointerEventData eventData)
-  {
+  public void OnPointerDown(PointerEventData eventData) {
     m_swipe_start = eventData.position;
   }
 
-  public void OnPointerUp(PointerEventData eventData)
-  {
+  public void OnPointerUp(PointerEventData eventData) {
     var swipe_end = eventData.position;
     var delta = swipe_end - m_swipe_start;
     if (Mathf.Abs(delta.x) < Screen.width / 10)

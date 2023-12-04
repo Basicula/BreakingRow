@@ -1,9 +1,7 @@
 ﻿using UnityEngine;
 
-public class SafeAreaFitter : MonoBehaviour
-{
-  private void Awake()
-  {
+public class SafeAreaFitter : MonoBehaviour {
+  private void Awake() {
     var safe_area_rect = Screen.safeArea;
     var anchor_min = safe_area_rect.min;
     var anchor_max = safe_area_rect.max;

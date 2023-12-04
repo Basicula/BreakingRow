@@ -1,11 +1,9 @@
-using UnityEngine;
 using System;
 using System.Collections.Generic;
+using UnityEngine;
 
-class ShapeProvider
-{
-  public enum ShapeType
-  {
+class ShapeProvider {
+  public enum ShapeType {
     Triangle = 0,
     RotatedTriangle = 1,
     Square = 2,
@@ -19,38 +17,32 @@ class ShapeProvider
     Circle = 10
   }
 
-  private class BoundingRect
-  {
+  private class BoundingRect {
     public Vector2 min;
     public Vector2 max;
 
-    public BoundingRect()
-    {
+    public BoundingRect() {
       min = new Vector2(float.MaxValue, float.MaxValue);
       max = new Vector2(float.MinValue, float.MinValue);
     }
 
-    public BoundingRect(Vector2 i_min, Vector2 i_max)
-    {
+    public BoundingRect(Vector2 i_min, Vector2 i_max) {
       min = i_min;
       max = i_max;
     }
 
-    public Vector2 GetSize()
-    {
+    public Vector2 GetSize() {
       return new Vector2(max.x - min.x, max.y - min.y);
     }
 
-    public void AddPoint(Vector2 i_point)
-    {
+    public void AddPoint(Vector2 i_point) {
       min.x = Mathf.Min(min.x, i_point.x);
       min.y = Mathf.Min(min.y, i_point.y);
       max.x = Mathf.Max(max.x, i_point.x);
       max.y = Mathf.Max(max.y, i_point.y);
     }
 
-    public void Merge(BoundingRect i_other)
-    {
+    public void Merge(BoundingRect i_other) {
       min.x = Mathf.Min(min.x, i_other.min.x);
       min.y = Mathf.Min(min.y, i_other.min.y);
       max.x = Mathf.Max(max.x, i_other.max.x);
@@ -58,101 +50,81 @@ class ShapeProvider
     }
   }
 
-  private abstract class ShapeTransition
-  {
+  private abstract class ShapeTransition {
     public Vector2 point;
 
-    public ShapeTransition(Vector2 i_point)
-    {
+    public ShapeTransition(Vector2 i_point) {
       point = i_point;
     }
 
-    public virtual void Scale(float i_scale)
-    {
+    public virtual void Scale(float i_scale) {
       point.Scale(new Vector2(i_scale, i_scale));
     }
 
     public abstract void FillSVG(ref SVGPath io_svg_path);
   }
 
-  private class Move : ShapeTransition
-  {
-    public Move(Vector2 i_point) : base(i_point)
-    {
+  private class Move : ShapeTransition {
+    public Move(Vector2 i_point) : base(i_point) {
     }
 
-    public override void FillSVG(ref SVGPath io_svg_path)
-    {
+    public override void FillSVG(ref SVGPath io_svg_path) {
       io_svg_path.MoveTo(point);
     }
   }
-  private class Line : ShapeTransition
-  {
-    public Line(Vector2 i_point) : base(i_point)
-    {
+  private class Line : ShapeTransition {
+    public Line(Vector2 i_point) : base(i_point) {
     }
 
-    public override void FillSVG(ref SVGPath io_svg_path)
-    {
+    public override void FillSVG(ref SVGPath io_svg_path) {
       io_svg_path.LineTo(point);
     }
   }
-  private class CircularArc : ShapeTransition
-  {
+  private class CircularArc : ShapeTransition {
     public Vector2 arc_center;
     public float radius;
     public bool arc_direction;
     public bool large_arc;
 
-    public CircularArc(Vector2 i_point, Vector2 i_arc_center, float i_radius, bool i_arc_direction, bool i_large_arc) : base(i_point)
-    {
+    public CircularArc(Vector2 i_point, Vector2 i_arc_center, float i_radius, bool i_arc_direction, bool i_large_arc) : base(i_point) {
       radius = i_radius;
       arc_direction = i_arc_direction;
       arc_center = i_arc_center;
       large_arc = i_large_arc;
     }
 
-    public override void FillSVG(ref SVGPath io_svg_path)
-    {
+    public override void FillSVG(ref SVGPath io_svg_path) {
       io_svg_path.ArcTo(radius, large_arc, arc_direction, point);
     }
 
-    public override void Scale(float i_scale)
-    {
+    public override void Scale(float i_scale) {
       point.Scale(new Vector2(i_scale, i_scale));
       radius *= i_scale;
     }
   }
 
-  private class Shape
-  {
+  private class Shape {
     public List<ShapeTransition> transitions;
 
-    public Shape()
-    {
+    public Shape() {
       transitions = new List<ShapeTransition>();
     }
 
-    public void Add(ShapeTransition i_transition)
-    {
+    public void Add(ShapeTransition i_transition) {
       transitions.Add(i_transition);
     }
 
-    public BoundingRect GetBounds()
-    {
+    public BoundingRect GetBounds() {
       BoundingRect bounds = new BoundingRect();
-      Func<Vector2, float> get_angle = (Vector2 i_point) =>
-      {
+      Func<Vector2, float> get_angle = (Vector2 i_point) => {
         var angle = Mathf.Atan2(i_point.y, i_point.x);
         if (angle < 0)
           angle += 2 * Mathf.PI;
         return angle;
       };
-      for (int i = 0; i < transitions.Count; ++i)
-      {
+      for (int i = 0; i < transitions.Count; ++i) {
         var transition_type = transitions[i].GetType();
-        if (transition_type == typeof(CircularArc))
-        {
+        if (transition_type == typeof(CircularArc)) {
           var transition = (CircularArc)transitions[i];
           List<Vector2> extreme_points = new List<Vector2> {
             transition.arc_center + new Vector2(transition.radius, 0),
@@ -166,8 +138,7 @@ class ShapeProvider
           var second_angle = get_angle(to);
           if (first_angle > second_angle)
             second_angle += 2 * Mathf.PI;
-          foreach (var extreme_point in extreme_points)
-          {
+          foreach (var extreme_point in extreme_points) {
             var point_angle = get_angle(extreme_point);
             if (point_angle < first_angle || point_angle > second_angle)
               continue;
@@ -179,14 +150,12 @@ class ShapeProvider
       return bounds;
     }
 
-    public void Scale(float i_scale)
-    {
+    public void Scale(float i_scale) {
       foreach (var transition in transitions)
         transition.Scale(i_scale);
     }
 
-    public void FillSVG(ref SVGPath io_svg_path)
-    {
+    public void FillSVG(ref SVGPath io_svg_path) {
       foreach (var transition in transitions)
         transition.FillSVG(ref io_svg_path);
     }
@@ -195,8 +164,7 @@ class ShapeProvider
   private float m_size;
   private Dictionary<ShapeType, Shape> m_shapes;
 
-  public ShapeProvider(float i_size, float i_line_width)
-  {
+  public ShapeProvider(float i_size, float i_line_width) {
     m_size = i_size - i_line_width;
 
     m_shapes = new Dictionary<ShapeType, Shape>();
@@ -214,8 +182,7 @@ class ShapeProvider
     m_shapes[ShapeType.Circle] = _Circle();
   }
 
-  public SVGPath RegularShape(ShapeType i_shape)
-  {
+  public SVGPath RegularShape(ShapeType i_shape) {
     var shape = m_shapes[i_shape];
     _Scale(ref shape);
     SVGPath svg_path = new SVGPath();
@@ -224,12 +191,10 @@ class ShapeProvider
     return svg_path;
   }
 
-  public SVGPath RoundCornersShape(ShapeType i_shape, float i_rounding_radius)
-  {
+  public SVGPath RoundCornersShape(ShapeType i_shape, float i_rounding_radius) {
     var shape = m_shapes[i_shape];
     Shape rounded_shape = new Shape();
-    for (int transition_id = 0; transition_id < shape.transitions.Count; ++transition_id)
-    {
+    for (int transition_id = 0; transition_id < shape.transitions.Count; ++transition_id) {
       Vector2 curr_point = shape.transitions[transition_id].point;
       int prev_point_id = transition_id - 1;
       int next_point_id = transition_id + 1;
@@ -265,13 +230,11 @@ class ShapeProvider
     return svg_path;
   }
 
-  public SVGPath RoundEdgesShape(ShapeType i_shape, float i_rounding_radius, bool i_is_concave)
-  {
+  public SVGPath RoundEdgesShape(ShapeType i_shape, float i_rounding_radius, bool i_is_concave) {
     var shape = m_shapes[i_shape];
     Shape rounded_shape = new Shape();
     rounded_shape.Add(new Move(shape.transitions[0].point));
-    for (int transition_id = 1; transition_id <= shape.transitions.Count; ++transition_id)
-    {
+    for (int transition_id = 1; transition_id <= shape.transitions.Count; ++transition_id) {
       Vector2 prev_point = shape.transitions[transition_id - 1].point;
       Vector2 curr_point = shape.transitions[transition_id == shape.transitions.Count ? 0 : transition_id].point;
       var a = (curr_point - prev_point).magnitude / 2;
@@ -287,12 +250,10 @@ class ShapeProvider
     return svg_path;
   }
 
-  private Shape _RegularPolygon(int angle_count, float start_angle = 0)
-  {
+  private Shape _RegularPolygon(int angle_count, float start_angle = 0) {
     float angle_step = (Mathf.PI * 2) / angle_count;
     Shape polyline = new Shape();
-    for (int point_id = 0; point_id < angle_count; ++point_id)
-    {
+    for (int point_id = 0; point_id < angle_count; ++point_id) {
       float angle = start_angle + point_id * angle_step;
       var new_point = _UnitVector(angle);
       polyline.Add(point_id == 0 ? new Move(new_point) : new Line(new_point));
@@ -300,13 +261,11 @@ class ShapeProvider
     return polyline;
   }
 
-  private Shape _StarPolygon(int i_spikes_count, float i_start_angle = 0)
-  {
+  private Shape _StarPolygon(int i_spikes_count, float i_start_angle = 0) {
     float angle_count = i_spikes_count * 2;
     float angle_step = (Mathf.PI * 2) / angle_count;
     Shape polyline = new Shape();
-    for (int point_id = 0; point_id < angle_count; ++point_id)
-    {
+    for (int point_id = 0; point_id < angle_count; ++point_id) {
       float angle = i_start_angle + point_id * angle_step;
       var point = _UnitVector(angle);
       if (point_id % 2 == 1)
@@ -316,8 +275,7 @@ class ShapeProvider
     return polyline;
   }
 
-  private Shape _MoonPolygon()
-  {
+  private Shape _MoonPolygon() {
     Shape moon = new Shape();
     float radius = 1;
     float phase = -1.75f;
@@ -329,8 +287,7 @@ class ShapeProvider
     return moon;
   }
 
-  private Shape _Circle()
-  {
+  private Shape _Circle() {
     Shape moon = new Shape();
     moon.Add(new Move(_UnitVector(-Mathf.PI / 2)));
     moon.Add(new CircularArc(_UnitVector(Mathf.PI / 2), new Vector2(0.0f, 0.0f), 1, false, false));
@@ -339,20 +296,17 @@ class ShapeProvider
   }
 
 
-  private float _GetFitScale(BoundingRect i_bounds)
-  {
+  private float _GetFitScale(BoundingRect i_bounds) {
     Vector2 size = i_bounds.GetSize();
     return Mathf.Min(m_size / size.x, m_size / size.y);
   }
 
-  private void _Scale(ref Shape i_shape)
-  {
+  private void _Scale(ref Shape i_shape) {
     var scale_factor = _GetFitScale(i_shape.GetBounds());
     i_shape.Scale(scale_factor);
   }
 
-  static private Vector2 _UnitVector(float angle)
-  {
+  static private Vector2 _UnitVector(float angle) {
     return new Vector2(Mathf.Cos(angle), Mathf.Sin(angle));
   }
 }
