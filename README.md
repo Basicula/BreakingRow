@@ -1,4 +1,6 @@
-#
+# Demo
+[![Watch the video](http://i3.ytimg.com/vi/ah1NKIwMfgk/hqdefault.jpg)](https://www.youtube.com/watch?v=ah1NKIwMfgk)
+
 # Features
 
 - [x] Score bonus for greater combinations
